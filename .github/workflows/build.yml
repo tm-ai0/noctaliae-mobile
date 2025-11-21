@@ -1,0 +1,138 @@
+# ============================================
+# 🌙 NOCTALIÆ - EAS BUILD PIPELINE
+# ============================================
+# Ce workflow build l'app Android via EAS Build
+# Il s'exécute manuellement ou sur tag de release
+
+name: EAS Build
+
+on:
+  # Déclenchement manuel
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile'
+        required: true
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+        default: 'preview'
+      
+      platform:
+        description: 'Platform'
+        required: true
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+        default: 'android'
+  
+  # Déclenchement sur tag (ex: v1.0.0)
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ============================================
+  # JOB 1: BUILD
+  # ============================================
+  build:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 🔧 Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      
+      - name: 🏗️ Build Android (Preview)
+        if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all'
+        run: |
+          PROFILE=${{ github.event.inputs.profile || 'preview' }}
+          echo "Building with profile: $PROFILE"
+          eas build --platform android --profile $PROFILE --non-interactive --no-wait
+      
+      - name: 🏗️ Build iOS (Preview)
+        if: (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all') && github.event.inputs.profile != 'production'
+        run: |
+          PROFILE=${{ github.event.inputs.profile || 'preview' }}
+          echo "Building iOS with profile: $PROFILE"
+          eas build --platform ios --profile $PROFILE --non-interactive --no-wait
+      
+      - name: 🏗️ Build Production (sur tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "Building production version for tag: ${{ github.ref_name }}"
+          eas build --platform android --profile production --non-interactive --no-wait
+      
+      - name: ✅ Build submitted
+        run: |
+          echo "✅ Build submitted to EAS"
+          echo "📱 Check build status: https://expo.dev/accounts/YOUR_USERNAME/projects/noctaliae-mobile/builds"
+
+  # ============================================
+  # JOB 2: NOTIFICATION (Optionnel)
+  # ============================================
+  notify:
+    name: Notify Build Status
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+    
+    steps:
+      - name: ✅ Build Success Notification
+        if: needs.build.result == 'success'
+        run: |
+          echo "✅ Build submitted successfully!"
+          echo "Platform: ${{ github.event.inputs.platform }}"
+          echo "Profile: ${{ github.event.inputs.profile }}"
+      
+      - name: ❌ Build Failure Notification
+        if: needs.build.result == 'failure'
+        run: |
+          echo "❌ Build submission failed"
+          echo "Please check the logs"
+
+# ============================================
+# CONFIGURATION REQUISE
+# ============================================
+# 
+# 1. CRÉER UN TOKEN EXPO :
+#    - Va sur https://expo.dev/accounts/[username]/settings/access-tokens
+#    - Crée un token "EXPO_TOKEN"
+#    - Ajoute-le dans GitHub Secrets
+# 
+# 2. AJOUTER LE SECRET GITHUB :
+#    - Va dans Settings > Secrets and variables > Actions
+#    - Ajoute EXPO_TOKEN avec la valeur du token Expo
+# 
+# 3. CONFIGURER EAS.JSON :
+#    - Assure-toi que eas.json contient les profiles (voir fichier)
+# 
+# 4. LANCER UN BUILD :
+#    - Va dans Actions > EAS Build > Run workflow
+#    - Choisis profile et platform
+#    - Clique sur "Run workflow"
+# 
+# 5. SUIVRE LE BUILD :
+#    - Le build s'exécute sur les serveurs Expo
+#    - Consulte le statut sur https://expo.dev
+#    - Télécharge l'APK/IPA quand c'est prêt

@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Noctaliae",
+    "slug": "noctaliae-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a0b2e"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.noctaliae.mobile",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Noctaliae a besoin du microphone pour enregistrer vos reves.",
+        "NSSpeechRecognitionUsageDescription": "Noctaliae utilise la reconnaissance vocale."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a0b2e"
+      },
+      "package": "com.noctaliae.mobile",
+      "permissions": [
+        "RECORD_AUDIO",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "softwareKeyboardLayoutMode": "pan"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Permettre a Noctaliae d'enregistrer vos reves."
+        }
+      ],
+      "expo-localization",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "aa672bc7-3b0b-4587-9b13-9638072270d8"
+      }
+    }
+  }
+}

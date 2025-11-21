@@ -1,0 +1,90 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Archives et fichiers sensibles
+_OLD_SESSION_*/
+*.env
+google-credentials.json
+
+# ============================================
+# 🌙 NOCTALIÆ - CUSTOM IGNORES
+# ============================================
+
+# Personal notes and session files
+_PERSONAL_NOTES/
+SESSION_*.md
+PROMPT_*.md
+🚨_*.txt
+✅_*.md
+📋_*.md
+PRESENTATION_*.md
+VISION_*.md
+E__Dream*.md
+
+# Backend versions (separate repo)
+_BACKEND_VERSIONS/
+BACKEND_*/
+index-COMPLET-FINAL.js
+index_v*.js
+endpoint-*.js
+streaming-*.js
+test_noctaliae_*.js
+
+# Windows-specific scripts (use cross-platform alternatives)
+*.bat
+NETTOYER_*.ps1
+🧹_*.bat
+
+# Backups (already in BACKUPS/ folder)
+BACKUPS/
+*.backup
+*-backup/
+
+# Old sessions
+_OLD_SESSION_*/
+
+# Deployment scripts (sensitive)
+RATE_LIMITING_SSH_SCRIPT.sh
+
+# Temporary reorganization script
+REORGANIZE_PROJECT.ps1
+
