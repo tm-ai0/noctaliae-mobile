@@ -225,7 +225,7 @@ Les contributions sont les bienvenues ! Merci de lire [CONTRIBUTING.md](./CONTRI
 - Montpellier, France
 - [GitHub](https://github.com/tm-ai0)
 - Email: contact@thomasmaury.fr
-- [Portfolio](https://thomasmaury.fr)
+- [Link.tree]((https://linktr.ee/thomasmaury))
 
 ---
 
