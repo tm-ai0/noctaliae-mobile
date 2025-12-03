@@ -23,7 +23,7 @@ A React Native (Expo) mobile app for scientific dream analysis, based on the neu
   - Llama 3.3 70B (quick analysis)
 - 💬 **Deep Conversation** : Chat with AI about your dreams
 - 🎨 **Customizable Themes** : 6 night-inspired themes
-- 📊 **Insights** : Statistics and trends from your dreams
+- 📊 **Atlas** : Statistics and trends from your dreams
 - 🔒 **Privacy-First** : Everything stays on your device
 
 ---
@@ -82,7 +82,7 @@ npm run start:clear
 - **Node.js** + Express
 - **Claude Sonnet 4.5** (Anthropic)
 - **Llama 3.3 70B** (Groq)
-- **Whisper-1** (OpenAI) for transcription
+- **Whisper** (Groq) for transcription
 
 ### Infrastructure
 - **Hosting**: Infomaniak (backend)
