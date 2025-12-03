@@ -9,11 +9,27 @@ export function MarkdownText({ children, style }) {
       return <View key={index} style={{ height: 14 }} />;
     }
 
+    // ✅ MASQUER LES METADATA
+    const metadataKeywords = ['METADATA:', 'EMOJI:', 'TITLE:', 'TAGS:', 'SUGGESTED QUESTIONS:', 'STYLE:'];
+    if (metadataKeywords.some(keyword => line.trim().toUpperCase().startsWith(keyword))) {
+      return null; // Ne rien afficher
+    }
+
+    // 🏆 DÉTECTER LES QUESTIONS (ligne qui finit par "?")
+    const trimmedLine = line.trim();
+    if (trimmedLine.endsWith('?') && !trimmedLine.startsWith('#') && !trimmedLine.startsWith('-') && !trimmedLine.startsWith('•')) {
+      return (
+        <Text key={index} style={[style, styles.question]}>
+          {parseBoldAndQuestion(trimmedLine)}
+        </Text>
+      );
+    }
+
     // Détecter les titres ###
     if (line.startsWith('### ')) {
       return (
         <Text key={index} style={[style, styles.subHeading]}>
-          {parseBold(line.substring(4))}
+          {parseBoldAndQuestion(line.substring(4))}
         </Text>
       );
     }
@@ -22,7 +38,7 @@ export function MarkdownText({ children, style }) {
     if (line.startsWith('## ')) {
       return (
         <Text key={index} style={[style, styles.heading]}>
-          {parseBold(line.substring(3))}
+          {parseBoldAndQuestion(line.substring(3))}
         </Text>
       );
     }
@@ -41,31 +57,38 @@ export function MarkdownText({ children, style }) {
     if (line.startsWith('# ')) {
       return (
         <Text key={index} style={[style, styles.mainHeading]}>
-          {parseBold(line.substring(2))}
+          {parseBoldAndQuestion(line.substring(2))}
         </Text>
       );
     }
 
-    // Détecter les listes à puces
-    if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
+    // Détecter les listes à puces (avec * ou - ou •)
+    if (line.trim().startsWith('*') || line.trim().startsWith('-') || line.trim().startsWith('•')) {
+      // Extraire le texte après le marqueur (* ou - ou •)
       const bulletText = line.trim().substring(1).trim();
+      
+      // 🛡️ Ignorer les bullets vides ou avec seulement des tirets
+      if (!bulletText || bulletText === '--' || bulletText === '-' || bulletText === '---') {
+        return null;
+      }
+      
       return (
         <View key={index} style={styles.bulletContainer}>
           <Text style={[style, styles.bullet]}>•</Text>
-          <Text style={[style, styles.bulletText]}>{parseBold(bulletText)}</Text>
+          <Text style={[style, styles.bulletText]}>{parseBoldAndQuestion(bulletText)}</Text>
         </View>
       );
     }
     
-    // Ligne normale
     return (
       <Text key={index} style={[style, styles.normalText]}>
-        {parseBold(line)}
+        {parseBoldAndQuestion(line)}
       </Text>
     );
   };
   
-  const parseBold = (text) => {
+  // 🏆 Parser BOLD + Questions
+  const parseBoldAndQuestion = (text) => {
     const parts = [];
     let currentIndex = 0;
     let key = 0;
@@ -84,9 +107,10 @@ export function MarkdownText({ children, style }) {
         );
       }
       
-      // Texte en gras
+      // Texte en gras (vert si c'est une question)
+      const isQuestion = text.trim().endsWith('?');
       parts.push(
-        <Text key={`bold-${key++}`} style={styles.bold}>
+        <Text key={`bold-${key++}`} style={isQuestion ? styles.boldQuestion : styles.bold}>
           {match[1]}
         </Text>
       );
@@ -122,48 +146,76 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: THEME.colors.primary,
   },
+  boldQuestion: {
+    fontWeight: '700',
+    color: THEME.colors.primary,
+  },
+  // 🏆 QUESTIONS (ligne qui finit par "?")
+  question: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: THEME.colors.primary,
+    lineHeight: 26,
+    marginVertical: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: THEME.colors.primaryGlow,
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.primary,
+    borderRadius: 8,
+  },
+  // 🏆 HEADINGS améliorés
   mainHeading: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     marginTop: 20,
     marginBottom: 12,
     color: THEME.colors.primary,
-    lineHeight: 32,
+    lineHeight: 30,
+    borderBottomWidth: 2,
+    borderBottomColor: THEME.colors.primary,
+    paddingBottom: 6,
   },
   heading: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 19,
+    fontWeight: '700',
     marginTop: 16,
     marginBottom: 10,
     color: THEME.colors.textPrimary,
-    lineHeight: 28,
+    lineHeight: 26,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.cardBorder,
+    paddingBottom: 4,
   },
   subHeading: {
     fontSize: 17,
-    fontWeight: '600',
-    marginTop: 12,
+    fontWeight: '700',
+    marginTop: 14,
     marginBottom: 8,
-    color: THEME.colors.textSecondary,
+    color: THEME.colors.primary,
     lineHeight: 24,
   },
   emojiHeading: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '700',
-    marginTop: 18,
+    marginTop: 16,
     marginBottom: 10,
     color: THEME.colors.primary,
     lineHeight: 26,
   },
+  // 🏆 BULLETS améliorés
   bulletContainer: {
     flexDirection: 'row',
-    marginVertical: 5,
-    paddingLeft: 8,
+    marginVertical: 6,
+    paddingLeft: 12,
+    paddingRight: 8,
   },
   bullet: {
-    marginRight: 10,
-    fontSize: 17,
+    marginRight: 12,
+    fontSize: 18,
     color: THEME.colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
+    lineHeight: 24,
   },
   bulletText: {
     flex: 1,

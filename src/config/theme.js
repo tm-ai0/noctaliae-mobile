@@ -12,11 +12,30 @@ const baseColors = {
   backgroundDeep: '#08091c',
   backgroundElevated: '#0f1130',
   
+  // 💚 PRIMARY - Noctaliæ Neon Green
   primary: '#00FFB0',
   primaryDark: '#00D994',
   primaryLight: '#33FFBD',
   primaryGlow: 'rgba(0, 255, 176, 0.15)',
   primaryStrong: 'rgba(0, 255, 176, 0.25)',
+  
+  // 🌿 ORGANIC GREEN - Pour soutien/Ko-fi
+  organicGreen: '#39FF88',
+  organicGreenDark: '#12D66A',
+  organicGreenLight: '#7AFFB5',
+  organicGreenSubtle: 'rgba(57, 255, 136, 0.15)',
+  
+  // 🧊 ACCENTS PREMIUM
+  arcticCyan: '#3CF0FF',
+  arcticCyanSubtle: 'rgba(60, 240, 255, 0.12)',
+  electricBlue: '#4F8DFF',
+  electricBlueSubtle: 'rgba(79, 141, 255, 0.12)',
+  ultraviolet: '#6B5CFF',
+  ultravioletSubtle: 'rgba(107, 92, 255, 0.12)',
+  cyberMagenta: '#FF3FD1',
+  cyberMagentaSubtle: 'rgba(255, 63, 209, 0.12)',
+  chrome: '#DDE2EA',
+  chromeSubtle: 'rgba(221, 226, 234, 0.12)',
   
   text: '#FFFFFF',
   textPrimary: '#FFFFFF',
@@ -27,13 +46,17 @@ const baseColors = {
   // 🎨 COULEURS OBLIGATOIRES NOCTALIÆ
   coolGrayGreen: '#A0B4D4',
   coolGrayGreenSubtle: 'rgba(160, 180, 212, 0.12)',
-  scientificBlueGreen: '#A0B4D4', // ✅ Alias pour compatibilité
+  scientificBlueGreen: '#A0B4D4',
   scientificBlueGreenSubtle: 'rgba(160, 180, 212, 0.12)',
   
   success: '#00FFB0',
   successSubtle: 'rgba(0, 255, 176, 0.12)',
-  error: '#FF5757',
-  errorSubtle: 'rgba(255, 87, 87, 0.12)',
+  info: '#3CF0FF',
+  infoSubtle: 'rgba(60, 240, 255, 0.12)',
+  error: '#FF4D6D',
+  errorSubtle: 'rgba(255, 77, 109, 0.12)',
+  warning: '#FFC85A',
+  warningSubtle: 'rgba(255, 200, 90, 0.12)',
   
   overlay: 'rgba(8, 9, 28, 0.95)',
   overlayStrong: 'rgba(8, 9, 28, 0.98)',
@@ -53,9 +76,9 @@ const ORIGINAL_THEME = {
   isPremium: false,
   colors: {
     ...baseColors,
-    cardBackground: '#0f1130',
-    cardBackgroundHover: '#12143a',
-    cardBorder: 'rgba(160, 180, 212, 0.08)',
+    cardBackground: '#151842', // Augmenté pour meilleur contraste (était #0f1130)
+    cardBackgroundHover: '#1a1d4f',
+    cardBorder: 'rgba(160, 180, 212, 0.15)', // Augmenté de 0.08 à 0.15
     
     warmGold: '#D2B14C',
     warmGoldDark: '#B89A3E',
@@ -318,13 +341,13 @@ export const THEMES = {
 // Liste des thèmes pour le sélecteur (3 free + 3 premium)
 export const THEME_LIST = [
   // FREE
-  { id: 'original', name: '🌊 Original', description: 'Bleu-mauve profond', isPremium: false },
-  { id: 'warm-gold', name: '🌅 Warm Gold', description: 'Or chaleureux', isPremium: false },
-  { id: 'earthy-brown', name: '🍂 Earthy Brown', description: 'Brun terreux', isPremium: false },
+  { id: 'original', name: 'Original', icon: 'water', iconFamily: 'MaterialIcons', description: 'Bleu-mauve profond', isPremium: false },
+  { id: 'warm-gold', name: 'Warm Gold', icon: 'wb-sunny', iconFamily: 'MaterialIcons', description: 'Or chaleureux', isPremium: false },
+  { id: 'earthy-brown', name: 'Earthy Brown', icon: 'terrain', iconFamily: 'MaterialIcons', description: 'Brun terreux', isPremium: false },
   // PREMIUM
-  { id: 'neon-green', name: '⚡ Neon Green', description: 'Vert néon intense', isPremium: true },
-  { id: 'deep-ocean', name: '🌊 Deep Ocean', description: 'Océan profond', isPremium: true },
-  { id: 'soft-pink', name: '🌸 Soft Pink', description: 'Rose doux', isPremium: true },
+  { id: 'neon-green', name: 'Neon Green', icon: 'flash-on', iconFamily: 'MaterialIcons', description: 'Vert néon intense', isPremium: true },
+  { id: 'deep-ocean', name: 'Deep Ocean', icon: 'waves', iconFamily: 'MaterialIcons', description: 'Océan profond', isPremium: true },
+  { id: 'soft-pink', name: 'Soft Pink', icon: 'local-florist', iconFamily: 'MaterialIcons', description: 'Rose doux', isPremium: true },
 ];
 
 // Export du thème par défaut (pour compatibilité)

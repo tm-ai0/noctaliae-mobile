@@ -53,5 +53,14 @@ export const premiumService = {
       console.error('❌ Erreur lecture expiration:', error);
       return null;
     }
+  },
+
+  // Alias pour compatibilité SettingsScreen
+  async enablePremium(expiryDate = null) {
+    return this.setPremium(true, expiryDate);
+  },
+
+  async disablePremium() {
+    return this.setPremium(false);
   }
 };

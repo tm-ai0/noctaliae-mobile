@@ -1,4 +1,3 @@
-# 🎙️ CHAT VOCAL CLAUDE - DONE ✅
 
 ## 🚀 EN 30 SECONDES
 

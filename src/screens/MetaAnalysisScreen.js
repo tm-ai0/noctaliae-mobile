@@ -184,7 +184,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
           
           {message.model && (
             <Text style={[styles.modelBadge, { color: theme.colors.textSecondary }]}>
-              {message.model === 'claude' ? '⭐ Mode Profond' : '🧠 Mode Léger'}
+              {message.model === 'claude' ? '⭐ DeepDream' : '⚡ QuickDream'}
             </Text>
           )}
         </View>

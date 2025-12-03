@@ -4,14 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  ScrollView,
   Platform
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../config/ThemeContext';
-
-const { width, height } = Dimensions.get('window');
 
 export default function OnboardingWelcome({ navigation }) {
   const { theme } = useTheme();
@@ -27,11 +25,18 @@ export default function OnboardingWelcome({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.content, { paddingTop: Math.max(insets.top, 20) + 20 }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: Math.max(insets.top, 20) + 20 }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo / Icône */}
         <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryGlow }]}>
           <MaterialCommunityIcons 
-            name="fingerprint" 
+            name="brain" 
             size={80} 
             color={theme.colors.primary} 
           />
@@ -51,7 +56,7 @@ export default function OnboardingWelcome({ navigation }) {
         <View style={styles.explanationContainer}>
           <View style={styles.explanationRow}>
             <MaterialCommunityIcons 
-              name="brain" 
+              name="fingerprint" 
               size={28} 
               color={theme.colors.primary} 
             />
@@ -98,7 +103,7 @@ export default function OnboardingWelcome({ navigation }) {
           </View>
         </View>
 
-        {/* Note */}
+        {/* Note - dans le scroll maintenant */}
         <View style={[styles.noteContainer, { backgroundColor: theme.colors.primaryGlow }]}>
           <MaterialCommunityIcons name="information" size={20} color={theme.colors.primary} />
           <Text style={[styles.noteText, { color: theme.colors.text }]}>
@@ -106,20 +111,8 @@ export default function OnboardingWelcome({ navigation }) {
             et peut être modifiée à tout moment
           </Text>
         </View>
-      </View>
 
-      {/* Boutons */}
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.skipButtonText, { color: theme.colors.textSecondary }]}>
-            Passer
-          </Text>
-        </TouchableOpacity>
-
+        {/* Bouton Commencer */}
         <TouchableOpacity
           style={[styles.nextButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleNext}
@@ -134,7 +127,18 @@ export default function OnboardingWelcome({ navigation }) {
             color={theme.colors.background} 
           />
         </TouchableOpacity>
-      </View>
+
+        {/* Bouton Passer */}
+        <TouchableOpacity
+          style={[styles.skipButton, { marginBottom: Math.max(insets.bottom, 20) + 20 }]}
+          onPress={handleSkip}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.skipButtonText, { color: theme.colors.textSecondary }]}>
+            Passer pour le moment
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
@@ -143,8 +147,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 30,
     alignItems: 'center',
   },
@@ -154,8 +160,8 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: 20,
+    marginBottom: 30,
   },
   title: {
     fontSize: 32,
@@ -167,11 +173,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     textAlign: 'center',
-    marginBottom: 50,
+    marginBottom: 40,
   },
   explanationContainer: {
     width: '100%',
-    gap: 24,
+    gap: 20,
+    marginBottom: 30,
   },
   explanationRow: {
     flexDirection: 'row',
@@ -195,25 +202,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    marginTop: 40,
+    marginBottom: 20,
     gap: 12,
+    width: '100%',
   },
   noteText: {
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
-  },
-  footer: {
-    paddingHorizontal: 30,
-    gap: 12,
-  },
-  skipButton: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   nextButton: {
     flexDirection: 'row',
@@ -222,6 +218,8 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 16,
     gap: 8,
+    width: '100%',
+    marginBottom: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#9B59B6',
@@ -237,5 +235,13 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  skipButton: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

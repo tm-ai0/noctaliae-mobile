@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noctaliæ Beta 0.9.9 - Analyse Scientifique des Rêves</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #D2B14C;
+            --gold-glow: rgba(210, 177, 76, 0.15);
+            --gold-soft: rgba(210, 177, 76, 0.6);
+            --brown: #88735C;
+            --gray-blue: #A0B4D4;
+            --neon-green: #00FFB0;
+            --violet: #8B5CF6;
+            --bg-dark: #0a0f1a;
+            --bg-card: rgba(20, 30, 50, 0.6);
+            --bg-card-border: rgba(210, 177, 76, 0.2);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(210, 177, 76, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse 100% 80% at 50% 100%, rgba(0, 255, 176, 0.04) 0%, transparent 40%),
+                linear-gradient(180deg, #0a0f1a 0%, #0d1525 50%, #0a1020 100%);
+            z-index: -1;
+            animation: bgPulse 15s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+
+        /* Stars effect */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--gold-soft);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .beta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--brown) 100%);
+            color: var(--bg-dark);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { box-shadow: 0 0 20px rgba(210, 177, 76, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(210, 177, 76, 0.5); }
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(48px, 10vw, 72px);
+            font-weight: 400;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, var(--gold) 0%, #f4e4a6 50%, var(--gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+
+        .tagline {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(18px, 4vw, 24px);
+            font-style: italic;
+            color: var(--gray-blue);
+            font-weight: 300;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .hero h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(28px, 5vw, 40px);
+            font-weight: 400;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .hero h2 span {
+            color: var(--neon-green);
+        }
+
+        .hero p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* CTA Button */
+        .cta-section {
+            text-align: center;
+            margin-bottom: 70px;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--neon-green) 0%, #00d99a 100%);
+            color: var(--bg-dark);
+            padding: 18px 40px;
+            border-radius: 60px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 30px rgba(0, 255, 176, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 40px rgba(0, 255, 176, 0.4);
+        }
+
+        .cta-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .cta-note {
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Features Grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 70px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 20px;
+            padding: 28px;
+            transition: all 0.3s ease;
+            animation: fadeInUp 1s ease-out both;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.5s; }
+        .feature-card:nth-child(2) { animation-delay: 0.6s; }
+        .feature-card:nth-child(3) { animation-delay: 0.7s; }
+        .feature-card:nth-child(4) { animation-delay: 0.8s; }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+            box-shadow: 0 10px 40px rgba(210, 177, 76, 0.1);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gold-glow);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+
+        .feature-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 10px;
+            color: var(--gold);
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* Tech Section */
+        .tech-section {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 70px;
+            animation: fadeInUp 1s ease-out 0.9s both;
+            backdrop-filter: blur(10px);
+        }
+
+        .tech-section h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 600px) {
+            .tech-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .tech-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .tech-badge.premium {
+            background: linear-gradient(135deg, var(--violet) 0%, #a78bfa 100%);
+            color: white;
+        }
+
+        .tech-badge.free {
+            background: linear-gradient(135deg, var(--neon-green) 0%, #00d99a 100%);
+            color: var(--bg-dark);
+        }
+
+        .tech-item h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .tech-item p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: linear-gradient(135deg, rgba(210, 177, 76, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 70px;
+            animation: fadeInUp 1s ease-out 1s both;
+        }
+
+        .instructions h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--gold);
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: var(--gold);
+            color: var(--bg-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--bg-card-border);
+            animation: fadeInUp 1s ease-out 1.1s both;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--gray-blue);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--gold);
+        }
+
+        .footer p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .footer .heart {
+            color: var(--gold);
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            background: rgba(255, 153, 102, 0.1);
+            border: 1px solid rgba(255, 153, 102, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .warning-banner span {
+            font-size: 20px;
+        }
+
+        .warning-banner p {
+            font-size: 14px;
+            color: #FF9966;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="beta-badge">
+                <span>⭐</span> Beta Privée 0.9.9
+            </div>
+            <h1 class="logo">Noctaliæ</h1>
+            <p class="tagline">L'analyse scientifique de vos rêves</p>
+        </header>
+
+        <!-- Warning -->
+        <div class="warning-banner">
+            <span>🧪</span>
+            <p><strong>Version Beta</strong> — Cette version est réservée aux testeurs. Merci de reporter tout bug ou suggestion !</p>
+        </div>
+
+        <!-- Hero -->
+        <section class="hero">
+            <h2>Explorez vos rêves avec la <span>neuroscience</span></h2>
+            <p>Noctaliæ utilise les dernières recherches en neurosciences du sommeil pour analyser vos rêves. Pas de mysticisme, pas de symbolisme universel — juste la science du cerveau endormi.</p>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section">
+            <a href="#" class="cta-button" id="downloadBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Télécharger l'APK Beta
+            </a>
+            <p class="cta-note">Android uniquement • ~50 MB • Nécessite Android 8+</p>
+        </section>
+
+        <!-- Features -->
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🎙️</div>
+                <h3>Enregistrement Vocal</h3>
+                <p>Racontez votre rêve au réveil. L'IA transcrit automatiquement et analyse votre récit.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>Double Moteur IA</h3>
+                <p>QuickDream gratuit illimité + DeepDream premium pour des analyses approfondies.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Privacy-First</h3>
+                <p>Vos rêves restent sur votre appareil. Chiffrement AES-256, aucune donnée sur nos serveurs.</p>
+            </div>
+        </section>
+
+        <!-- Tech -->
+        <section class="tech-section">
+            <h3>🔬 Propulsé par la Science</h3>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <div>
+                        <span class="tech-badge premium">Soutien</span>
+                    </div>
+                    <div>
+                        <h4>DeepDream Engine</h4>
+                        <p>Claude Sonnet 4.5 avec prompt scientifique de 3000+ mots basé sur Isabelle Arnulf, Matthew Walker, Antti Revonsuo...</p>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <div>
+                        <span class="tech-badge free">Gratuit</span>
+                    </div>
+                    <div>
+                        <h4>QuickDream</h4>
+                        <p>Llama 3.3 70B — Analyses rapides et illimitées pour tous vos rêves du quotidien.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Instructions -->
+        <section class="instructions">
+            <h3>📱 Comment Installer</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Téléchargez l'APK</h4>
+                        <p>Cliquez sur le bouton ci-dessus pour télécharger le fichier .apk</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Autorisez les sources inconnues</h4>
+                        <p>Android vous demandera d'autoriser l'installation depuis cette source — c'est normal pour une beta</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Installez et explorez</h4>
+                        <p>Lancez l'app, suivez l'onboarding, et enregistrez votre premier rêve !</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Partagez vos retours</h4>
+                        <p>Bug ? Suggestion ? Contactez-moi directement — chaque feedback compte !</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="https://noctaliae-app.notion.site/Soutient-et-mon-tisation-Noctali-29b976346b3681b596a3e0fdc0584cdf?source=copy_link" target="_blank">📖 Philosophie</a>
+                <a href="https://ko-fi.com/tm_ai0" target="_blank">☕ Soutenir sur Ko-fi</a>
+                <a href="mailto:contact@thomasmaury.fr">📧 Contact</a>
+            </div>
+            <p>Créé avec <span class="heart">♥</span> à Montpellier par Thomas Maury</p>
+            <p style="margin-top: 8px; font-size: 12px; opacity: 0.6;">Science > Mystique • Privacy-First • No Dark Patterns</p>
+        </footer>
+    </div>
+
+    <script>
+        // Generate stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            star.style.animationDuration = (2 + Math.random() * 2) + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Download button - Replace URL when build is ready
+        document.getElementById('downloadBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            // TODO: Replace with actual APK URL from EAS Build
+            alert('🚧 Le build est en cours ! Le lien sera disponible dans ~3h.');
+        });
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../config/ThemeContext';
 
@@ -10,12 +10,42 @@ export default function CustomTabBar({ state, navigation }) {
   const iconMap = {
     'Analyses': 'brain',
     'Trends': 'trending-up',
-    'Insights': 'chart-line',
+    'Atlas': 'map-marker-path',
     'Settings': 'cog-outline',
   };
 
   // Position du placeholder FAB (au milieu)
   const fabPosition = Math.floor(state.routes.length / 2);
+
+  // 🎨 Animations refs pour chaque onglet (initialisées selon état actif)
+  const animations = useRef(
+    state.routes.map((_, index) => ({
+      scale: new Animated.Value(state.index === index ? 1.2 : 1),
+      opacity: new Animated.Value(state.index === index ? 1 : 0.5),
+    }))
+  ).current;
+
+  // 🎬 Animer l'onglet actif au changement
+  useEffect(() => {
+    state.routes.forEach((_, index) => {
+      const isFocused = state.index === index;
+      
+      // Animation simultanée scale + opacity (Material Design 3)
+      Animated.parallel([
+        Animated.spring(animations[index].scale, {
+          toValue: isFocused ? 1.2 : 1,
+          useNativeDriver: true,
+          friction: 7,
+          tension: 80,
+        }),
+        Animated.timing(animations[index].opacity, {
+          toValue: isFocused ? 1 : 0.5,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, [state.index]);
 
   return (
     <View style={[
@@ -49,11 +79,18 @@ export default function CustomTabBar({ state, navigation }) {
                 style={styles.tabItem}
                 activeOpacity={0.7}
               >
-                <MaterialCommunityIcons
-                  name={icon}
-                  size={38}
-                  color={isFocused ? theme.colors.primary : theme.colors.textSecondary}
-                />
+                <Animated.View
+                  style={{
+                    transform: [{ scale: animations[index].scale }],
+                    opacity: animations[index].opacity,
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={icon}
+                    size={38}
+                    color={isFocused ? theme.colors.primary : theme.colors.textSecondary}
+                  />
+                </Animated.View>
               </TouchableOpacity>
             </React.Fragment>
           );
@@ -76,11 +113,18 @@ export default function CustomTabBar({ state, navigation }) {
             style={styles.tabItem}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons
-              name={icon}
-              size={38}
-              color={isFocused ? theme.colors.primary : theme.colors.textSecondary}
-            />
+            <Animated.View
+              style={{
+                transform: [{ scale: animations[index].scale }],
+                opacity: animations[index].opacity,
+              }}
+            >
+              <MaterialCommunityIcons
+                name={icon}
+                size={38}
+                color={isFocused ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </Animated.View>
           </TouchableOpacity>
         );
       })}

@@ -143,9 +143,9 @@ export default function TrendsScreen({ navigation }) {
             styles.iconButton,
             { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.cardBorder }
           ]}
-          onPress={() => navigation.navigate('Settings')}
+          onPress={() => navigation.navigate('Persona')}
         >
-          <MaterialCommunityIcons name="cog-outline" size={24} color={theme.colors.text} />
+          <MaterialCommunityIcons name="dna" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 200,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -306,6 +306,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
+    overflow: 'hidden', // 🔧 FIX GLOW CORNERS
   },
   statIcon: {
     width: 56,
@@ -328,6 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 20,
+    overflow: 'hidden', // 🔧 FIX GLOW CORNERS
   },
   chartHeader: {
     flexDirection: 'row',
@@ -371,6 +373,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 20,
+    overflow: 'hidden', // 🔧 FIX GLOW CORNERS
   },
   wordsHeader: {
     flexDirection: 'row',
@@ -423,6 +426,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     gap: 12,
+    overflow: 'hidden', // 🔧 FIX GLOW CORNERS
   },
   infoText: {
     flex: 1,

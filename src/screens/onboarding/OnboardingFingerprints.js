@@ -8,6 +8,7 @@ import {
   TextInput,
   Platform,
   Alert,
+  Modal,
   KeyboardAvoidingView
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -18,6 +19,76 @@ import { useTheme } from '../../config/ThemeContext';
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
 
+// ============================================
+// 🧠 HELPER FUNCTION - TOP 0.1% APPROACH
+// ============================================
+/**
+ * Vérifie si l'utilisateur a fourni des données valides
+ * sur l'écran précédent (markers) OU l'écran actuel (tags/texte)
+ * 
+ * @param {Object|null|undefined} markers - Données de OnboardingMarkers
+ * @param {Array} selectedTags - Tags sélectionnés sur cet écran
+ * @param {string} customText - Texte libre sur cet écran
+ * @returns {Object} { hasData: boolean, source: string, count: number }
+ * 
+ * EDGE CASES GÉRÉS :
+ * - markers = null | undefined | {}
+ * - markers.interests = null | undefined | []
+ * - selectedTags = []
+ * - customText = '' | '   ' (espaces)
+ * 
+ * SCALABILITÉ :
+ * Pour ajouter un nouveau champ marker, ajouter dans markerFields array
+ */
+function hasValidUserData(markers, selectedTags, customText) {
+  let dataCount = 0;
+  let sources = [];
+  
+  // 🔍 1. Vérifier les markers de l'écran précédent
+  if (markers && typeof markers === 'object') {
+    // Champs simples (string)
+    // 🧠 TOP 0.1% : "not_sure" compte aussi ! L'utilisateur a fait un choix conscient
+    const markerFields = ['ageRange', 'rhythm', 'mood'];
+    markerFields.forEach(field => {
+      if (markers[field] && String(markers[field]).trim()) {
+        dataCount++;
+        // Note : on log si c'est "not_sure" pour tracer, mais ça compte quand même
+        const value = markers[field];
+        sources.push(value === 'not_sure' ? `${field}(« pas sûr »)` : field);
+      }
+    });
+    
+    // Champs array (interests)
+    if (Array.isArray(markers.interests) && markers.interests.length > 0) {
+      dataCount += markers.interests.length;
+      sources.push('interests');
+    }
+  }
+  
+  // 🔍 2. Vérifier les tags de cet écran
+  if (Array.isArray(selectedTags) && selectedTags.length > 0) {
+    dataCount += selectedTags.length;
+    sources.push('tags');
+  }
+  
+  // 🔍 3. Vérifier le texte libre
+  if (customText && String(customText).trim().length > 0) {
+    dataCount++;
+    sources.push('customText');
+  }
+  
+  const result = {
+    hasData: dataCount > 0,
+    source: sources.join(', ') || 'none',
+    count: dataCount
+  };
+  
+  // 📊 Log pour debug (utile en dev)
+  console.log('🔍 hasValidUserData:', result);
+  
+  return result;
+}
+
 export default function OnboardingFingerprints({ route, navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -26,11 +97,12 @@ export default function OnboardingFingerprints({ route, navigation }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [customText, setCustomText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const suggestedTags = [
-    '👨‍💼 Métier',
-    '🎨 Passion',
-    '😰 Stress',
+    '🎨 Créativité',
+    '🎭 Culture',
+    '😐 Stress',
     '😊 Joie',
     '🏃 Sport',
     '🎵 Musique',
@@ -53,19 +125,18 @@ export default function OnboardingFingerprints({ route, navigation }) {
   };
 
   const handleFinish = async () => {
-    if (selectedTags.length === 0 && !customText.trim()) {
-      Alert.alert(
-        'Aucune empreinte',
-        'Voulez-vous terminer sans ajouter d\'empreintes ?',
-        [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Terminer', onPress: () => completeOnboarding([]) }
-        ],
-        { userInterfaceStyle: 'dark' }
-      );
+    // 🧠 TOP 0.1% : Vérifier TOUTES les sources de données (markers + tags + texte)
+    const userData = hasValidUserData(markers, selectedTags, customText);
+    
+    if (!userData.hasData) {
+      // ⚠️ Vraiment AUCUNE donnée nulle part → Afficher modal bienveillant
+      console.log('⚠️ Aucune donnée utilisateur détectée, affichage modal');
+      setShowConfirmModal(true);
       return;
     }
-
+    
+    // ✅ L'utilisateur a fourni des données → Sauvegarder directement
+    console.log(`✅ Données trouvées (${userData.count} items de: ${userData.source})`);
     await saveFingerprints();
   };
 
@@ -76,8 +147,9 @@ export default function OnboardingFingerprints({ route, navigation }) {
       const fingerprints = [];
 
       // Ajouter les repères de l'écran précédent
+      // 🧠 TOP 0.1% : On ignore les "not_sure" car ils n'apportent rien à l'analyse
       if (markers) {
-        if (markers.ageRange) {
+        if (markers.ageRange && markers.ageRange !== 'not_sure') {
           fingerprints.push({
             id: `marker_age_${Date.now()}`,
             text: `Tranche d'âge : ${markers.ageRange}`,
@@ -85,7 +157,7 @@ export default function OnboardingFingerprints({ route, navigation }) {
             source: 'onboarding'
           });
         }
-        if (markers.rhythm) {
+        if (markers.rhythm && markers.rhythm !== 'not_sure') {
           fingerprints.push({
             id: `marker_rhythm_${Date.now()}`,
             text: `Rythme de vie : ${markers.rhythm}`,
@@ -93,7 +165,7 @@ export default function OnboardingFingerprints({ route, navigation }) {
             source: 'onboarding'
           });
         }
-        if (markers.mood) {
+        if (markers.mood && markers.mood !== 'not_sure') {
           fingerprints.push({
             id: `marker_mood_${Date.now()}`,
             text: `État d'esprit : ${markers.mood}`,
@@ -307,6 +379,46 @@ export default function OnboardingFingerprints({ route, navigation }) {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Modal de confirmation personnalisé (thème sombre) */}
+      <Modal
+        visible={showConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.cardBackground }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+              Continuer sans empreintes ?
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>
+              Pas de souci ! Vous pourrez toujours les ajouter plus tard dans Paramètres → Persona pour des analyses plus personnalisées.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: theme.colors.cardBorder }]}
+                onPress={() => setShowConfirmModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.colors.textSecondary }]}>
+                  Annuler
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  completeOnboarding([]);
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.colors.background }]}>
+                  Terminer
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -443,5 +555,49 @@ const styles = StyleSheet.create({
   finishButtonText: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  
+  // Modal de confirmation
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  modalButtonPrimary: {
+    borderWidth: 0,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

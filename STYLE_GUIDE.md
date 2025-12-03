@@ -17,6 +17,207 @@ primaryLight: '#33FFBD'         // Variante plus claire
 primaryGlow: 'rgba(0, 255, 176, 0.15)'   // Fond subtil
 primaryStrong: 'rgba(0, 255, 176, 0.25)' // Fond plus prononcé
 ```
+### 🔥 Couleurs variantes 1 à essayer ! important mise à jour le 22/11/25
+**Réflexion sur les nuances de vert et les contrastes**
+
+Je me demande si je devrais définir l'accent vert comme "Neon Green (Primary) #39FF14" ou opter pour un vert légèrement bleuâtre, comme "Lime Neon #39FF88", plus premium. Je dois aussi m'assurer que les contrastes avec le fond sombre (#0B0F14) sont conformes aux critères d'accessibilité. Je vais proposer une palette avec des nuances de vert et des accents frais comme le cyan arctique et le bleu électrique. Chaque couleur doit être vérifiée pour garantir qu'elle reste cohérente et premium. Bon, allons-y.
+### Checklist for identifying the best premium palette
+- **Audit context:** Confirm dark UI baseline, privacy/pro-science tone, and neon green as the signature energy.
+- **Set luminance rails:** Define contrast-safe neutrals, then pick accents with equal “cool freshness” and differing roles.
+- **Test harmony:** Check each accent against neon green for temperature, luminance, and perceived quality (not just hue).
+- **Stress accessibility:** Ensure WCAG contrast for text/icons on dark backgrounds; reserve saturated tones for highlights.
+- **Prototype quickly:** Apply to CTAs, mic states, badges, and navigation to validate rhythm and hierarchy.
+
+---
+
+### Design constraints and intent for Noctaliæ
+Noctaliæ’s interface signals scientific rigor, personalization (empreintes), privacy-on-device, and an AI analysis engine. The neon green conveys clarity and vitality; to feel premium, surrounding accents must stay cool, precise, and slightly restrained, with metal-like neutrals and ultraviolet/cyan edges. Saturation appears only where meaning is strong (CTA, active states, analysis engine), while most surfaces remain calm.
+
+---
+
+### Final palette for a premium, fresh dark UI
+
+#### Core neutrals (foundation and typography)
+- **Onyx 900:** ` #0A0D10`  
+  - Role: App background on OLED/AMOLED; maximizes contrast and battery feel.
+- **Carbon 800:** ` #11161D`  
+  - Role: Cards, sheets, secondary surfaces; reduces starkness against Onyx.
+- **Graphite 700:** ` #1A212B`  
+  - Role: Elevated containers, modals, focused inputs.
+- **Steel 500:** ` #2A3442`  
+  - Role: Dividers, borders, disabled controls; cool and precise.
+- **Mist 200:** ` #B8C3CF`  
+  - Role: Secondary text; scientific clarity without glare.
+- **Snow 50:** ` #F5F7FA`  
+  - Role: Primary text on dark; crisp but gentle.
+
+#### Primary identity (neon green)
+- **Noctaliæ Neon 500:** ` #39FF88`  
+  - Role: Primary CTA, active mic, success/ready states, signature highlights.
+- **Noctaliæ Neon 300:** ` #7AFFB5`  
+  - Role: Hover/focus rings, subtle pulses.
+- **Noctaliæ Neon 700:** ` #12D66A`  
+  - Role: Pressed states, dark-theme emphasis.
+
+#### Accent set (all verified for freshness and high-end coherence with neon green)
+- **Arctic Cyan 500:** ` #3CF0FF`  
+  - Role: Secondary CTA, info/tooltips, analysis “live” indicators; cool, clean, lab-grade.
+- **Electric Blue 500:** ` #4F8DFF`  
+  - Role: Links, progress, deep-dive analysis; modern without gaming glare.
+- **Ultraviolet 500:** ` #6B5CFF`  
+  - Role: Advanced features (DeepDream badges), premium tiers; cool-violet adds depth.
+- **Cyber Magenta 500:** ` #FF3FD1`  
+  - Role: Rare highlights, discovery moments; skewed cool (blue-biased) to keep it fresh, not sugary.
+- **Chrome 200 (metallic highlight):** ` #DDE2EA`  
+  - Role: Icon strokes, thin separators, premium microdetails; evokes scientific instruments.
+
+> Harmony check: All accents sit on the cool spectrum (cyan → blue → violet → cool magenta). Their hue distance from neon green avoids clash while keeping a shared “cold luminosity.” Luminance levels ensure crisp contrast on Onyx/Carbon; none drift into warm or muddy tones that would cheapen the feel.
+
+---
+
+### Usage mapping and component tokens
+
+#### Calls-to-action and navigation
+- **Primary CTA:** Noctaliæ Neon 500 on Carbon 800; text Snow 50; focus ring Neon 300; pressed Neon 700.
+- **Secondary CTA:** Arctic Cyan 500; hover 400 (` #70F6FF`); pressed 600 (` #15D7E6`).
+- **Links and micro-interactions:** Electric Blue 500; visited 600 (` #2C6EEA`); focus ring Chrome 200.
+
+#### System states
+- **Success:** Noctaliæ Neon 500 + a thin Chrome 200 underline (scientific, not celebratory).
+- **Info/Live:** Arctic Cyan 500 pulsing to 300 for subtle animations.
+- **Warning (cool discipline):** **Amber-cool 500** ` #FFC85A` used sparingly on Graphite 700; keep minimal to avoid warmth creep.
+- **Error (clinical):** **Crimson-cool 500** ` #FF4D6D` with Electric Blue 500 outlines for precision.
+
+#### Badges and tiers (DeepDream, advanced version)
+- **Ultraviolet 500** text/stroke + Chrome 200 microline + Neon 500 dot accent → reads premium and technical.
+- **Cyber Magenta 500** for “experimental” flags; pair with Graphite 700 to prevent candy tone.
+
+---
+
+### Harmony verification with neon green (freshness + premium)
+
+- **Arctic Cyan 500 (` #3CF0FF`)**  
+  - Freshness: Shared cool luminance; feels “sterile-clean.”  
+  - Premium: Metallic with Chrome; pairs in gradients without nightclub vibes.
+
+- **Electric Blue 500 (`#4F8DFF`)**  
+  - Freshness: Cool mid-sat; precise edges for text/icons.  
+  - Premium: Corporate-scientific, non-gamer; excellent for data density.
+
+- **Ultraviolet 500 (` #6B5CFF`)**  
+  - Freshness: Cold-violet avoids warmth; adds depth and mystery.  
+  - Premium: Signals advanced features; balances the neon with gravitas.
+
+- **Cyber Magenta 500 (` #FF3FD1`)**  
+  - Freshness: Blue-biased magenta keeps it icy, not sweet.  
+  - Premium: Use sparingly; luxe when constrained to highlights.
+
+- **Chrome 200 (` #DDE2EA`)**  
+  - Freshness: Clean reflections; reads as scientific hardware.  
+  - Premium: Elevates micro-details and typography cadence.
+
+All accents maintain cool temperature, high clarity, and avoid warm contamination. With Onyx/Carbon bases, each stays contrast-safe for icons and small UI elements.
+
+---
+
+### Gradient and motion recipes (premium without noise)
+- **Signature beam:** Noctaliæ Neon 500 → Arctic Cyan 500 (linear 30°); stop bias 40/60; gentle 6% blur.
+- **Deep analysis:** Electric Blue 500 → Ultraviolet 500 (radial); center 30%; opacity 85%; shadow in Graphite 700.
+- **Discovery pulse:** Cyber Magenta 500 ring 1px, glow to Ultraviolet 500 at 30% opacity; duration 900ms, cubic-bezier eased, no bloom.
+
+---
+
+### Accessibility notes (keep it clinical)
+- **Text on Onyx/Carbon:** Snow 50 and Mist 200 stay above contrast thresholds for body and secondary text.  
+- **Accents on dark:** Use accents for icons, strokes, and small badges; reserve body text for neutrals.  
+- **Saturation discipline:** Avoid large fields of saturated accents; prefer thin lines, dots, and controlled glows.
+
+---
+
+### What a top 0.1% UX/UI + color theory person would think and do
+- **Perceptual uniformity:** Tune hues in HSLuv/OKLCH to maintain equal perceived saturation across cyan/blue/violet; adjust chroma so accents feel equally “bright” next to neon green.
+- **Cross-device realism:** Test on OLED (true black), LCD (raised black), and Windows/Android gamma profiles; correct for dark crush and banding in gradients.
+- **Gamut and contrast:** Ensure WCAG AA for critical text; treat accents as affordances, not text fills; verify contrast in real sizes, not mock ratios.
+- **Brand emotion control:** Keep warmth out; when warnings are needed, use cool-amber with small footprint; prioritize scientific trust over spectacle.
+- **Micro-detail craft:** Use Chrome 200 for 1px rules, icon inner strokes, and selection indicators; refine focus rings with Neon 300 so accessibility feels elegant, not loud.
+- **Systematic tokens:** Define semantic roles (primary, info, analysis, advanced, experimental) and lock tones to those roles to avoid palette drift over time.
+
+If you want, I can translate these into design tokens (CSS/React Native), apply them to your current screens (CTA, mic, DeepDream badge), and sanity-check contrast in situ.
+
+### 🔥 Couleurs variantes 2 à essayer ! important mise à jour le 22/11/25
+Parfait, Thomas. Voici une **autre déclinaison** de la palette premium, pensée pour ton rôle de designer technique et pour l’interface Noctaliæ, sans image — juste du **sémantique, du code, et du sens**.
+
+---
+
+
+
+## 🎨 Déclinaison en tokens React Native (ou CSS variables)
+
+### 🌑 Neutres (fondations et typographie)
+```js
+--color-bg-primary: #0A0D10;       // Onyx 900
+--color-bg-secondary: #11161D;     // Carbon 800
+--color-surface: #1A212B;          // Graphite 700
+--color-border: #2A3442;           // Steel 500
+--color-text-primary: #F5F7FA;     // Snow 50
+--color-text-secondary: #B8C3CF;   // Mist 200
+```
+
+### 💚 Couleur signature Noctaliæ (neon green)
+```js
+--color-accent-primary: #00FFB0;   // Neon 500
+--color-accent-hover: #7AFFB5;     // Neon 300
+--color-accent-pressed: #12D66A;   // Neon 700
+```
+
+### 🧊 Accents premium
+```js
+--color-accent-cyan: #3CF0FF;      // Arctic Cyan 500
+--color-accent-blue: #4F8DFF;      // Electric Blue 500
+--color-accent-violet: #6B5CFF;    // Ultraviolet 500
+--color-accent-magenta: #FF3FD1;   // Cyber Magenta 500
+--color-accent-chrome: #DDE2EA;    // Chrome 200
+```
+
+### ⚠️ États système
+```js
+--color-success: #39FF88;          // Neon green
+--color-info: #3CF0FF;             // Cyan
+--color-warning: #FFC85A;          // Amber-cool 500
+--color-error: #FF4D6D;            // Crimson-cool 500
+```
+
+---
+
+## 🧠 Déclinaison par rôle sémantique (UX/UI)
+
+| Rôle                     | Couleur principale      | Usage typique                                 |
+|--------------------------|-------------------------|------------------------------------------------|
+| CTA principal            | `#39FF88` (Neon)        | Bouton “Commencer”, micro actif               |
+| CTA secondaire           | `#3CF0FF` (Cyan)        | Bouton “En savoir plus”, focus                |
+| Lien / navigation        | `#4F8DFF` (Blue)        | Liens, navigation, états actifs               |
+| Badge DeepDream          | `#6B5CFF` (Violet)      | Version avancée, moteur activé                |
+| Découverte / expérimental| `#FF3FD1` (Magenta)     | Nouveautés, exploration, “testez”             |
+| Microdétails premium     | `#DDE2EA` (Chrome)      | Icônes, séparateurs, focus rings              |
+
+---
+
+## 🧪 Déclinaison typographique
+
+- **Titres** : `#F5F7FA` sur fond `#0A0D10` → contraste AA+
+- **Sous-titres / légendes** : `#B8C3CF` → lisibilité douce, scientifique
+- **Badges / labels** : `#6B5CFF` ou `#FF3FD1` selon le niveau d’expérimentation
+- **Focus ring** : `#7AFFB5` ou `#DDE2EA` selon le contexte (CTA vs input)
+
+---
+
+## 🧬 Déclinaison motion / animation
+
+- **Pulse mic actif** : `#39FF88` → `#7AFFB5` → `#12D66A` (durée 800ms, ease-in-out)
+- **Badge DeepDream** : halo `#6B5CFF` + micro-glow `#DDE2EA` (opacity 0.2)
+- **Focus input** : ring `#3CF0FF` + inner stroke `#DDE2EA`
+
+---
 
 ### 2️⃣ Cards & Profondeur
 
@@ -31,7 +232,7 @@ cardBorder: 'rgba(0, 255, 176, 0.08)' // Bordure subtile
 
 ```javascript
 // OR DÉSATURÉ - Badges "Light"
-warmGold: '#D2B14C'             // 🟡 Couleur or
+warmGold: '#ffc31fff'             // 🟡 Couleur or
 warmGoldDark: '#B89A3E'         // Variante foncée
 warmGoldSubtle: 'rgba(210, 177, 76, 0.12)' // Fond subtil
 
@@ -58,7 +259,7 @@ deepAnalysis: '#8A2BE2'         // 🟣 Violet
 deepAnalysisSubtle: 'rgba(138, 43, 226, 0.15)' // Fond subtil
 
 // ANALYSE LIGHT (Mode Gratuit)
-lightAnalysis: '#D2B14C'        // 🟡 Or (même que warmGold)
+lightAnalysis: '#ffc31fff'        // 🟡 Or (même que warmGold)
 lightAnalysisSubtle: 'rgba(210, 177, 76, 0.15)' // Fond subtil
 
 // ÉTATS SYSTÈME

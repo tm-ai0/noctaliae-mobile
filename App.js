@@ -11,6 +11,8 @@ import { Audio } from 'expo-av';
 import { AudioModule } from 'expo-audio';
 import { ThemeProvider } from './src/config/ThemeContext';
 import { THEME } from './src/config/theme';
+import { GlowProvider } from './src/contexts/GlowContext';
+import GlobalGlowOverlay from './src/components/GlobalGlowOverlay';
 import { saveDream } from './src/services/storageService';
 import { transcribeAudio } from './src/services/apiService';
 import LiquidGlassAnimation from './src/components/LiquidGlassAnimation';
@@ -19,7 +21,7 @@ import CustomTabBar from './src/components/CustomTabBar';
 
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import InsightsScreen from './src/screens/InsightsScreen';
+import AtlasScreen from './src/screens/AtlasScreen';
 import TrendsScreen from './src/screens/TrendsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import VoiceAssistantScreen from './src/screens/VoiceAssistantScreen';
@@ -33,6 +35,7 @@ import PersonaScreen from './src/screens/PersonaScreen';
 import OnboardingWelcome from './src/screens/onboarding/OnboardingWelcome';
 import OnboardingMarkers from './src/screens/onboarding/OnboardingMarkers';
 import OnboardingFingerprints from './src/screens/onboarding/OnboardingFingerprints';
+import PlaygroundScreen from './src/screens/PlaygroundScreen';
 
 import { secureStorageService } from './src/services/secureStorageService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -86,7 +89,7 @@ function MainTabsWithFAB({ navigation }) {
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
-        Alert.alert('Permission refusée', 'Accès au microphone requis');
+        Alert.alert('Permission refusée', 'Accès au microphone requis', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
         return;
       }
 
@@ -114,7 +117,7 @@ function MainTabsWithFAB({ navigation }) {
       startAudioLevelDetection();
     } catch (err) {
       console.error('❌ Erreur:', err);
-      Alert.alert('Erreur', 'Impossible de démarrer l\'enregistrement');
+      Alert.alert('Erreur', 'Impossible de démarrer l\'enregistrement', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
     }
   }
 
@@ -172,7 +175,7 @@ function MainTabsWithFAB({ navigation }) {
       const uri = recordingRef.current.getURI();
 
       if (!uri || typeof uri !== 'string') {
-        Alert.alert('Erreur', 'Fichier audio non créé ou URI invalide');
+        Alert.alert('Erreur', 'Fichier audio non créé ou URI invalide', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
         return;
       }
 
@@ -192,7 +195,7 @@ function MainTabsWithFAB({ navigation }) {
       recordingRef.current = null;
     } catch (err) {
       console.error('❌ Erreur:', err);
-      Alert.alert('Erreur', 'Échec de la transcription');
+      Alert.alert('Erreur', 'Échec de la transcription', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
       setIsTranscribing(false);
     }
   }
@@ -230,11 +233,11 @@ function MainTabsWithFAB({ navigation }) {
         />
         
         <Tab.Screen 
-          name="Insights" 
-          component={InsightsScreen}
+          name="Atlas" 
+          component={AtlasScreen}
           options={{
-            tabBarIcon: ({ color }) => <MaterialCommunityIcons name="chart-line" size={32} color={color} />,
-            tabBarLabel: 'Insights',
+            tabBarIcon: ({ color }) => <MaterialCommunityIcons name="map-marker-path" size={32} color={color} />,
+            tabBarLabel: 'Atlas',
           }}
         />
         
@@ -344,6 +347,7 @@ function MainStack() {
       <Stack.Screen name="OnboardingWelcome" component={OnboardingWelcome} options={{ headerShown: false, title: 'OnboardingWelcome.js' }} />
       <Stack.Screen name="OnboardingMarkers" component={OnboardingMarkers} options={{ headerShown: false, title: 'OnboardingMarkers.js' }} />
       <Stack.Screen name="OnboardingFingerprints" component={OnboardingFingerprints} options={{ headerShown: false, title: 'OnboardingFingerprints.js' }} />
+      <Stack.Screen name="Playground" component={PlaygroundScreen} options={{ presentation: 'card', title: '🎨 Playground' }} />
     </Stack.Navigator>
   );
 }
@@ -357,9 +361,12 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <NavigationContainer>
-          <MainStack />
-        </NavigationContainer>
+        <GlowProvider>
+          <GlobalGlowOverlay />
+          <NavigationContainer>
+            <MainStack />
+          </NavigationContainer>
+        </GlowProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,10 +6,14 @@ import {
   TouchableOpacity, 
   ScrollView,
   ActivityIndicator,
-  Alert
+  Alert,
+  Linking,
+  Animated,
+  Platform
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { analyzeDreamFromText } from '../services/apiService';
 import { saveAnalysis } from '../services/storageService';
 import { securityService } from '../services/securityService';
@@ -19,69 +23,228 @@ import DebugScreenLabel from '../components/DebugScreenLabel';
 import RateLimitBanner from '../components/RateLimitBanner';
 import RateLimitModal from '../modals/RateLimitModal';
 
+// 💾 Clé pour le tooltip de guidance (première utilisation)
+const GUIDANCE_TOOLTIP_KEY = '@noctaliae_post_recording_guidance_shown';
+
+// 🏷️ Fonction pour extraire un titre intelligent depuis l'analyse
+function extractDreamTitle(analysis, transcription) {
+  // 1️⃣ Chercher "## 🌙 Titre" ou "# 🌙 Titre" ou juste "🌙 Titre" en début
+  const moonPatterns = [
+    /^##\s*🌙\s*(.+?)(?:\n|$)/m,
+    /^#\s*🌙\s*(.+?)(?:\n|$)/m,
+    /^🌙\s*(.+?)(?:\n|$)/m,
+    /\*\*🌙\s*(.+?)\*\*/,
+  ];
+  
+  for (const pattern of moonPatterns) {
+    const match = analysis.match(pattern);
+    if (match && match[1].trim().length > 5 && match[1].trim().length < 80) {
+      return match[1].trim();
+    }
+  }
+  
+  // 2️⃣ Chercher "Analyse de votre rêve" suivi d'un titre
+  const analyseMatch = analysis.match(/Analyse de votre rêve[:\s]*["\u201c]?([^"\u201d\n]+)["\u201d]?/i);
+  if (analyseMatch && analyseMatch[1].trim().length > 5) {
+    return analyseMatch[1].trim();
+  }
+  
+  // 3️⃣ Première phrase pertinente de l'analyse (sans emojis/markdown)
+  const cleanAnalysis = analysis
+    .replace(/^[#*\s]+/gm, '') // Retire # et * en début de ligne
+    .replace(/[🌙📌📊🔗😊🧠💡✨🌟💫🌌😴🌃⚡💤🌈]/g, '')
+    .trim();
+  
+  const sentences = cleanAnalysis.split(/[.!?\n]+/);
+  for (const sentence of sentences) {
+    const cleaned = sentence.trim();
+    if (cleaned.length > 15 && cleaned.length < 70 && !cleaned.toLowerCase().includes('analyse')) {
+      return cleaned;
+    }
+  }
+  
+  // 4️⃣ Première phrase de la transcription
+  const firstTranscript = transcription.split(/[.!?]/)[0].trim();
+  if (firstTranscript.length > 10 && firstTranscript.length < 60) {
+    return firstTranscript;
+  }
+  
+  // 5️⃣ Fallback : date du jour
+  return `Rêve du ${new Date().toLocaleDateString('fr-FR')}`;
+}
+
+// ============================================
+// 🎨 COMPOSANT CARD RÉUTILISABLE - Top 0.1% approach
+// ============================================
+function EngineCard({ 
+  icon, 
+  iconColor, 
+  title, 
+  subtitle, 
+  description, 
+  badge,
+  badgeColor,
+  selected, 
+  disabled, 
+  onPress 
+}) {
+  const Wrapper = disabled ? View : TouchableOpacity;
+  
+  return (
+    <Wrapper 
+      style={[
+        styles.engineCard, 
+        selected && styles.engineCardSelected,
+        disabled && styles.engineCardDisabled
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* === HEADER ROW : Icon + Title + Check === */}
+      <View style={styles.engineHeader}>
+        <View style={styles.engineHeaderLeft}>
+          <MaterialCommunityIcons name={icon} size={24} color={iconColor} />
+          <Text style={[styles.engineTitle, disabled && styles.engineTitleDisabled]}>
+            {title}
+          </Text>
+        </View>
+        {selected && (
+          <MaterialIcons name="check-circle" size={20} color={THEME.colors.primary} />
+        )}
+      </View>
+      
+      {/* === SUBTITLE === */}
+      <Text style={styles.engineSubtitle}>{subtitle}</Text>
+      
+      {/* === DESCRIPTION === */}
+      <Text style={[styles.engineDescription, disabled && styles.engineDescriptionDisabled]}>
+        {description}
+      </Text>
+      
+      {/* === FOOTER : Badge (si présent) === */}
+      {badge && (
+        <View style={[styles.engineBadge, { backgroundColor: `${badgeColor}20` }]}>
+          <Text style={[styles.engineBadgeText, { color: badgeColor }]}>{badge}</Text>
+        </View>
+      )}
+    </Wrapper>
+  );
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 export default function PostRecordingScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { dreamId, audioUri, transcription, duration } = route.params;
   
-  const [selectedModel, setSelectedModel] = useState('llama'); // 'claude' ou 'llama'
-  const [activeTab, setActiveTab] = useState('choice'); // 'choice' ou 'transcript'
+  const [selectedModel, setSelectedModel] = useState('llama');
+  const [activeTab, setActiveTab] = useState('choice');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [limitInfo, setLimitInfo] = useState(null); // 🔒 Info sur la limite
-  const [showRateLimitModal, setShowRateLimitModal] = useState(false); // 🆕 Modal rate limit
+  const [limitInfo, setLimitInfo] = useState(null);
+  const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+  
+  // 💡 Tooltip de guidance (première utilisation)
+  const [showGuidanceTooltip, setShowGuidanceTooltip] = useState(false);
+  const [tooltipAnim] = useState(new Animated.Value(0));
+  
+  // 💡 Vérifier si c'est la première utilisation au mount
+  useEffect(() => {
+    async function checkFirstUse() {
+      try {
+        const hasSeenGuidance = await AsyncStorage.getItem(GUIDANCE_TOOLTIP_KEY);
+        if (!hasSeenGuidance) {
+          // Première fois → afficher le tooltip avec animation
+          setShowGuidanceTooltip(true);
+          Animated.spring(tooltipAnim, {
+            toValue: 1,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true
+          }).start();
+        }
+      } catch (error) {
+        console.error('❌ Erreur check guidance:', error);
+      }
+    }
+    checkFirstUse();
+  }, []);
+  
+  // 💡 Handler pour fermer le tooltip
+  async function dismissGuidanceTooltip() {
+    try {
+      // Animation de sortie
+      Animated.timing(tooltipAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true
+      }).start(() => {
+        setShowGuidanceTooltip(false);
+      });
+      // Sauvegarder pour ne plus afficher
+      await AsyncStorage.setItem(GUIDANCE_TOOLTIP_KEY, 'true');
+    } catch (error) {
+      console.error('❌ Erreur dismiss guidance:', error);
+    }
+  }
 
   async function handleAnalyze() {
     if (!transcription || transcription.trim().length === 0) {
-      Alert.alert('Erreur', 'La transcription est vide. Impossible d\'analyser.');
+      Alert.alert('❌ Erreur', 'Impossible d\'analyser le rêve sans transcription.', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
       return;
     }
 
     setIsAnalyzing(true);
 
     try {
-      console.log(`🧠 Analyse avec ${selectedModel === 'claude' ? 'Claude (Mode Profond)' : 'Llama (Mode Léger)'}...`);
+      console.log(`🧠 Analyse avec ${selectedModel === 'claude' ? 'DeepDream (Claude)' : 'QuickDream (Llama)'}...`);
       
-      // Appel API
       const result = await analyzeDreamFromText(transcription, selectedModel === 'claude');
       
-      // 🔒 Vérifier si limite atteinte
       if (result.limitInfo) {
         setLimitInfo(result.limitInfo);
-        // Afficher la modal si limite atteinte
         if (result.limitInfo.limited && selectedModel === 'claude') {
-          console.log('⏰ Limite atteinte - Affichage modal');
           setShowRateLimitModal(true);
-          setSelectedModel('llama'); // Forcer passage mode gratuit
-          return; // Ne pas continuer l'analyse
+          setSelectedModel('llama');
+          return;
         }
       }
       
-      // Sauvegarder l'analyse
-      await saveAnalysis(dreamId, result.analysis, result.model || selectedModel);
+      await saveAnalysis(dreamId, result, result.model || selectedModel);
       
-      console.log('✅ Analyse sauvegardée');
+      // 🏷️ Titre dynamique : priorité au backend, sinon extraction intelligente
+      const extractedTitle = (result.title && result.title !== 'Rêve sans titre') 
+        ? result.title 
+        : extractDreamTitle(result.analysis, transcription);
       
-      // Navigation directe vers l'analyse
       navigation.navigate('Conversation', {
         dreamId: dreamId,
         dreamAnalysis: result.analysis,
         dreamTranscription: transcription,
-        dreamTitle: `Rêve du ${new Date().toLocaleDateString('fr-FR')}`,
+        dreamTitle: extractedTitle,
         dreamDate: new Date().toISOString()
       });
 
-      // 🔒 Supprimer l'audio si l'option est désactivée
       await securityService.deleteAudioIfNeeded(audioUri, FileSystem);
     } catch (error) {
       console.error('❌ Erreur analyse:', error);
-      Alert.alert('Erreur', error.message || 'Impossible d\'analyser le rêve');
+      Alert.alert('❌ Erreur', 'Une erreur est survenue lors de l\'analyse.', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
     } finally {
       setIsAnalyzing(false);
     }
   }
 
+  function openKofi() {
+    Linking.openURL('https://ko-fi.com/tm_ai0');
+  }
+
+  // ============================================
+  // RENDER
+  // ============================================
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <DebugScreenLabel screenName="📝 Post-Enregistrement" />
+      
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -94,35 +257,64 @@ export default function PostRecordingScreen({ route, navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
+      {/* 💡 TOOLTIP DE GUIDANCE - Première utilisation */}
+      {showGuidanceTooltip && (
+        <Animated.View 
+          style={[
+            styles.guidanceTooltip,
+            {
+              opacity: tooltipAnim,
+              transform: [{
+                translateY: tooltipAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-20, 0]
+                })
+              }]
+            }
+          ]}
+        >
+          <View style={styles.guidanceContent}>
+            <View style={styles.guidanceIconContainer}>
+              <MaterialCommunityIcons name="check-circle" size={28} color={THEME.colors.primary} />
+            </View>
+            <View style={styles.guidanceTextContainer}>
+              <Text style={styles.guidanceTitle}>✨ Enregistrement terminé !</Text>
+              <Text style={styles.guidanceText}>
+                Choisissez maintenant un moteur d'analyse pour explorer votre rêve.
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.guidanceDismissButton}
+            onPress={dismissGuidanceTooltip}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.guidanceDismissText}>Compris</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'choice' && styles.tabActive]}
-          onPress={() => setActiveTab('choice')}
-        >
-          <MaterialCommunityIcons 
-            name="brain" 
-            size={20} 
-            color={activeTab === 'choice' ? '#0c0e27' : THEME.colors.textSecondary} 
-          />
-          <Text style={[styles.tabText, activeTab === 'choice' && styles.tabTextActive]}>
-            Analyse
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'transcript' && styles.tabActive]}
-          onPress={() => setActiveTab('transcript')}
-        >
-          <MaterialIcons 
-            name="text-fields" 
-            size={20} 
-            color={activeTab === 'transcript' ? '#0c0e27' : THEME.colors.textSecondary} 
-          />
-          <Text style={[styles.tabText, activeTab === 'transcript' && styles.tabTextActive]}>
-            Transcript
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.tabsWrapper}>
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'choice' && styles.tabActive]}
+            onPress={() => setActiveTab('choice')}
+          >
+            <Text style={[styles.tabText, activeTab === 'choice' && styles.tabTextActive]}>
+              Analyse
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'transcript' && styles.tabActive]}
+            onPress={() => setActiveTab('transcript')}
+          >
+            <Text style={[styles.tabText, activeTab === 'transcript' && styles.tabTextActive]}>
+              Transcript
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Banner Rate Limiting */}
@@ -133,94 +325,112 @@ export default function PostRecordingScreen({ route, navigation }) {
         />
       )}
 
+      {/* 🔝 BOUTON ANALYSER STICKY EN HAUT */}
+      {activeTab === 'choice' && (
+        <View style={styles.stickyAnalyzeContainer}>
+          <TouchableOpacity 
+            style={[styles.stickyAnalyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
+            onPress={handleAnalyze}
+            disabled={isAnalyzing}
+            activeOpacity={0.8}
+          >
+            {isAnalyzing ? (
+              <ActivityIndicator color="#0c0e27" size="small" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="brain" size={22} color="#0c0e27" />
+                <Text style={styles.stickyAnalyzeButtonText}>Analyser le rêve</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Content */}
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {activeTab === 'choice' ? (
           <>
-            {/* Info durée */}
-            <View style={styles.durationBox}>
-              <MaterialIcons name="timer" size={20} color={THEME.colors.textSecondary} />
-              <Text style={styles.durationText}>
-                Durée : {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
-              </Text>
+            {/* INFO BAR */}
+            <View style={styles.infoBar}>
+              <View style={styles.infoItem}>
+                <MaterialIcons name="timer" size={18} color={THEME.colors.textSecondary} />
+                <Text style={styles.infoText}>
+                  Durée : {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
+                </Text>
+              </View>
+              <View style={styles.infoDivider} />
+              <TouchableOpacity 
+                style={[styles.infoItem, { flex: 1 }]}
+                onPress={() => setActiveTab('transcript')}
+              >
+                <Text style={styles.infoTextHint} numberOfLines={1} ellipsizeMode="tail">
+                  Vérifier le transcript →
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.sectionTitle}>Choisissez le modèle d'analyse</Text>
+            <Text style={styles.sectionTitle}>Choisissez le moteur d'analyse</Text>
 
-            {/* Modèle Profond (Claude) */}
-            <TouchableOpacity 
-              style={[styles.modelCard, selectedModel === 'claude' && styles.modelCardSelected]}
-              onPress={() => setSelectedModel('claude')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.modelHeader}>
-                <View style={styles.modelTitleRow}>
-                  <MaterialCommunityIcons name="star" size={24} color="#FFD700" />
-                  <Text style={styles.modelTitle}>DeepDream</Text>
-                </View>
-                {selectedModel === 'claude' && (
-                  <MaterialIcons name="check-circle" size={24} color={THEME.colors.primary} />
-                )}
-              </View>
-              
-              <Text style={styles.modelSubtitle}>Claude Sonnet 4.5</Text>
-              
-              <Text style={styles.modelDescription}>
-                • Analyse neuroscientifique approfondie{'\n'}
-                • 6 grilles scientifiques (Hobson, Domhoff, etc.){'\n'}
-                • Réponses détaillées et personnalisées{'\n'}
-                • Accessible avec votre soutien
-              </Text>
-              
-              <View style={styles.modelBadge}>
-                <Text style={styles.modelBadgeText}>🌕 Recommandé</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Modèle Léger (Llama) */}
-            <TouchableOpacity 
-              style={[styles.modelCard, selectedModel === 'llama' && styles.modelCardSelected]}
+            {/* ============================================ */}
+            {/* QUICKDREAM - Gratuit */}
+            {/* ============================================ */}
+            <EngineCard
+              icon="flash"
+              iconColor="#00FFB0"
+              title="QuickDream"
+              subtitle="Llama 3.3 70B • Gratuit et illimité"
+              description="Analyses rapides et efficaces pour explorer vos rêves au quotidien."
+              selected={selectedModel === 'llama'}
               onPress={() => setSelectedModel('llama')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.modelHeader}>
-                <View style={styles.modelTitleRow}>
-                  <MaterialCommunityIcons name="brain" size={24} color="#4A9EFF" />
-                  <Text style={styles.modelTitle}>QuickDream</Text>
-                </View>
-                {selectedModel === 'llama' && (
-                  <MaterialIcons name="check-circle" size={24} color={THEME.colors.primary} />
-                )}
-              </View>
-              
-              <Text style={styles.modelSubtitle}>Llama 3.3 70B</Text>
-              
-              <Text style={styles.modelDescription}>
-                • Analyse scientifique standard{'\n'}
-                • Réponses concises{'\n'}
-                • Gratuit et illimité
-              </Text>
-            </TouchableOpacity>
+            />
 
-            {/* Bouton Analyser */}
+            {/* ============================================ */}
+            {/* DEEPDREAM - Premium */}
+            {/* ============================================ */}
+            <EngineCard
+              icon="electron-framework"
+              iconColor="#4F8DFF"
+              title="DeepDream Engine"
+              subtitle="Claude Sonnet 4.5 • Qualité d'analyses optimales"
+              description="Analyse neuroscientifique approfondie avec 6 grilles (Hobson, Domhoff...). Réponses détaillées et personnalisées."
+              badge="⭐ Recommandé"
+              badgeColor="#4F8DFF"
+              selected={selectedModel === 'claude'}
+              onPress={() => setSelectedModel('claude')}
+            />
+
+            {/* ============================================ */}
+            {/* OPUS NOCTIS - Coming Soon */}
+            {/* ============================================ */}
+            <EngineCard
+              icon="star-four-points"
+              iconColor="#D2B14C"
+              title="Opus Noctis"
+              subtitle="Claude Opus 4.5 • L'œuvre de la nuit"
+              description="DeepDream amplifié : raisonnement étendu, mémoire profonde, synthèse nuancée. Interprétation fine et contextuelle."
+              badge="🌙 Prochainement"
+              badgeColor="#D2B14C"
+              disabled
+            />
+
+            {/* KO-FI CARD */}
             <TouchableOpacity 
-              style={[styles.analyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
-              onPress={handleAnalyze}
-              disabled={isAnalyzing}
+              style={styles.kofiCard}
+              onPress={openKofi}
               activeOpacity={0.8}
             >
-              {isAnalyzing ? (
-                <ActivityIndicator color="#0c0e27" size="small" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="brain" size={24} color="#0c0e27" />
-                  <Text style={styles.analyzeButtonText}>Analyser le rêve</Text>
-                </>
-              )}
+              <View style={styles.kofiContent}>
+                <Text style={styles.kofiEmoji}>☕</Text>
+                <View>
+                  <Text style={styles.kofiTitle}>Soutenir Noctaliæ</Text>
+                  <Text style={styles.kofiSubtitle}>Aidez-nous à développer de nouvelles fonctionnalités</Text>
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
           </>
         ) : (
-          // Tab Transcript
+          // TAB TRANSCRIPT
           <View style={styles.transcriptContainer}>
             <View style={styles.transcriptHeader}>
               <MaterialIcons name="text-fields" size={24} color={THEME.colors.primary} />
@@ -233,14 +443,44 @@ export default function PostRecordingScreen({ route, navigation }) {
               </ScrollView>
             </View>
             
-            <Text style={styles.transcriptNote}>
-              💡 Vérifiez que la transcription est correcte avant d'analyser
-            </Text>
+            {/* 🎯 CTA FEEDBACK */}
+            <View style={styles.feedbackContainer}>
+              <Text style={styles.feedbackLabel}>La transcription est-elle correcte ?</Text>
+              <View style={styles.feedbackButtons}>
+                <TouchableOpacity 
+                  style={styles.feedbackButtonPositive}
+                  onPress={() => setActiveTab('choice')}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="check" size={18} color="#0c0e27" />
+                  <Text style={styles.feedbackButtonPositiveText}>C'est bon</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.feedbackButtonNegative}
+                  onPress={() => {
+                    Alert.alert(
+                      '✏️ Signaler une erreur',
+                      'La transcription vocale peut parfois faire des erreurs. Souhaitez-vous continuer avec cette version ou réenregistrer ?',
+                      [
+                        { text: 'Réenregistrer', onPress: () => navigation.goBack(), style: 'destructive' },
+                        { text: 'Continuer quand même', onPress: () => setActiveTab('choice') },
+                      ],
+                      { userInterfaceStyle: 'dark' }
+                    );
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="edit" size={18} color={THEME.colors.warmGold} />
+                  <Text style={styles.feedbackButtonNegativeText}>Problème</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
 
-      {/* 🆕 Modal Rate Limit */}
+      {/* Modal Rate Limit */}
       <RateLimitModal
         visible={showRateLimitModal}
         onClose={() => setShowRateLimitModal(false)}
@@ -250,6 +490,9 @@ export default function PostRecordingScreen({ route, navigation }) {
   );
 }
 
+// ============================================
+// STYLES
+// ============================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -273,24 +516,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: THEME.colors.text,
   },
-  tabsContainer: {
-    flexDirection: 'row',
+  
+  // Tabs
+  tabsWrapper: {
     paddingHorizontal: 20,
     marginBottom: 20,
-    gap: 10,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 10,
+    padding: 4,
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: THEME.colors.cardBackground,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: THEME.colors.primary,
+    backgroundColor: THEME.colors.background,
   },
   tabText: {
     fontSize: 14,
@@ -298,95 +544,139 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
   },
   tabTextActive: {
-    color: '#0c0e27', // Dark mauve au lieu de blanc
+    color: THEME.colors.text,
   },
+  
+  // Content
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 160, // 🔧 FIX: Espace suffisant pour nav Android (augmenté)
   },
-  durationBox: {
+  
+  // Info Bar
+  infoBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.colors.cardBackground,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 25,
-    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
   },
-  durationText: {
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  infoText: {
     fontSize: 14,
     color: THEME.colors.text,
     fontWeight: '600',
   },
+  infoTextHint: {
+    fontSize: 12,
+    color: THEME.colors.primary,
+    fontWeight: '500',
+  },
+  infoDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: THEME.colors.cardBorder,
+    marginHorizontal: 12,
+  },
+  
+  // Section Title
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: THEME.colors.text,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  modelCard: {
+  
+  // ============================================
+  // ENGINE CARDS - Pure Flexbox, no absolute
+  // ============================================
+  engineCard: {
     backgroundColor: THEME.colors.cardBackground,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 15,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  modelCardSelected: {
+  engineCardSelected: {
     borderColor: THEME.colors.primary,
   },
-  modelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  engineCardDisabled: {
+    opacity: 0.5,
   },
-  modelTitleRow: {
+  
+  // Header Row : Icon + Title + Check
+  engineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  engineHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
   },
-  modelTitle: {
-    fontSize: 20,
+  engineTitle: {
+    fontSize: 17,
     fontWeight: '700',
     color: THEME.colors.text,
   },
-  modelSubtitle: {
-    fontSize: 14,
+  engineTitleDisabled: {
     color: THEME.colors.textSecondary,
-    marginBottom: 15,
   },
-  modelDescription: {
-    fontSize: 14,
-    color: THEME.colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  modelBadge: {
-    backgroundColor: '#2C1B47',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  modelBadgeText: {
+  
+  // Subtitle & Description - Alignés avec padding-left = icon width + gap
+  engineSubtitle: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    color: THEME.colors.textSecondary,
+    marginBottom: 8,
+    marginLeft: 34, // 24 (icon) + 10 (gap)
   },
+  engineDescription: {
+    fontSize: 13,
+    color: THEME.colors.textSecondary,
+    lineHeight: 18,
+    marginLeft: 34,
+  },
+  engineDescriptionDisabled: {
+    opacity: 0.7,
+  },
+  
+  // Badge - Dans le flux, pas en absolute
+  engineBadge: {
+    alignSelf: 'flex-start',
+    marginLeft: 34,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  engineBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  
+  // Analyze Button
   analyzeButton: {
     backgroundColor: THEME.colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    marginTop: 30,
+    paddingVertical: 16,
+    borderRadius: 14,
+    marginTop: 20,
     gap: 10,
-    shadowColor: '#9B59B6',
+    shadowColor: THEME.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -397,10 +687,44 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   analyzeButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#0c0e27', // Dark mauve au lieu de blanc
+    color: '#0c0e27',
   },
+  
+  // Ko-fi Card
+  kofiCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#39FF8830',
+  },
+  kofiContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  kofiEmoji: {
+    fontSize: 24,
+  },
+  kofiTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#39FF88',
+    marginBottom: 2,
+  },
+  kofiSubtitle: {
+    fontSize: 11,
+    color: THEME.colors.textSecondary,
+  },
+  
+  // Transcript Tab
   transcriptContainer: {
     flex: 1,
   },
@@ -427,10 +751,140 @@ const styles = StyleSheet.create({
     color: THEME.colors.text,
     lineHeight: 26,
   },
-  transcriptNote: {
+  // 🎯 CTA Feedback
+  feedbackContainer: {
+    marginTop: 8,
+  },
+  feedbackLabel: {
     fontSize: 14,
     color: THEME.colors.textSecondary,
     textAlign: 'center',
-    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  feedbackButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  feedbackButtonPositive: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6,
+  },
+  feedbackButtonPositiveText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0c0e27',
+  },
+  feedbackButtonNegative: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.colors.warmGold,
+    gap: 6,
+  },
+  feedbackButtonNegativeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.colors.warmGold,
+  },
+  
+  // 💡 TOOLTIP DE GUIDANCE
+  guidanceTooltip: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: THEME.colors.primary + '40',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: THEME.colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  guidanceContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    gap: 12,
+  },
+  guidanceIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guidanceTextContainer: {
+    flex: 1,
+  },
+  guidanceTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.colors.text,
+    marginBottom: 4,
+  },
+  guidanceText: {
+    fontSize: 14,
+    color: THEME.colors.textSecondary,
+    lineHeight: 20,
+  },
+  guidanceDismissButton: {
+    backgroundColor: THEME.colors.primary + '15',
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.cardBorder,
+  },
+  guidanceDismissText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.colors.primary,
+  },
+  
+  // 🔝 STICKY ANALYZE BUTTON
+  stickyAnalyzeContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: THEME.colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.cardBorder,
+  },
+  stickyAnalyzeButton: {
+    backgroundColor: THEME.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 10,
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  stickyAnalyzeButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0c0e27',
   },
 });

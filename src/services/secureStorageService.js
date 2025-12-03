@@ -82,8 +82,8 @@ export const secureStorageService = {
    */
   async getKeepAudio() {
     const value = await this.getItem(SECURE_KEYS.KEEP_AUDIO);
-    // Par défaut : true (on garde les audios)
-    return value === null ? true : value === 'true';
+    // Par défaut : false (on supprime les audios pour confidentialité)
+    return value === null ? false : value === 'true';
   },
 
   /**

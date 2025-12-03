@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,11 +26,29 @@ export default function PersonaScreen({ navigation }) {
   const [fingerprints, setFingerprints] = useState([]);
   const [newFingerprint, setNewFingerprint] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // 🔧 Fix Android : Détecter le clavier pour ajuster le background
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   // 🌍 Multilangue (FR par défaut, prêt pour EN/ES)
   const i18n = {
     fr: {
-      title: 'Mes Empreintes',
+      title: 'Persona',
       infoText: 'Ces empreintes aident Noctaliæ à personnaliser ses analyses et conversations',
       emptyTitle: 'Aucune empreinte',
       emptySubtitle: 'Ajoute des repères sur toi pour des analyses plus personnalisées',
@@ -201,9 +220,11 @@ export default function PersonaScreen({ navigation }) {
   return (
     <KeyboardAvoidingView 
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
+      {/* 🔧 Fix Android : Background qui couvre tout l'écran y compris derrière le clavier */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background }]} />
       <DebugScreenLabel screenName="🎭 Persona" />
       {/* Header */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 15) + 15 }]}>
@@ -216,7 +237,7 @@ export default function PersonaScreen({ navigation }) {
         
         <View style={styles.headerContent}>
           <MaterialCommunityIcons 
-            name="fingerprint" 
+            name="dna" 
             size={32} 
             color={theme.colors.primary} 
           />

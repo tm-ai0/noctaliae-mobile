@@ -32,6 +32,30 @@ export async function saveConversation(dreamId, messages, dreamTitle) {
 }
 
 /**
+ * Migre un message vers le nouveau format (avec model au lieu d'emojis)
+ * @param {Object} message - Message à migrer
+ * @returns {Object} - Message migré
+ */
+function migrateMessage(message) {
+  // Si le message a déjà un champ model valide, on le retourne tel quel
+  if (message.model && typeof message.model === 'string') {
+    return message;
+  }
+  
+  // Si c'est un message assistant sans model, on tente de déterminer le model
+  if (message.role === 'assistant') {
+    // Par défaut, on considère que c'était claude (l'ancien système)
+    return {
+      ...message,
+      model: 'claude'
+    };
+  }
+  
+  // Pour les messages user, pas de model nécessaire
+  return message;
+}
+
+/**
  * Charge une conversation pour un rêve spécifique
  * @param {string} dreamId - ID du rêve
  * @returns {Array|null} - Messages ou null si aucune conversation
@@ -42,7 +66,23 @@ export async function loadConversation(dreamId) {
     
     if (allConversations[dreamId]) {
       console.log(`✅ Conversation chargée pour rêve ${dreamId}`);
-      return allConversations[dreamId].messages;
+      
+      // 🏆 MIGRATION AUTOMATIQUE vers nouveau format
+      const messages = allConversations[dreamId].messages;
+      const migratedMessages = messages.map(msg => migrateMessage(msg));
+      
+      // Sauvegarder la version migrée si nécessaire
+      const needsMigration = messages.some((msg, i) => 
+        JSON.stringify(msg) !== JSON.stringify(migratedMessages[i])
+      );
+      
+      if (needsMigration) {
+        console.log(`🔄 Migration de la conversation ${dreamId}`);
+        allConversations[dreamId].messages = migratedMessages;
+        await AsyncStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(allConversations));
+      }
+      
+      return migratedMessages;
     }
     
     console.log(`ℹ️ Aucune conversation trouvée pour rêve ${dreamId}`);

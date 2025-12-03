@@ -6,7 +6,9 @@ import {
   Switch, 
   ScrollView, 
   TouchableOpacity,
-  Platform
+  Platform,
+  Linking,
+  Alert
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,18 +16,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { premiumService } from '../services/premiumService';
 import { useTheme } from '../config/ThemeContext';
 import DebugScreenLabel from '../components/DebugScreenLabel';
-
+import { DeepDreamInfoModal } from '../components/DeepDreamInfoModal';
+import { ContributeResearchModal } from '../components/ContributeResearchModal';
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
+const PLAYGROUND_KOFI_KEY = '@noctaliae_playground_kofi';
+const MENU_HINT_KEY = '@noctaliae_menu_hint_shown';
+import { ResearchOptInVIP } from '../components/ResearchOptInVIP';
+import { useGlow } from '../contexts/GlowContext';
+import { getAllDreams, deleteDream } from '../services/storageService';
+import BiometricService from '../services/biometricService';
 
 export default function SettingsScreen({ navigation }) {
   const { theme, currentThemeId, changeTheme, availableThemes } = useTheme();
+  const { refreshGlowStates } = useGlow();
   const insets = useSafeAreaInsets();
   
   const [isPremium, setIsPremium] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [appearanceExpanded, setAppearanceExpanded] = useState(false);
+  const [kofiExpanded, setKofiExpanded] = useState(false);
   const [fingerprintCount, setFingerprintCount] = useState(0);
+  const [showDeepDreamModal, setShowDeepDreamModal] = useState(false);
+  const [kofiStyles, setKofiStyles] = useState(null); // 🎨 Styles du Playground
 
   useEffect(() => {
     loadPremiumStatus();
@@ -36,9 +49,22 @@ export default function SettingsScreen({ navigation }) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       loadFingerprintCount();
+      loadKofiStyles(); // 🎨 Recharger les styles Ko-fi
     });
     return unsubscribe;
   }, [navigation]);
+
+  // 🎨 Charger les styles Ko-fi du Playground
+  const loadKofiStyles = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(PLAYGROUND_KOFI_KEY);
+      if (stored) {
+        setKofiStyles(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('❌ Erreur chargement styles Ko-fi:', error);
+    }
+  };
 
   const loadPremiumStatus = async () => {
     try {
@@ -61,6 +87,8 @@ export default function SettingsScreen({ navigation }) {
       await premiumService.disablePremium();
       console.log('🌙 Mode Gratuit activé');
     }
+    
+    refreshGlowStates(); // 🔄 Actualiser le glow global
   };
 
   const handleThemeChange = async (themeId) => {
@@ -72,8 +100,23 @@ export default function SettingsScreen({ navigation }) {
     try {
       const stored = await AsyncStorage.getItem(FINGERPRINTS_KEY);
       if (stored) {
-        const fingerprints = JSON.parse(stored);
-        setFingerprintCount(fingerprints.length);
+        // Support multiple formats : array, object map ou valeur simple
+        let count = 0;
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            count = parsed.length;
+          } else if (parsed && typeof parsed === 'object') {
+            count = Object.keys(parsed).length;
+          } else {
+            // parsed is primitive (string/number), count as 1
+            count = 1;
+          }
+        } catch (e) {
+          // stored wasn't JSON (fallback)
+          count = 1;
+        }
+        setFingerprintCount(count);
       } else {
         setFingerprintCount(0);
       }
@@ -93,6 +136,80 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
+  // 🧪 RESET NEW USER (pour tester le parcours)
+  const handleResetNewUser = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        ONBOARDING_COMPLETED_KEY,
+        MENU_HINT_KEY,
+        FINGERPRINTS_KEY,
+      ]);
+      Alert.alert(
+        '✅ Reset effectué !',
+        'Vous pouvez maintenant tester comme un nouveau utilisateur. Relancez l\'app.',
+        [{ text: 'OK' }],
+        { userInterfaceStyle: 'dark' }
+      );
+      console.log('🧪 Reset new user effectué');
+    } catch (error) {
+      console.error('❌ Erreur reset:', error);
+    }
+  };
+
+  // 🧪 CLEAR CONVERSATIONS CACHE (pour tester badges)
+  const handleClearConversationsCache = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const conversationKeys = keys.filter(key => key.startsWith('@noctaliae_conversation_'));
+      if (conversationKeys.length > 0) {
+        await AsyncStorage.multiRemove(conversationKeys);
+        console.log(`✅ ${conversationKeys.length} conversations supprimées`);
+        alert(`Cache nettoyé : ${conversationKeys.length} conversations supprimées`);
+      } else {
+        console.log('ℹ️ Aucune conversation en cache');
+        alert('Aucune conversation en cache');
+      }
+    } catch (error) {
+      console.error('❌ Erreur clear cache conversations:', error);
+      alert('Erreur lors du nettoyage');
+    }
+  };
+
+  const handleKofi = (amount) => {
+    const url = amount === 1.99
+      ? 'https://ko-fi.com/tm_ai0?amount=1.99'
+      : 'https://ko-fi.com/tm_ai0?amount=3.39';
+    
+    Linking.openURL(url).catch(err => 
+      console.error('❌ Erreur ouverture Ko-fi:', err)
+    );
+  };
+
+  const handleSupport = () => {
+    setShowDeepDreamModal(false);
+    handleKofi(1.99); // Ouvre Ko-fi
+  };
+
+  // 🗑️ Supprimer TOUS les rêves
+  const handleDeleteAllDreams = async () => {
+    try {
+      const allDreams = await getAllDreams();
+      for (const dream of allDreams) {
+        await deleteDream(dream.id);
+      }
+      Alert.alert(
+        '✅ Terminé',
+        'Tous vos rêves ont été supprimés.',
+        [{ text: 'OK' }],
+        { userInterfaceStyle: 'dark' }
+      );
+      console.log(`🗑️ ${allDreams.length} rêves supprimés`);
+    } catch (error) {
+      console.error('❌ Erreur suppression totale:', error);
+      Alert.alert('❌ Erreur', 'Impossible de supprimer les rêves', [{ text: 'OK' }], { userInterfaceStyle: 'dark' });
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <DebugScreenLabel screenName="⚙️ Paramètres" fileName="SettingsScreen.js" />
@@ -105,11 +222,14 @@ export default function SettingsScreen({ navigation }) {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-          Paramètres
-        </Text>
-        
+        {/* Header avec icône */}
+        <View style={styles.header}>
+          <MaterialIcons name="settings" size={32} color={theme.colors.primary} />
+          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
+            Paramètres
+          </Text>
+        </View>
+        {/* ❌ BADGE VIOLET SUPPRIMÉ - Design plus épuré */}
         {/* === SECTION 1 : PERSONA === */}
         <View style={[styles.section, { 
           backgroundColor: theme.colors.cardBackground,
@@ -117,9 +237,12 @@ export default function SettingsScreen({ navigation }) {
           ...theme.shadow.md 
         }]}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-              🎭 Persona
-            </Text>
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons name="dna" size={24} color={theme.colors.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+                Persona
+              </Text>
+            </View>
             {fingerprintCount > 0 && (
               <View style={[styles.badge, { backgroundColor: theme.colors.primary }]}>
                 <Text style={[styles.badgeText, { color: theme.colors.background }]}>
@@ -128,9 +251,9 @@ export default function SettingsScreen({ navigation }) {
               </View>
             )}
           </View>
-          
+
           <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
-            Tes empreintes personnelles pour des analyses sur-mesure
+            Pour des analyses sur-mesure et rien qu'a vous.
           </Text>
 
           <TouchableOpacity 
@@ -165,25 +288,39 @@ export default function SettingsScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* === SECTION 2 : INTELLIGENCE (ex-Premium) === */}
+        {/* === SECTION 2 : MODÈLE D'ANALYSE === */}
         <View style={[styles.section, { 
           backgroundColor: theme.colors.cardBackground,
           borderColor: theme.colors.cardBorder,
           ...theme.shadow.md 
         }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-            ⭐ Intelligence
-          </Text>
+         <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
+            <MaterialCommunityIcons name="brain" size={24} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              Modèle d'Analyse 
+            </Text>
+          </View>
           
-          <View style={styles.optionRow}>
+          {/* 💎 BOUTON MOTEUR ACTIF (Toggle) */}
+          <View style={[styles.engineToggleContainer, {
+            backgroundColor: isPremium ? 'rgba(79, 141, 255, 0.08)' : 'rgba(57, 255, 136, 0.08)',
+            borderColor: isPremium ? 'rgba(79, 141, 255, 0.3)' : 'rgba(57, 255, 136, 0.3)'
+          }]}>
             <View style={styles.optionInfo}>
-              <Text style={[styles.optionTitle, { color: theme.colors.textPrimary }]}>
-                {isPremium ? '🌕 DeepDream' : '🌙 QuickDream'}
-              </Text>
+              <View style={styles.optionTitleRow}>
+                <MaterialIcons 
+                  name={isPremium ? "auto-awesome" : "flash-on"} 
+                  size={22} 
+                  color={isPremium ? '#4F8DFF' : '#39FF88'} 
+                />
+                <Text style={[styles.optionTitle, { color: theme.colors.textPrimary }]}>
+                  {isPremium ? 'DeepDream Engine' : 'QuickDream'}
+                </Text>
+              </View>
               <Text style={[styles.optionDescription, { color: theme.colors.textSecondary }]}>
                 {isPremium 
-                  ? 'Claude Sonnet 4.5 - Qualité maximale'
-                  : 'Llama 3.3 70B - Gratuit et illimité'
+                  ? "Claude Sonnet 4.5 - Qualité d'analyses optimales et approfondies."
+                  : 'Llama 3.3 70B - Gratuit et illimité pour des analyses rapides et efficaces.'
                 }
               </Text>
             </View>
@@ -192,11 +329,24 @@ export default function SettingsScreen({ navigation }) {
               value={isPremium}
               onValueChange={handleTogglePremium}
               disabled={isLoading}
-              trackColor={{ false: theme.colors.textMuted, true: theme.colors.primary }}
-              thumbColor={theme.colors.textPrimary}
+              trackColor={{ false: '#39FF88', true: '#4F8DFF' }}
+              thumbColor={'#FFFFFF'}
               ios_backgroundColor={theme.colors.backgroundElevated}
             />
           </View>
+
+          {/* 🔓 INFO DEEPDREAM */}
+          <TouchableOpacity
+            style={[styles.engineInfoButton, { borderColor: theme.colors.cardBorder }]}
+            onPress={() => setShowDeepDreamModal(true)}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="info-outline" size={20} color={theme.colors.primary} />
+            <Text style={[styles.engineInfoText, { color: theme.colors.primary }]}>
+              En savoir plus sur DeepDream Engine
+            </Text>
+            <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         {/* Badge Premium */}
@@ -206,96 +356,187 @@ export default function SettingsScreen({ navigation }) {
             borderColor: theme.colors.deepAnalysis
           }]}>
             <Text style={[styles.premiumBadgeText, { color: theme.colors.textPrimary }]}>
-              🌕 Vous testez actuellement DeepDream
+            Vous testez actuellement DeepDream Engine
             </Text>
             <Text style={[styles.premiumBadgeSubtext, { color: theme.colors.textSecondary }]}>
-              Accessible avec votre soutien
+              Accessible aujourdh'ui grace à votre soutien
             </Text>
           </View>
         )}
 
-        {/* === SECTION 3 : APPARENCE (AVEC TOGGLE) === */}
+        {/* === SECTION 3 : CONFIDENTIALITÉ === */}
         <View style={[styles.section, { 
           backgroundColor: theme.colors.cardBackground,
           borderColor: theme.colors.cardBorder,
           ...theme.shadow.md 
         }]}>
-          {/* 🆕 HEADER DÉPLOYABLE */}
+          <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
+            <MaterialCommunityIcons name="key-variant" size={24} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              Confidentialité
+            </Text>
+          </View>
+          
+          <Text style={[styles.journalIntimeText, { color: theme.colors.textSecondary }]}>
+            Noctaliæ fonctionne comme un journal intime. Vos données restent sur votre appareil.
+          </Text>
+
+          {/* 🔐 Bouton Rêves secrets */}
           <TouchableOpacity 
-            style={styles.sectionHeader}
-            onPress={() => setAppearanceExpanded(!appearanceExpanded)}
+            style={[styles.privacyActionButton, { 
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              borderColor: 'rgba(139, 92, 246, 0.3)'
+            }]}
+            onPress={async () => {
+              const authenticated = await BiometricService.authenticateForSecrets();
+              if (authenticated) {
+                navigation.navigate('Analyses', { showOnlySecrets: true });
+              }
+            }}
             activeOpacity={0.7}
           >
-            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-              🎨 Apparence
-            </Text>
-            <MaterialIcons 
-              name={appearanceExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-              size={24} 
-              color={theme.colors.textSecondary} 
-            />
+            <MaterialCommunityIcons name="lock" size={24} color="#8B5CF6" />
+            <View style={styles.privacyActionContent}>
+              <Text style={[styles.privacyActionTitle, { color: theme.colors.textPrimary }]}>
+                Rêves protégés
+              </Text>
+              <Text style={[styles.privacyActionSubtitle, { color: theme.colors.textSecondary }]}>
+                Vos rêves les plus personnels
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
           </TouchableOpacity>
-          
-          {/* 🆕 CONTENU DÉPLOYABLE */}
-          {appearanceExpanded && (
-            <>
-              <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>  
-                Choisissez un thème pour personnaliser l'app
-              </Text>
 
-              {/* 🆓 Thèmes Gratuits */}
-              <Text style={[styles.themeGroupTitle, { color: theme.colors.textPrimary }]}>
-                🆓 Gratuits
+          {/* 📋 Bouton Gérer mes rêves */}
+          <TouchableOpacity 
+            style={[styles.privacyActionButton, { 
+              backgroundColor: 'rgba(57, 255, 136, 0.1)',
+              borderColor: 'rgba(57, 255, 136, 0.3)'
+            }]}
+            onPress={() => navigation.navigate('Analyses', { startInSelectionMode: true })}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="checklist" size={24} color="#39FF88" />
+            <View style={styles.privacyActionContent}>
+              <Text style={[styles.privacyActionTitle, { color: theme.colors.textPrimary }]}>
+                Gérer mes rêves
               </Text>
-              {availableThemes.filter(t => !t.isPremium).map((themeOption) => (
-                <View key={themeOption.id} style={styles.themeRow}>
-                  <View style={styles.themeInfo}>
-                    <Text style={[styles.themeOptionName, { color: theme.colors.textPrimary }]}>
-                      {themeOption.name}
-                    </Text>
-                    <Text style={[styles.themeOptionDescription, { color: theme.colors.textSecondary }]}>
-                      {themeOption.description}
-                    </Text>
-                  </View>
-                  
-                  <Switch
-                    value={currentThemeId === themeOption.id}
-                    onValueChange={() => handleThemeChange(themeOption.id)}
-                    trackColor={{ false: theme.colors.textMuted, true: theme.colors.primary }}
-                    thumbColor={theme.colors.textPrimary}
-                    ios_backgroundColor={theme.colors.backgroundElevated}
-                  />
-                </View>
-              ))}
+              <Text style={[styles.privacyActionSubtitle, { color: theme.colors.textSecondary }]}>
+                Sélectionner, supprimer ou archiver
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
 
-              {/* ⭐ Thèmes Premium */}
-              <Text style={[styles.themeGroupTitle, { color: theme.colors.textPrimary, marginTop: 20 }]}>
-                ⭐ Premium
-              </Text>
-              {availableThemes.filter(t => t.isPremium).map((themeOption) => (
-                <View key={themeOption.id} style={styles.themeRow}>
-                  <View style={styles.themeInfo}>
-                    <Text style={[styles.themeOptionName, { color: theme.colors.textPrimary }]}>
-                      {themeOption.name}
-                    </Text>
-                    <Text style={[styles.themeOptionDescription, { color: theme.colors.textSecondary }]}>
-                      {themeOption.description}
-                    </Text>
-                  </View>
-                  
-                  <Switch
-                    value={currentThemeId === themeOption.id}
-                    onValueChange={() => handleThemeChange(themeOption.id)}
-                    trackColor={{ false: theme.colors.textMuted, true: theme.colors.primary }}
-                    thumbColor={theme.colors.textPrimary}
-                    ios_backgroundColor={theme.colors.backgroundElevated}
-                    disabled={!isPremium}
-                  />
-                </View>
-              ))}
-            </>
-          )}
+          {/* 📱 Mention stockage */}
+          <View style={styles.storageNote}>
+            <MaterialIcons name="smartphone" size={16} color={theme.colors.textSecondary} />
+            <Text style={[styles.storageNoteText, { color: theme.colors.textSecondary }]}>
+              Stocké seulement sur votre appareil.
+            </Text>
+          </View>
         </View>
+
+        {/* === SECTION 4 : RECHERCHE === */}
+        <View style={[styles.section, { 
+          backgroundColor: theme.colors.cardBackground,
+          borderColor: theme.colors.cardBorder,
+          ...theme.shadow.md 
+        }]}>
+          <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
+            <MaterialIcons name="science" size={24} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              Recherche
+            </Text>
+          </View>
+          
+          {/* Composant Recherche VIP */}
+          <ResearchOptInVIP />
+        </View>
+
+        {/* === SECTION SOUTENIR (KO-FI) 💚 === */}
+        <View style={[styles.section, { 
+          backgroundColor: theme.colors.cardBackground,
+          borderColor: theme.colors.cardBorder,
+          ...theme.shadow.md 
+        }]}>
+          <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
+            <MaterialIcons name="favorite" size={20} color="#ff004cff" />
+            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+              Soutenir Noctaliæ
+            </Text>
+          </View>
+
+          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>  
+            Noctaliæ est gratuit et le restera. Votre soutien permet d'en financer le développement et de participer à son évolution.
+          </Text>
+
+          {/* Bouton En savoir plus */}
+          <TouchableOpacity
+            style={[styles.learnMoreButton, { 
+              backgroundColor: theme.colors.primaryGlow,
+              borderColor: theme.colors.primary
+            }]}
+            onPress={() => Linking.openURL('https://noctaliae-app.notion.site/Soutient-et-mon-tisation-Noctali-29b976346b3681b596a3e0fdc0584cdf')}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="info-outline" size={20} color={theme.colors.primary} />
+            <Text style={[styles.learnMoreText, { color: theme.colors.primary }]}>
+              En savoir plus sur la philosophie Noctaliæ
+            </Text>
+            <MaterialIcons name="open-in-new" size={18} color={theme.colors.primary} />
+          </TouchableOpacity>
+
+          {/* 💚 Bouton Café - Neon */}
+          <TouchableOpacity
+            style={[styles.kofiButton, { 
+              backgroundColor: kofiStyles?.bgColor ? `${kofiStyles.bgColor}26` : '#39ff8826',
+              borderWidth: 1.5,
+              borderColor: kofiStyles?.borderColor || '#39FF88',
+              borderRadius: kofiStyles?.borderRadius || 16,
+              padding: kofiStyles?.padding || 16,
+            }]}
+            onPress={() => handleKofi(1.99)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.kofiContent}>
+              <View style={[styles.kofiLeft, { gap: kofiStyles?.gap || 12 }]}>
+                <MaterialIcons name="local-cafe" size={28} color={kofiStyles?.priceColor1 || '#39FF88'} />
+                <View>
+                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary, fontSize: kofiStyles?.fontSize || 18 }]}>Un café</Text>
+                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~13 analyses DeepDream Engine</Text>
+                </View>
+              </View>
+              <Text style={[styles.kofiPrice, { color: kofiStyles?.priceColor1 || '#39FF88', fontSize: kofiStyles?.priceSize || 24 }]}>1,99€</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* 💚 Bouton P'tit Déj - Neon */}
+          <TouchableOpacity
+            style={[styles.kofiButton, { 
+              backgroundColor: kofiStyles?.bgColor ? `${kofiStyles.bgColor}26` : '#39ff8826',
+              borderWidth: 1.5,
+              borderColor: kofiStyles?.borderColor || '#39FF88',
+              borderRadius: kofiStyles?.borderRadius || 16,
+              padding: kofiStyles?.padding || 16,
+              marginBottom: 0,
+            }]}
+            onPress={() => handleKofi(3.39)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.kofiContent}>
+              <View style={[styles.kofiLeft, { gap: kofiStyles?.gap || 12 }]}>
+                <MaterialIcons name="restaurant" size={28} color={kofiStyles?.priceColor2 || '#39FF88'} />
+                <View>
+                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary, fontSize: kofiStyles?.fontSize || 18 }]}>Un p'tit déj</Text>
+                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~23 analyses DeepDream Engine</Text>
+                </View>
+              </View>
+              <Text style={[styles.kofiPrice, { color: kofiStyles?.priceColor2 || '#39FF88', fontSize: kofiStyles?.priceSize || 24 }]}>3,39€</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
 
         {/* === SECTION AIDE === */}
         <View style={[styles.section, { 
@@ -303,9 +544,12 @@ export default function SettingsScreen({ navigation }) {
           borderColor: theme.colors.cardBorder,
           ...theme.shadow.md 
         }]}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-            ❓ Aide
-          </Text>
+          <View style={styles.sectionTitleRow}>
+            <MaterialIcons name="help-outline" size={24} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              Aide
+            </Text>
+          </View>
           
           <TouchableOpacity 
             style={[styles.helpButton, { borderBottomColor: theme.colors.cardBorder }]}
@@ -331,13 +575,42 @@ export default function SettingsScreen({ navigation }) {
               color={theme.colors.textSecondary} 
             />
           </TouchableOpacity>
+
+          {/* 🧪 Bouton Reset New User */}
+          <TouchableOpacity 
+            style={[styles.helpButton, { borderBottomColor: theme.colors.cardBorder, borderBottomWidth: 0 }]}
+            onPress={handleResetNewUser}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons 
+              name="test-tube" 
+              size={24} 
+              color="#F59E0B" 
+            />
+            <View style={styles.helpButtonContent}>
+              <Text style={[styles.helpButtonTitle, { color: theme.colors.text }]}>
+                🧪 Reset New User
+              </Text>
+              <Text style={[styles.helpButtonSubtitle, { color: theme.colors.textSecondary }]}>
+                Tester le parcours nouveau utilisateur
+              </Text>
+            </View>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={24} 
+              color={theme.colors.textSecondary} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* === INFOS === */}
         <View style={[styles.infoSection, { borderTopColor: theme.colors.dividerStrong }]}>
-          <Text style={[styles.infoTitle, { color: theme.colors.textPrimary }]}>
-            ℹ️ À propos
-          </Text>
+          <View style={styles.sectionTitleRow}>
+            <MaterialIcons name="info-outline" size={24} color={theme.colors.textSecondary} />
+            <Text style={[styles.infoTitle, { color: theme.colors.textPrimary }]}>
+              À propos
+            </Text>
+          </View>
           <Text style={[styles.infoTextBottom, { color: theme.colors.textSecondary }]}>
             Noctaliæ - Analyse scientifique des rêves{'\n'}
             Version: MVP 1.0 (Phase 1.7)
@@ -347,6 +620,13 @@ export default function SettingsScreen({ navigation }) {
         {/* Padding en bas pour voir "À propos" correctement */}
         <View style={{ height: 200 }} />
       </ScrollView>
+
+      {/* 🎯 MODAL DEEPDREAM INFO */}
+      <DeepDreamInfoModal 
+        visible={showDeepDreamModal}
+        onClose={() => setShowDeepDreamModal(false)}
+        onSupport={handleSupport}
+      />
     </View>
   );
 }
@@ -361,16 +641,21 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 30,
+  },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    marginBottom: 30,
   },
   
   // === SECTIONS ===
   section: {
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     marginBottom: 20,
     borderWidth: 1,
   },
@@ -378,21 +663,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
+    marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: 12,
+  },
+  kofiIntroText: {
+    fontSize: 50,
+    lineHeight: 22,
+    marginBottom: 16,
   },
   badge: {
     paddingHorizontal: 10,
@@ -402,6 +693,31 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  // 💎 ENGINE TOGGLE CONTAINER (nouveau)
+  engineToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  engineInfoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  engineInfoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 
   // === PERSONA BUTTON ===
@@ -464,12 +780,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   premiumBadge: {
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 20,
-    alignItems: 'center',
-    borderWidth: 1.5,
-  },
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 16,
+  alignItems: 'center',
+  borderWidth: 1.5,
+  overflow: 'hidden',  // 🔧 FIX GLOW CORNERS
+},
   premiumBadgeText: {
     fontSize: 16,
     fontWeight: '700',
@@ -482,10 +799,16 @@ const styles = StyleSheet.create({
   },
   
   // === THÈMES (AVEC TOGGLE) ===
+  themeGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 12,
+  },
   themeGroupTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 12,
   },
   themeRow: {
     flexDirection: 'row',
@@ -521,5 +844,104 @@ const styles = StyleSheet.create({
   infoTextBottom: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  
+  // Styles manquants
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  optionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 5,
+  },
+  
+  // === KO-FI BUTTONS ===
+  kofiButton: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  kofiContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kofiLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  kofiTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  kofiSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  kofiPrice: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  
+  // === LEARN MORE BUTTON ===
+  learnMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 8,
+  },
+  learnMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  
+  // === PRIVACY SECTION STYLES ===
+  journalIntimeText: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'left',
+    marginBottom: 20,
+  },
+  privacyActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 12,
+  },
+  privacyActionContent: {
+    flex: 1,
+  },
+  privacyActionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  privacyActionSubtitle: {
+    fontSize: 13,
+  },
+  storageNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  storageNoteText: {
+    fontSize: 13,
   },
 });

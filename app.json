@@ -2,7 +2,7 @@
   "expo": {
     "name": "Noctaliae",
     "slug": "noctaliae-mobile",
-    "version": "1.0.0",
+    "version": "0.9.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -19,7 +19,8 @@
       "bundleIdentifier": "com.noctaliae.mobile",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Noctaliae a besoin du microphone pour enregistrer vos reves.",
-        "NSSpeechRecognitionUsageDescription": "Noctaliae utilise la reconnaissance vocale."
+        "NSSpeechRecognitionUsageDescription": "Noctaliae utilise la reconnaissance vocale.",
+        "NSFaceIDUsageDescription": "Noctaliae utilise Face ID pour proteger vos reves secrets."
       }
     },
     "android": {
@@ -33,7 +34,9 @@
         "WRITE_EXTERNAL_STORAGE",
         "READ_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -48,11 +51,17 @@
         }
       ],
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Utiliser Face ID pour acceder a vos reves proteges."
+        }
+      ]
     ],
     "extra": {
       "eas": {
-        "projectId": "aa672bc7-3b0b-4587-9b13-9638072270d8"
+        "projectId": "2f45576d-d20a-49af-b612-fd007ee3c352"
       }
     }
   }

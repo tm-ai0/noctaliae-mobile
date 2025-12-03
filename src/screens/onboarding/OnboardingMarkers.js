@@ -19,9 +19,12 @@ export default function OnboardingMarkers({ navigation }) {
     ageRange: null,
     rhythm: null,
     mood: null,
-    interests: []
+    interests: [],
+    interestsSkipped: false  // 💡 Nouveau: "Plus tard" pour centres d'intérêt
   });
 
+  // 🧠 TOP 0.1% UX : Options simples + lien "Je ne sais pas" en vert néon
+  // PAS de "pas sûr" sur l'âge (trop personnel)
   const ageRanges = [
     { id: '18-25', label: '18-25 ans', emoji: '🌱' },
     { id: '26-35', label: '26-35 ans', emoji: '🌿' },
@@ -69,7 +72,16 @@ export default function OnboardingMarkers({ navigation }) {
     const updated = current.includes(id)
       ? current.filter(i => i !== id)
       : [...current, id];
-    setSelectedMarkers({ ...selectedMarkers, interests: updated });
+    setSelectedMarkers({ ...selectedMarkers, interests: updated, interestsSkipped: false });
+  };
+
+  // 💡 Toggle "Plus tard" pour centres d'intérêt
+  const handleSkipInterests = () => {
+    setSelectedMarkers({ 
+      ...selectedMarkers, 
+      interests: [],
+      interestsSkipped: !selectedMarkers.interestsSkipped 
+    });
   };
 
   const handleNext = () => {
@@ -81,7 +93,7 @@ export default function OnboardingMarkers({ navigation }) {
     navigation.goBack();
   };
 
-  const canContinue = selectedMarkers.ageRange || selectedMarkers.rhythm || 
+  const hasSelection = selectedMarkers.ageRange || selectedMarkers.rhythm || 
                       selectedMarkers.mood || selectedMarkers.interests.length > 0;
 
   return (
@@ -104,13 +116,13 @@ export default function OnboardingMarkers({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.title, { color: theme.colors.text }]}>
-          Quelques repères
+          Premiers pas
         </Text>
         <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-          Ces infos sont optionnelles mais améliorent les analyses
+          Ces informations sont facultatives, sachez juste que plus approfondirez les analyses de vos reves et plus elles seront personnaliser.
         </Text>
 
-        {/* Tranche d'âge */}
+        {/* Tranche d'âge - PAS de "je ne sais pas" ici */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             🎂 Tranche d'âge
@@ -147,7 +159,10 @@ export default function OnboardingMarkers({ navigation }) {
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             ⏱️ Rythme de vie
           </Text>
-          <View style={styles.optionsGrid}>
+          <View style={[
+            styles.optionsGrid,
+            selectedMarkers.rhythm === 'not_sure' && styles.optionsGridFaded
+          ]}>
             {rhythms.map((rhythm) => (
               <TouchableOpacity
                 key={rhythm.id}
@@ -160,10 +175,12 @@ export default function OnboardingMarkers({ navigation }) {
                     borderColor: selectedMarkers.rhythm === rhythm.id 
                       ? theme.colors.primary 
                       : theme.colors.cardBorder
-                  }
+                  },
+                  selectedMarkers.rhythm === 'not_sure' && styles.optionCardFaded
                 ]}
                 onPress={() => handleSelectRhythm(rhythm.id)}
                 activeOpacity={0.7}
+                disabled={selectedMarkers.rhythm === 'not_sure'}
               >
                 <Text style={styles.optionEmoji}>{rhythm.emoji}</Text>
                 <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
@@ -172,6 +189,22 @@ export default function OnboardingMarkers({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+          {/* 💡 Lien "Pas trop sûr" en vert néon - TOGGLE */}
+          <TouchableOpacity 
+            style={[
+              styles.notSureLink,
+              selectedMarkers.rhythm === 'not_sure' && styles.notSureLinkActive
+            ]}
+            onPress={() => handleSelectRhythm(selectedMarkers.rhythm === 'not_sure' ? null : 'not_sure')}
+          >
+            <Text style={[
+              styles.notSureLinkText, 
+              { color: selectedMarkers.rhythm === 'not_sure' ? theme.colors.background : theme.colors.primary },
+              selectedMarkers.rhythm === 'not_sure' && { fontWeight: '700' }
+            ]}>
+              {selectedMarkers.rhythm === 'not_sure' ? '✓ Pas trop sûr' : 'Pas trop sûr'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* État d'esprit */}
@@ -179,7 +212,10 @@ export default function OnboardingMarkers({ navigation }) {
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             💭 État d'esprit général
           </Text>
-          <View style={styles.optionsGrid}>
+          <View style={[
+            styles.optionsGrid,
+            selectedMarkers.mood === 'not_sure' && styles.optionsGridFaded
+          ]}>
             {moods.map((mood) => (
               <TouchableOpacity
                 key={mood.id}
@@ -192,10 +228,12 @@ export default function OnboardingMarkers({ navigation }) {
                     borderColor: selectedMarkers.mood === mood.id 
                       ? theme.colors.primary 
                       : theme.colors.cardBorder
-                  }
+                  },
+                  selectedMarkers.mood === 'not_sure' && styles.optionCardFaded
                 ]}
                 onPress={() => handleSelectMood(mood.id)}
                 activeOpacity={0.7}
+                disabled={selectedMarkers.mood === 'not_sure'}
               >
                 <Text style={styles.optionEmoji}>{mood.emoji}</Text>
                 <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
@@ -204,6 +242,22 @@ export default function OnboardingMarkers({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+          {/* 💡 Lien "Pas trop sûr" en vert néon - TOGGLE */}
+          <TouchableOpacity 
+            style={[
+              styles.notSureLink,
+              selectedMarkers.mood === 'not_sure' && styles.notSureLinkActive
+            ]}
+            onPress={() => handleSelectMood(selectedMarkers.mood === 'not_sure' ? null : 'not_sure')}
+          >
+            <Text style={[
+              styles.notSureLinkText, 
+              { color: selectedMarkers.mood === 'not_sure' ? theme.colors.background : theme.colors.primary },
+              selectedMarkers.mood === 'not_sure' && { fontWeight: '700' }
+            ]}>
+              {selectedMarkers.mood === 'not_sure' ? '✓ Pas trop sûr' : 'Pas trop sûr'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Centres d'intérêt */}
@@ -214,7 +268,10 @@ export default function OnboardingMarkers({ navigation }) {
           <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
             Sélectionnez-en plusieurs
           </Text>
-          <View style={styles.optionsGrid}>
+          <View style={[
+            styles.optionsGrid,
+            selectedMarkers.interestsSkipped && styles.optionsGridFaded
+          ]}>
             {interests.map((interest) => (
               <TouchableOpacity
                 key={interest.id}
@@ -227,10 +284,12 @@ export default function OnboardingMarkers({ navigation }) {
                     borderColor: selectedMarkers.interests.includes(interest.id)
                       ? theme.colors.primary 
                       : theme.colors.cardBorder
-                  }
+                  },
+                  selectedMarkers.interestsSkipped && styles.optionCardFaded
                 ]}
                 onPress={() => handleToggleInterest(interest.id)}
                 activeOpacity={0.7}
+                disabled={selectedMarkers.interestsSkipped}
               >
                 <Text style={styles.optionEmoji}>{interest.emoji}</Text>
                 <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
@@ -239,6 +298,22 @@ export default function OnboardingMarkers({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+          {/* 💡 Lien "Plus tard" en vert néon - TOGGLE comme "Pas trop sûr" */}
+          <TouchableOpacity 
+            style={[
+              styles.notSureLink,
+              selectedMarkers.interestsSkipped && styles.notSureLinkActive
+            ]}
+            onPress={handleSkipInterests}
+          >
+            <Text style={[
+              styles.notSureLinkText, 
+              { color: selectedMarkers.interestsSkipped ? theme.colors.background : theme.colors.primary },
+              selectedMarkers.interestsSkipped && { fontWeight: '700' }
+            ]}>
+              {selectedMarkers.interestsSkipped ? '✓ Plus tard' : 'Plus tard'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 120 }} />
@@ -249,29 +324,31 @@ export default function OnboardingMarkers({ navigation }) {
         backgroundColor: theme.colors.background,
         paddingBottom: Math.max(insets.bottom, 20) + 20 
       }]}>
+        {/* Bouton principal */}
         <TouchableOpacity
           style={[
             styles.nextButton, 
-            { 
-              backgroundColor: canContinue ? theme.colors.primary : theme.colors.textMuted,
-              opacity: canContinue ? 1 : 0.5
-            }
+            { backgroundColor: theme.colors.primary }
           ]}
           onPress={handleNext}
-          disabled={!canContinue}
           activeOpacity={0.8}
         >
           <Text style={[styles.nextButtonText, { color: theme.colors.background }]}>
-            {canContinue ? 'Continuer' : 'Sélectionnez au moins une option'}
+            {hasSelection ? 'Continuer' : 'Passer cette étape'}
           </Text>
-          {canContinue && (
-            <MaterialCommunityIcons 
-              name="arrow-right" 
-              size={24} 
-              color={theme.colors.background} 
-            />
-          )}
+          <MaterialCommunityIcons 
+            name="arrow-right" 
+            size={24} 
+            color={theme.colors.background} 
+          />
         </TouchableOpacity>
+        
+        {/* Mention facultatif */}
+        {!hasSelection && (
+          <Text style={[styles.skipHint, { color: theme.colors.textSecondary }]}>
+            Vous pourrez toujours compléter plus tard
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -353,6 +430,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  // 💡 Lien "Pas trop sûr" / "Plus tard" en vert néon
+  notSureLink: {
+    alignSelf: 'center',
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  notSureLinkActive: {
+    backgroundColor: '#00FFB0', // Vert néon quand actif
+  },
+  notSureLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // 🕳️ Grisage des options quand "Pas trop sûr" est sélectionné
+  optionsGridFaded: {
+    opacity: 0.35,
+  },
+  optionCardFaded: {
+    borderColor: 'transparent',
+  },
   footer: {
     paddingHorizontal: 30,
     paddingTop: 20,
@@ -381,5 +480,10 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  skipHint: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 12,
   },
 });

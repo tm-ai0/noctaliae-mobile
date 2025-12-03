@@ -82,6 +82,28 @@ export async function deleteDream(id) {
   }
 }
 
+// 🔐 Marquer un rêve comme secret
+export async function setDreamSecret(id, isSecret = true) {
+  try {
+    const dreams = await getAllDreams();
+    const dreamIndex = dreams.findIndex(d => d.id === id);
+    
+    if (dreamIndex !== -1) {
+      dreams[dreamIndex].isSecret = isSecret;
+      dreams[dreamIndex].secretAt = isSecret ? new Date().toISOString() : null;
+      await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
+    }
+  } catch (error) {
+    console.error('Erreur marquage secret:', error);
+    throw error;
+  }
+}
+
+// 🔓 Retirer le statut secret d'un rêve
+export async function removeDreamSecret(id) {
+  return setDreamSecret(id, false);
+}
+
 // Nettoyer les archives expirées (30 jours)
 export async function cleanExpiredArchives() {
   try {
@@ -120,20 +142,35 @@ export async function saveTranscription(dreamId, transcription) {
   }
 }
 
-// Sauvegarder l'analyse d'un rêve
-export async function saveAnalysis(dreamId, analysis, modelUsed = 'llama') {
+// Sauvegarder l'analyse d'un rêve + métadonnées
+export async function saveAnalysis(dreamId, analysisData, modelUsed = 'llama') {
   try {
     const dreams = await getAllDreams();
     const dreamIndex = dreams.findIndex(d => d.id === dreamId);
     
     if (dreamIndex !== -1) {
-      dreams[dreamIndex].analysis = analysis;
-      dreams[dreamIndex].analyzedAt = new Date().toISOString();
-      dreams[dreamIndex].modelUsed = modelUsed; // 🆕 claude ou llama
-      dreams[dreamIndex].isPremium = modelUsed === 'claude'; // 🆕 bool pour faciliter les filtres
+      // Si analysisData est un string (ancien format)
+      if (typeof analysisData === 'string') {
+        dreams[dreamIndex].analysis = analysisData;
+      } else {
+        // Nouveau format avec métadonnées (backend v2.3+)
+        dreams[dreamIndex].analysis = analysisData.analysis || analysisData;
+        dreams[dreamIndex].emoji = analysisData.emoji; // 🆕
+        dreams[dreamIndex].dreamTitle = analysisData.title; // 🆕
+        dreams[dreamIndex].tags = analysisData.tags; // 🆕
+        dreams[dreamIndex].suggestedQuestions = analysisData.suggestedQuestions; // 🆕
+        
+        // Override le titre générique si on a un titre IA
+        if (analysisData.title && analysisData.title !== 'Rêve sans titre') {
+          dreams[dreamIndex].title = analysisData.title;
+        }
+      }
       
-      // 🆕 Supprimer l'audioUri pour économiser de l'espace
-      // Le fichier reste sur le téléphone mais on n'y accède plus
+      dreams[dreamIndex].analyzedAt = new Date().toISOString();
+      dreams[dreamIndex].modelUsed = modelUsed; // claude ou llama
+      dreams[dreamIndex].isPremium = modelUsed === 'claude';
+      
+      // Supprimer l'audioUri pour économiser de l'espace
       dreams[dreamIndex].audioUri = null;
       
       await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));

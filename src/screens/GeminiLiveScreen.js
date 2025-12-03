@@ -241,7 +241,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
         visible={showOnboarding}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowOnboarding(false)}
+        onRequestClose={() => navigation.goBack()}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.onboardingModal}>
@@ -249,43 +249,63 @@ export default function GeminiLiveScreen({ route, navigation }) {
               colors={[THEME.colors.warmGoldSubtle, THEME.colors.warmBrownSubtle]}
               style={styles.onboardingGradient}
             >
+              {/* Badge "Bientôt" */}
+              <View style={styles.comingSoonBadge}>
+                <Text style={styles.comingSoonText}>🚀 BIENTÔT DISPONIBLE</Text>
+              </View>
+
               <Text style={styles.onboardingEmoji}>✨</Text>
-              <Text style={styles.onboardingTitle}>NoctaliaeAI+ en temps réel</Text>
+              <Text style={styles.onboardingTitle}>NoctaliaeAI+ Live</Text>
+              <Text style={styles.onboardingSubtitle}>Conversation vocale avec votre rêve</Text>
               
               <View style={styles.featuresList}>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🎙️</Text>
                   <View style={styles.featureText}>
                     <Text style={styles.featureTitle}>Mode mains libres</Text>
-                    <Text style={styles.featureDesc}>Parlez naturellement</Text>
+                    <Text style={styles.featureDesc}>Parlez naturellement, l'IA vous répond en temps réel</Text>
                   </View>
                 </View>
 
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🧠</Text>
                   <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Questions expertes</Text>
-                    <Text style={styles.featureDesc}>Basées sur votre rêve</Text>
+                    <Text style={styles.featureTitle}>Contexte intelligent</Text>
+                    <Text style={styles.featureDesc}>L'IA connaît votre rêve et pose des questions pertinentes</Text>
                   </View>
                 </View>
 
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>⚡</Text>
                   <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Temps réel</Text>
-                    <Text style={styles.featureDesc}>Streaming instantané</Text>
+                    <Text style={styles.featureTitle}>Streaming instantané</Text>
+                    <Text style={styles.featureDesc}>Powered by Gemini 2.5 Flash (1M context)</Text>
+                  </View>
+                </View>
+
+                <View style={styles.featureItem}>
+                  <Text style={styles.featureIcon}>🎨</Text>
+                  <View style={styles.featureText}>
+                    <Text style={styles.featureTitle}>Vision multimodale</Text>
+                    <Text style={styles.featureDesc}>Partagez photos et dessins de vos rêves</Text>
                   </View>
                 </View>
               </View>
 
+              {/* Message d'attente */}
+              <View style={styles.waitingMessage}>
+                <Text style={styles.waitingText}>
+                  Cette fonctionnalité est en cours de développement.{"\n"}
+                  Rejoignez la communauté pour être notifié du lancement !
+                </Text>
+              </View>
+
               <TouchableOpacity
-                style={styles.startButton}
-                onPress={() => {
-                  setShowOnboarding(false);
-                  connectToLiveAPI();
-                }}
+                style={styles.backButtonTeaser}
+                onPress={() => navigation.goBack()}
               >
-                <Text style={styles.startButtonText}>Commencer</Text>
+                <MaterialIcons name="arrow-back" size={20} color={THEME.colors.warmGold} />
+                <Text style={styles.backButtonTeaserText}>Retour</Text>
               </TouchableOpacity>
             </LinearGradient>
           </View>
@@ -659,6 +679,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: THEME.colors.background,
+  },
+  // 🚀 TEASER MODE STYLES
+  comingSoonBadge: {
+    backgroundColor: THEME.colors.warmGold + '30',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: THEME.colors.warmGold,
+  },
+  comingSoonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.warmGold,
+    letterSpacing: 1,
+  },
+  onboardingSubtitle: {
+    fontSize: 14,
+    color: THEME.colors.textSecondary,
+    marginBottom: 25,
+    textAlign: 'center',
+  },
+  waitingMessage: {
+    backgroundColor: THEME.colors.background + '60',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    width: '100%',
+  },
+  waitingText: {
+    fontSize: 13,
+    color: THEME.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  backButtonTeaser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: THEME.colors.warmGold,
+    width: '100%',
+    gap: 10,
+  },
+  backButtonTeaserText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.warmGold,
   },
   helpModal: {
     width: width - 40,
