@@ -246,7 +246,6 @@ MIT License - see [LICENSE](./LICENSE) file for details
 ### Technologies
 - **Anthropic** - Claude API
 - **Groq** - Llama & Whisper APIs
-- **OpenAI** - Whisper transcription
 - **Expo** - React Native framework
 
 ---
