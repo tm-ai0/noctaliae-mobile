@@ -2,7 +2,7 @@
 
 **AI-powered dream analysis with neuroscience**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/tm-ai0/noctaliae-mobile)
+[![Version](https://img.shields.io/badge/version-0.9.9-blue)]
 [![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61dafb)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-54-000020)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
