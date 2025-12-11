@@ -241,4 +241,4 @@ Si le rêveur décrit :
 
 ---
 
-**Basé sur** : Arnulf, Domhoff, Revonsuo, Walker, Ruby, Solms, Hobson, Hoel, Stickgold et plus de 100 sources croisées mise à disposition ici ! 
+**Basé sur une interprétation des travaux de** : Arnulf, Domhoff, Revonsuo, Walker, Ruby, Solms, Hobson, Hoel, Stickgold et plus de 100 sources croisées mise à disposition ici ! lien vers monnotebooklm etde bloc de recherches !

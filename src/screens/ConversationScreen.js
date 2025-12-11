@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -19,6 +19,7 @@ import { MarkdownText } from '../components/MarkdownText';
 import { analyzeDreamFromText } from '../services/apiService';
 import { saveAnalysis, deleteDream } from '../services/storageService';
 import { premiumService } from '../services/premiumService';
+import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 
 export default function ConversationScreen({ route, navigation }) {
@@ -30,6 +31,17 @@ export default function ConversationScreen({ route, navigation }) {
   const [currentAnalysis, setCurrentAnalysis] = useState(dreamAnalysis);
   const [reanalyzeDropdownOpen, setReanalyzeDropdownOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
+
+  // 🔄 Charger le statut Premium au montage
+  useEffect(() => {
+    const loadPremiumStatus = async () => {
+      const status = await premiumService.isPremium();
+      setIsPremium(status);
+    };
+    loadPremiumStatus();
+  }, []);
 
   const date = new Date(dreamDate);
   const formattedTime = date.toLocaleTimeString('fr-FR', { 
@@ -37,6 +49,24 @@ export default function ConversationScreen({ route, navigation }) {
     minute: '2-digit' 
   });
   const formattedDate = date.toLocaleDateString('fr-FR');
+
+  // 🆕 Vérifier Premium avant de re-analyser avec Claude
+  async function handleSelectReanalyzeModel(useClaude) {
+    if (useClaude && !isPremium) {
+      setReanalyzeDropdownOpen(false);
+      setShowActivateModal(true);
+      return;
+    }
+    reanalyzeWithModel(useClaude);
+  }
+
+  // 🆕 Activer DeepDream depuis le modal
+  async function handleActivateDeepDream() {
+    await premiumService.setPremium(true);
+    setIsPremium(true);
+    setShowActivateModal(false);
+    reanalyzeWithModel(true);
+  }
 
   async function reanalyzeWithModel(useClaude) {
     setReanalyzeDropdownOpen(false);
@@ -517,7 +547,7 @@ export default function ConversationScreen({ route, navigation }) {
                 <View style={styles.reanalyzeDropdown}>
                   <TouchableOpacity
                     style={styles.dropdownOption}
-                    onPress={() => reanalyzeWithModel(true)}
+                    onPress={() => handleSelectReanalyzeModel(true)}
                   >
                     <MaterialCommunityIcons name="electron-framework" size={24} color="#4F8DFF" />
                     <View style={{ flex: 1 }}>
@@ -528,7 +558,7 @@ export default function ConversationScreen({ route, navigation }) {
 
                   <TouchableOpacity
                     style={[styles.dropdownOption, styles.dropdownOptionBorder]}
-                    onPress={() => reanalyzeWithModel(false)}
+                    onPress={() => handleSelectReanalyzeModel(false)}
                   >
                     <MaterialCommunityIcons name="flash" size={24} color="#00FFB0" />
                     <View style={{ flex: 1 }}>
@@ -570,6 +600,13 @@ export default function ConversationScreen({ route, navigation }) {
           )
         )}
       </ScrollView>
+      
+      {/* 🆕 Modal Activer DeepDream */}
+      <ActivateDeepDreamModal
+        visible={showActivateModal}
+        onClose={() => setShowActivateModal(false)}
+        onActivate={handleActivateDeepDream}
+      />
     </ContainerComponent>
   );
 }

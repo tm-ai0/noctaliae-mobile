@@ -101,22 +101,6 @@ Les sources indiquent explicitement que la **limite** de ce modèle est qu'il **
 L'explication de la bizarreté est que le contenu est bizarre en raison de la **perte de la capacité d'organisation du cerveau** (due à la désactivation du cortex préfrontal), et non à cause d'un mécanisme élaboré de déguisement (contrairement à Freud).3\. Contexte et Rappel des Rêves (Preamble)Les deux prémisses que vous mentionnez sont des principes fondamentaux reconnus par la neurobiologie moderne du rêve, souvent mis en avant par l'équipe d'Isabelle Arnulf :• Les "non-rêveurs" ont un problème d'encodage en mémoire, pas une absence de rêves.Les études suggèrent en effet que tout le monde rêve, mais que l'absence de souvenir est due à un échec dans le processus d'**encodage ou de rappel de ces expériences oniriques dans la mémoire**. L'oubli est la norme.• Facteur clé : Se réveiller pendant ou juste après le REM maximise le rappel.C'est un fait bien établi : les rêves sont plus intenses, plus longs, plus vifs et plus mémorables pendant le sommeil paradoxal (REM). Si l'on réveille quelqu'un pendant le sommeil paradoxal, il y a **plus de 80 % de chance** qu'il puisse raconter un rêve en détail. Le rappel est maximisé si l'éveil survient **pendant ou juste après le REM**.
 
 
-C'es
-
-Dans le cadre de notre conversation (où nous utilisons le format de **citation numérique intégrale**), une citation "courte" consiste à insérer l'identifiant numérique de la source immédiatement après l'information, en privilégiant l'attribution des idées clés aux auteurs ou aux modèles spécifiques.
-
-Voici comment vous rédigeriez des citations courtes sur les sujets abordés, en respectant les exigences de citation factuelle et en mettant l'accent sur la clarté :
-
-1\. Citation courte d'une théorie ou d'une date clé
-
-Pour citer une théorie fondamentale ou une date marquante, mentionnez l'auteur et l'année pour le contexte, puis ajoutez l'identifiant de la source entre crochets.
-
-Concept à citer
-
-Formulation courte et précise
-
-Activation-Synthèse (A-S)
-
 Le modèle d'Activation-Synthèse, proposé par **Hobson et McCarley (1977)**, explique que le cerveau génère des rêves en synthétisant l'activité chaotique du tronc cérébral.
 
 Régulation Émotionnelle

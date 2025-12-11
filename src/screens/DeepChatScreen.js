@@ -23,6 +23,8 @@ import { MarkdownText } from '../components/MarkdownText';
 import { THEME } from '../config/theme';
 import { saveConversation, loadConversation, clearConversation } from '../services/conversationService';
 import { deleteDream } from '../services/storageService';
+import { premiumService } from '../services/premiumService';
+import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -128,8 +130,10 @@ export default function DeepChatScreen({ route, navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('claude');
+  const [selectedModel, setSelectedModel] = useState('llama');
   const [modelSelectorExpanded, setModelSelectorExpanded] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
   
   const [dreamAnalysis] = useState(initialAnalysis);
   const [suggestedQuestions, setSuggestedQuestions] = useState([]);
@@ -141,6 +145,25 @@ export default function DeepChatScreen({ route, navigation }) {
   const scrollViewRef = useRef();
   const [contentHeight, setContentHeight] = useState(0);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
+
+  // 🔄 Charger statut Premium et présélectionner modèle
+  useEffect(() => {
+    const loadPremiumStatus = async () => {
+      const status = await premiumService.isPremium();
+      setIsPremium(status);
+      setSelectedModel(status ? 'claude' : 'llama');
+    };
+    loadPremiumStatus();
+  }, []);
+
+  // 🏆 Activer DeepDream depuis le modal
+  const handleActivateDeepDream = async () => {
+    await premiumService.enablePremium();
+    setIsPremium(true);
+    setSelectedModel('claude');
+    setShowActivateModal(false);
+    navigation.navigate('Settings');
+  };
 
   // 🏆 SUGGESTIONS (backend ou fallback local)
   useEffect(() => {
@@ -763,7 +786,15 @@ export default function DeepChatScreen({ route, navigation }) {
             <View style={styles.modelDropdown}>
               <TouchableOpacity
                 style={[styles.modelOption, selectedModel === 'claude' && styles.modelOptionSelected]}
-                onPress={() => { setSelectedModel('claude'); setModelSelectorExpanded(false); }}
+                onPress={() => {
+                  if (!isPremium) {
+                    setModelSelectorExpanded(false);
+                    setShowActivateModal(true);
+                  } else {
+                    setSelectedModel('claude');
+                    setModelSelectorExpanded(false);
+                  }
+                }}
               >
                 <MaterialIcons name="science" size={24} color={THEME.colors.primary} />
                 <View style={styles.modelOptionInfo}>
@@ -825,6 +856,13 @@ export default function DeepChatScreen({ route, navigation }) {
           />
         </TouchableOpacity>
       </View>
+
+      {/* 🏆 MODAL ACTIVATION DEEPDREAM */}
+      <ActivateDeepDreamModal
+        visible={showActivateModal}
+        onClose={() => setShowActivateModal(false)}
+        onActivate={handleActivateDeepDream}
+      />
     </ContainerComponent>
   );
 }

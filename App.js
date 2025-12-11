@@ -36,9 +36,14 @@ import OnboardingWelcome from './src/screens/onboarding/OnboardingWelcome';
 import OnboardingMarkers from './src/screens/onboarding/OnboardingMarkers';
 import OnboardingFingerprints from './src/screens/onboarding/OnboardingFingerprints';
 import PlaygroundScreen from './src/screens/PlaygroundScreen';
+import DecrypterScreen from './src/screens/DecrypterScreen';
+import ExplorerScreen from './src/screens/ExplorerScreen';
 
 import { secureStorageService } from './src/services/secureStorageService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { sendInstallPing } from './src/services/installService';
+import { shouldShowUpdateModal, dismissUpdate } from './src/services/updateService';
+import { UpdateAvailableModal } from './src/modals/UpdateAvailableModal';
 
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
 
@@ -348,15 +353,60 @@ function MainStack() {
       <Stack.Screen name="OnboardingMarkers" component={OnboardingMarkers} options={{ headerShown: false, title: 'OnboardingMarkers.js' }} />
       <Stack.Screen name="OnboardingFingerprints" component={OnboardingFingerprints} options={{ headerShown: false, title: 'OnboardingFingerprints.js' }} />
       <Stack.Screen name="Playground" component={PlaygroundScreen} options={{ presentation: 'card', title: '🎨 Playground' }} />
+      <Stack.Screen name="Decrypter" component={DecrypterScreen} options={{ presentation: 'card', title: '🔓 Décrypter' }} />
+      <Stack.Screen name="Explorer" component={ExplorerScreen} options={{ presentation: 'card', title: '🧭 Explorer' }} />
     </Stack.Navigator>
   );
 }
 
 export default function App() {
-  // 🔄 Migration vers stockage sécurisé au démarrage
+  // 🔄 État pour le modal de mise à jour
+  const [updateInfo, setUpdateInfo] = React.useState(null);
+  const [showUpdateModal, setShowUpdateModal] = React.useState(false);
+
+  // 🧪 TEST MODE - Mettre à true pour tester le modal
+  const TEST_UPDATE_MODAL = false;
+
+  // 🔄 Migration + Ping installation + Vérification mise à jour au démarrage
   React.useEffect(() => {
     secureStorageService.migrateFromAsyncStorage();
+    sendInstallPing(); // Track les installations
+    
+    // 🧪 MODE TEST : afficher le modal avec données simulées
+    if (TEST_UPDATE_MODAL) {
+      setTimeout(() => {
+        setUpdateInfo({
+          available: true,
+          currentVersion: '0.9.10',
+          latestVersion: '0.9.11',
+          downloadUrl: 'https://example.com/noctaliae-0.9.11.apk',
+          releaseNotes: '• Vérification Premium sur DeepDream\n• Rate limiting IP (100 req/h)\n• Fix transcription audio\n• Correction typo "le cœur"',
+          isCritical: false,
+        });
+        setShowUpdateModal(true);
+        console.log('🧪 TEST: Modal mise à jour affiché');
+      }, 1500);
+      return; // Skip la vraie vérification en mode test
+    }
+    
+    // 🆕 Vérification mise à jour (après 2s pour ne pas bloquer le démarrage)
+    const checkUpdate = async () => {
+      const info = await shouldShowUpdateModal();
+      if (info && info.available) {
+        setUpdateInfo(info);
+        setShowUpdateModal(true);
+        console.log('🆕 Mise à jour disponible:', info.latestVersion);
+      }
+    };
+    
+    setTimeout(checkUpdate, 2000);
   }, []);
+
+  // Handler pour "Plus tard"
+  const handleDismissUpdate = (version) => {
+    dismissUpdate(version);
+    setShowUpdateModal(false);
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -366,6 +416,20 @@ export default function App() {
           <NavigationContainer>
             <MainStack />
           </NavigationContainer>
+          
+          {/* 🆕 MODAL MISE À JOUR */}
+          {updateInfo && (
+            <UpdateAvailableModal
+              visible={showUpdateModal}
+              onClose={() => setShowUpdateModal(false)}
+              onDismiss={handleDismissUpdate}
+              currentVersion={updateInfo.currentVersion}
+              latestVersion={updateInfo.latestVersion}
+              downloadUrl={updateInfo.downloadUrl}
+              releaseNotes={updateInfo.releaseNotes}
+              isCritical={updateInfo.isCritical}
+            />
+          )}
         </GlowProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

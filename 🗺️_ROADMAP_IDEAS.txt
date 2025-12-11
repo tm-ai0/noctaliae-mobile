@@ -1,0 +1,251 @@
+# 🚀 ROADMAP & IDÉES FUTURES - Noctaliæ
+> **Créé** : 4 décembre 2025
+> **Dernière maj** : 4 décembre 2025
+
+---
+
+## 🎯 VISION : LES 3 PILIERS
+
+```
+Noctaliæ n'est PAS juste un "dream journal"
+
+┌─────────────────────────────────────────────────┐
+│ 1. 📝 ENREGISTRER    → Journal vocal intelligent │
+│ 2. 🔬 ANALYSER       → IA neuroscientifique      │
+│ 3. 🎓 APPRENDRE      → Vulgarisation scientifique│
+└─────────────────────────────────────────────────┘
+
+"La seule app qui te rend EXPERT de tes propres rêves"
+```
+
+---
+
+## ✍️ TAGLINES PROPOSÉES
+
+```
+ACTUEL : "Analyse scientifique des rêves"
+
+OPTIONS :
+→ "Enregistre. Comprends. Apprends."
+→ "La science des rêves dans ta poche"
+→ "Deviens expert de tes nuits"
+→ "Journal intelligent + Université du rêve"
+```
+
+---
+
+## 📍 OÙ PLACER LE MESSAGE "3 PILIERS"
+
+| Endroit | Priorité | Status | Notes |
+|---------|----------|--------|-------|
+| Landing page | 🔥 HAUTE | ⬜ | Refonte avec 3 piliers visuels |
+| Onboarding | 🔥 HAUTE | ⬜ | Nouveau slide "Apprends la science" |
+| Atlas intro | ✅ MOYENNE | ⬜ | "Ton université du rêve" |
+| About/Settings | ✅ MOYENNE | ⬜ | Mission complète |
+| App Store | 🔥 HAUTE | ⬜ | Description + keywords SEO |
+
+---
+
+## ⌚ SMARTWATCH - ROADMAP COMPLÈTE
+
+### Matériel disponible
+- **Xiaomi Watch 2** (Wear OS 4) - Thomas a la montre
+
+### Features planifiées
+
+| Feature | Description | Version | Priorité |
+|---------|-------------|---------|----------|
+| Health Connect API | Connexion données santé Android | V1.1 | 🔥 |
+| Données sommeil | Durée, phases, qualité | V1.1 | 🔥 |
+| Dream Capture Alarm | Réveil intelligent fin de cycle REM | V1.2 | 🔥🔥 |
+| Notif "Raconte ton rêve" | Push après réveil REM détecté | V1.2 | 🔥 |
+| HRV dans analyse | Variabilité cardiaque enrichit l'analyse | V1.3 | ✅ |
+| HR pendant sommeil | Corrélation émotions rêve / physio | V1.3 | ✅ |
+| Companion app Wear OS | Mini app sur la montre | V2.0 | ⬜ |
+
+### Killer Feature : Dream Capture Alarm 🎯
+
+```
+CONCEPT :
+1. Montre détecte fin de cycle REM (mouvements + HR)
+2. Vibration douce pour réveiller
+3. Notification immédiate "Raconte ton rêve"
+4. L'utilisateur enregistre AVANT d'oublier
+
+POURQUOI C'EST ÉNORME :
+- On oublie 95% des rêves en 5 minutes
+- Réveil au bon moment = souvenir intact
+- Aucune app grand public ne fait ça bien
+```
+
+### Ressources techniques
+- Conversation de référence : https://claude.ai/chat/ca5c40f2-af4b-4b97-adab-25ce5a71baca
+- Health Connect docs : https://developer.android.com/health-and-fitness/guides/health-connect
+- Wear OS 4 : Compatible Xiaomi Watch 2
+
+---
+
+## 🎓 DREAM ATLAS - ÉVOLUTIONS
+
+### V1.0 (Actuel - Beta 0.9.10)
+- ✅ Explorer : Parcours 6 cards "82% rêves négatifs"
+- ✅ Décrypter : Fiche scientifique
+- ⬜ Cartographie : Coming Soon
+- ⬜ Laboratoire : Coming Soon
+
+### V1.1 - Polish Explorer
+| Amélioration | Description |
+|--------------|-------------|
+| Nav dans card | Boutons inside pour éviter conflit Android |
+| Instructions claires | Texte explicite sur chaque type de card |
+| Variété cards | Quiz, drag & drop, fill blanks |
+| Écran "Bravo!" | Confettis + célébration fin parcours |
+| Bullet points | "À retenir" avec icônes |
+
+### V1.2 - Déblocage personnalisé
+```
+CONCEPT UNIQUE :
+Chaque rêve enregistré DÉBLOQUE une micro-leçon liée
+
+Exemples :
+- Rêve de chute → Fiche "Pourquoi on rêve de tomber"
+- Rêve de poursuite → Fiche "Simulation des menaces"  
+- 5 rêves négatifs → Fiche "82% des rêves négatifs"
+- Rêve lucide → Fiche "Stephen LaBerge"
+
+AVANTAGE : Kinnu ne peut PAS faire ça (contenu statique)
+```
+
+### V1.3 - Cartographie
+- Visualisation thèmes récurrents
+- Timeline émotionnelle
+- Patterns de sommeil
+
+### V2.0 - Laboratoire
+- Analyses statistiques avancées
+- Export données scientifiques
+- Comparaison avec études
+
+---
+
+## 📦 CONTENU NOTEBOOKLM - GOLDMINE
+
+### Dossier : `_DREAM_ATLAS_CONTENT/`
+
+| Type | Fichiers | Utilisation future |
+|------|----------|-------------------|
+| audio/ | 3 podcasts | Bonus éducatif, mode audio |
+| video/ | 2 vidéos | Onboarding, marketing |
+| flashcards/ | 50+ Q&A | Quiz interactifs Explorer |
+| quiz/ | CSV + JSON | Gamification |
+| infographics/ | 2 PNG | Cartographie, partage social |
+| slides/ | 2 PDF | Nouvelles fiches Décrypter |
+| reports/ | CSV + JSON | Base de données facts |
+
+### Pipeline futur
+```
+NotebookLM (160+ sources)
+    ↓
+Génération contenu (audio, video, flashcards)
+    ↓
+Import dans app
+    ↓
+Parcours Explorer + Fiches Décrypter
+```
+
+---
+
+## 🌍 INTERNATIONALISATION (i18n)
+
+### Plan
+| Phase | Langues | Quand |
+|-------|---------|-------|
+| Beta | 🇫🇷 FR only | Maintenant |
+| V1.0 | 🇫🇷 FR + 🇬🇧 EN | Post-launch |
+| V1.1 | + 🇪🇸 ES (Mexique) | Demande testeurs |
+
+### Structure technique
+```
+src/
+  locales/
+    fr.json    ← Actuel
+    en.json    ← Futur
+    es.json    ← Futur
+```
+
+### Outil recommandé
+- `expo-localization` + `i18next`
+- Détection auto langue téléphone
+
+---
+
+## 🔬 CONTRIBUTION RECHERCHE (V2.0+ / 2025)
+
+**Objectif** : Contribuer à la science des rêves (données anonymisées)
+
+| Idée | Quand | Notes |
+|------|-------|-------|
+| Explorer Reddit (r/Dreams, r/LucidDreaming) | 2025 | Voir ce qui existe |
+| Contacter chercheurs (Arnulf, etc.) | 2025 | Déjà planifié |
+| Dream databases existantes | 2025 | DreamBank.net, etc. |
+| Pipeline NotebookLM → App | V1.5+ | Automatisation contenu |
+| Communauté Noctaliæ | V2.0+ | Quand l'app est stable |
+
+**⚠️ PAS MAINTENANT - Focus beta d'abord !**
+
+---
+
+## 💡 IDÉES DIVERSES (Backlog)
+
+| Idée | Description | Priorité |
+|------|-------------|----------|
+| Images IA | Gemini/DALL-E pour illustrer cards | V1.5 |
+| Bestiaire | Créatures oniriques illustrées | V2.0 |
+| Streaks | 🦚 au lieu de 🦢 Kinnu | V1.1 |
+| Spaced repetition | Réviser les fiches apprises | V1.3 |
+| Social sharing | Partager stats (pas les rêves!) | V1.2 |
+| Dark/Light mode | Toggle manuel | V1.1 |
+| Widget Android | Rappel "As-tu rêvé?" | V1.2 |
+
+---
+
+## 📊 PRIORITÉS GLOBALES
+
+### 🔥 COURT TERME (V1.0 - V1.1)
+1. Polish Explorer (feedback testeurs)
+2. Smartwatch Health Connect
+3. Landing page 3 piliers
+4. Onboarding slide "Apprends"
+
+### ✅ MOYEN TERME (V1.2 - V1.3)
+1. Dream Capture Alarm
+2. Déblocage personnalisé
+3. Cartographie
+4. i18n EN/ES
+
+### ⬜ LONG TERME (V2.0+)
+1. Laboratoire complet
+2. Companion Wear OS
+3. Images IA
+4. Communauté
+
+---
+
+## 🦚 RAPPEL PHILOSOPHIE
+
+```
+"Ship. Learn. Iterate."
+
+- La fiche 82% qui marche AUJOURD'HUI 
+  vaut mieux que 50 features dans 6 mois
+
+- Science > Business
+- Privacy > Features  
+- Simple > Complexe
+
+- Thomas seul > Équipe de 10 qui ship rien
+```
+
+---
+
+*Dernière mise à jour : 4 décembre 2025 - Session Dream Atlas*

@@ -145,7 +145,7 @@ export async function transcribeAudio(audioUri) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        audio_base64: audioBase64,
+        audio: audioBase64,
       }),
     });
 

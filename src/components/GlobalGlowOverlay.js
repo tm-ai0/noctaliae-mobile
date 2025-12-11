@@ -5,63 +5,25 @@
  * - DeepDream : Vert néon #00FFB0
  * - Les deux : Effet mixte avec les deux couleurs
  * 
- * V2 : Opacité augmentée + texture grain subtile
+ * V4 : Suppression des corners rectangulaires - edges only + radial fade
  */
 
 import React, { useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, Filter, FeTurbulence, FeColorMatrix, Rect } from 'react-native-svg';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useGlow, GLOW_COLORS } from '../contexts/GlowContext';
 
 const { width, height } = Dimensions.get('window');
 
-// 🎨 Paramètres visuels V2 - PLUS VISIBLE
+// 🎨 Paramètres visuels V4 - CLEAN & ORGANIC
 const GLOW_CONFIG = {
-  opacity: 0.22,           // Opacité de base (22% - augmenté)
-  pulseMin: 0.15,          // Opacité min pulsation (15%)
-  pulseMax: 0.32,          // Opacité max pulsation (32%)
-  pulseDuration: 4000,     // Durée cycle pulsation (4s)
-  edgeSize: 100,           // Taille du glow sur les bords (100px - augmenté)
-  grainOpacity: 0.04,      // Opacité du grain (4%)
+  opacity: 0.20,           // Opacité de base (20%)
+  pulseMin: 0.12,          // Opacité min pulsation (12%)
+  pulseMax: 0.28,          // Opacité max pulsation (28%)
+  pulseDuration: 6000,     // Durée cycle pulsation (6s - encore plus lent)
+  edgeSize: 50,            // Taille du glow sur les bords (50px)
 };
-
-// 🎨 Composant Grain SVG
-function GrainOverlay({ color }) {
-  // Générer une seed unique pour le turbulence
-  const seed = useMemo(() => Math.floor(Math.random() * 1000), []);
-  
-  return (
-    <View style={styles.grainContainer} pointerEvents="none">
-      <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <Filter id="noise" x="0%" y="0%" width="100%" height="100%">
-            <FeTurbulence 
-              type="fractalNoise" 
-              baseFrequency="0.9" 
-              numOctaves="4" 
-              seed={seed}
-              result="noise"
-            />
-            <FeColorMatrix
-              type="saturate"
-              values="0"
-            />
-          </Filter>
-        </Defs>
-        <Rect 
-          x="0" 
-          y="0" 
-          width="100%" 
-          height="100%" 
-          filter="url(#noise)" 
-          opacity={GLOW_CONFIG.grainOpacity}
-          fill={color}
-        />
-      </Svg>
-    </View>
-  );
-}
 
 export default function GlobalGlowOverlay() {
   const { isGlowActive, glowType, isContributor, isDeepDream } = useGlow();
@@ -112,17 +74,27 @@ export default function GlobalGlowOverlay() {
       style={[styles.container, { opacity: pulseAnim }]}
       pointerEvents="none"
     >
-      {/* 🎞️ Grain overlay */}
-      <GrainOverlay color={primaryColor} />
+      {/* 🌌 Vignette radiale centrale (effet organique) */}
+      <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <RadialGradient id="vignette" cx="50%" cy="50%" rx="70%" ry="60%">
+            <Stop offset="0%" stopColor="transparent" stopOpacity="0" />
+            <Stop offset="60%" stopColor="transparent" stopOpacity="0" />
+            <Stop offset="85%" stopColor={primaryColor} stopOpacity="0.15" />
+            <Stop offset="100%" stopColor={primaryColor} stopOpacity="0.4" />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#vignette)" />
+      </Svg>
 
-      {/* 🔝 Bord supérieur */}
+      {/* 🔝 Bord supérieur - fade plus doux */}
       <LinearGradient
         colors={[
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.8),
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.3),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.5),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.15),
           'transparent',
         ]}
-        locations={[0, 0.4, 1]}
+        locations={[0, 0.5, 1]}
         style={[styles.edge, styles.edgeTop]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -132,10 +104,10 @@ export default function GlobalGlowOverlay() {
       <LinearGradient
         colors={[
           'transparent',
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.3),
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.8),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.15),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.5),
         ]}
-        locations={[0, 0.6, 1]}
+        locations={[0, 0.5, 1]}
         style={[styles.edge, styles.edgeBottom]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -144,11 +116,11 @@ export default function GlobalGlowOverlay() {
       {/* ◀️ Bord gauche */}
       <LinearGradient
         colors={[
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.7),
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.25),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.4),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.1),
           'transparent',
         ]}
-        locations={[0, 0.4, 1]}
+        locations={[0, 0.5, 1]}
         style={[styles.edge, styles.edgeLeft]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
@@ -158,75 +130,14 @@ export default function GlobalGlowOverlay() {
       <LinearGradient
         colors={[
           'transparent',
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.25),
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.7),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.1),
+          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.4),
         ]}
-        locations={[0, 0.6, 1]}
+        locations={[0, 0.5, 1]}
         style={[styles.edge, styles.edgeRight]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
       />
-
-      {/* 🔲 Coins renforcés */}
-      {/* Coin haut-gauche */}
-      <LinearGradient
-        colors={[
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.contributor : primaryColor, 0.6),
-          'transparent',
-        ]}
-        style={[styles.corner, styles.cornerTopLeft]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
-      
-      {/* Coin haut-droite */}
-      <LinearGradient
-        colors={[
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.mixed : primaryColor, 0.5),
-          'transparent',
-        ]}
-        style={[styles.corner, styles.cornerTopRight]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      />
-      
-      {/* Coin bas-gauche */}
-      <LinearGradient
-        colors={[
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.mixed : primaryColor, 0.5),
-          'transparent',
-        ]}
-        style={[styles.corner, styles.cornerBottomLeft]}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 1, y: 0 }}
-      />
-      
-      {/* Coin bas-droite */}
-      <LinearGradient
-        colors={[
-          getColorWithAlpha(glowType === 'mixed' ? GLOW_COLORS.deepDream : primaryColor, 0.6),
-          'transparent',
-        ]}
-        style={[styles.corner, styles.cornerBottomRight]}
-        start={{ x: 1, y: 1 }}
-        end={{ x: 0, y: 0 }}
-      />
-
-      {/* 🌟 Highlight central subtil pour le mode mixed */}
-      {glowType === 'mixed' && (
-        <View style={styles.mixedCenterGlow}>
-          <LinearGradient
-            colors={[
-              'transparent',
-              getColorWithAlpha(GLOW_COLORS.mixed, 0.08),
-              'transparent',
-            ]}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-          />
-        </View>
-      )}
     </Animated.View>
   );
 }
@@ -235,10 +146,7 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
-  },
-  grainContainer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+    overflow: 'hidden',
   },
   edge: {
     position: 'absolute',
@@ -267,35 +175,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     width: GLOW_CONFIG.edgeSize,
-  },
-  corner: {
-    position: 'absolute',
-    width: GLOW_CONFIG.edgeSize * 1.2,
-    height: GLOW_CONFIG.edgeSize * 1.2,
-    zIndex: 3,
-  },
-  cornerTopLeft: {
-    top: 0,
-    left: 0,
-  },
-  cornerTopRight: {
-    top: 0,
-    right: 0,
-  },
-  cornerBottomLeft: {
-    bottom: 0,
-    left: 0,
-  },
-  cornerBottomRight: {
-    bottom: 0,
-    right: 0,
-  },
-  mixedCenterGlow: {
-    position: 'absolute',
-    top: '30%',
-    bottom: '30%',
-    left: 0,
-    right: 0,
-    zIndex: 1,
   },
 });

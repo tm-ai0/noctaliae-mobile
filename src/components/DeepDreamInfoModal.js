@@ -51,7 +51,7 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
               <Text style={[styles.title, { color: THEME.colors.textPrimary }]}>
                 <Text style={{ color: '#ffffffff' }}>Un outil innovant</Text>
                 {' basée sur les neurosciences et dédié à l\'analyse des rêves.'}
-                <Text style={{ color: '#39FF88' }}>C\'est lui qui est cœur de Noctaliæ.</Text>
+                <Text style={{ color: '#39FF88' }}> C'est lui qui est au cœur de Noctaliæ.</Text>
               </Text>
               <View style={styles.moonIcon}>
                 <Text style={{ fontSize: 32 }}>🌙</Text>
@@ -60,14 +60,18 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
 
             {/* Section Claude Sonnet */}
 <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-  DeepDream Engine est un moteur d’analyse des rêves optimisé par Claude Sonnet 4.5, 
-  conçu pour explorer les nuances émotionnelles et narratives en s’appuyant sur les grands 
-  modèles neuroscientifiques et les recherches récentes.{"\n\n"}
 
-  Son approche s’inscrit dans la continuité des grands modèles neurobiologiques du rêve : 
-  la théorie de l’activation-synthèse proposée par J. Allan Hobson et Robert McCarley, 
-  la perspective de la continuité développée par G. William Domhoff, 
-  ou encore l’approche neurocognitive défendue par Mark Solms.{"\n\n"}
+  <Text style={{ fontWeight: "bold" }}>DeepDream Engine</Text> est un moteur d’analyse des rêves que 
+  j’ai développé en m’appuyant sur <Text style={{ fontStyle: "italic" }}>Claude Sonnet 4.5</Text>, après avoir 
+  réuni et organisé dans <Text style={{ fontStyle: "italic" }}>NotebookLM</Text> un large ensemble de sources issues 
+  des grands modèles neuroscientifiques et des recherches récentes. Cette base de connaissances 
+  m’a permis d’adapter l’outil pour explorer avec précision les nuances émotionnelles et narratives 
+  des rêves.{"\n\n"}
+
+  Son approche s’inscrit dans la continuité des grands modèles neurobiologiques du rêve : 
+  la <Text style={{ fontStyle: "italic" }}>théorie de l’activation-synthèse</Text> proposée par J. Allan Hobson et Robert McCarley, 
+  la <Text style={{ fontStyle: "italic" }}>perspective de la continuité</Text> développée par G. William Domhoff, 
+  ou encore l’approche <Text style={{ fontStyle: "italic" }}>neurocognitive</Text> défendue par Mark Solms.{"\n\n"}
 
   Les travaux d’Antti Revonsuo sur les rêves comme simulations de menaces, 
   ceux de Matthew Walker sur la mémoire et l’émotion, 
@@ -77,12 +81,15 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
   et ses collaborateurs illustre la manière dont la recherche contemporaine articule 
   consensus et controverses.{"\n\n"}
 
-  👉 DeepDream Engine n’est pas seulement un outil technique, il s’ancre dans un corpus scientifique reconnu, en dialogue avec les débats 
-  actuels des neurosciences du rêve et en constante évolution, grace à vous.
-</Text>
+  👉 <Text style={{ fontWeight: "bold" }}>DeepDream Engine</Text> n’est pas seulement un outil technique : 
+  il s’ancre dans un corpus scientifique solide, en dialogue avec les débats actuels des 
+  neurosciences du rêve, et évolue continuellement grâce au travail de sélection, 
+  d’organisation et d’adaptation des connaissances que j’y apporte.{"\n\n"}
 
-<Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-  🌙 Toutes les sources, prompts et grilles et rapports d'analyses seront bientot mis à disposition dans Noctaliæ, patience!
+  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary, fontWeight: "bold" }]}>
+    🌙 Toutes les sources, prompts et grilles et rapports d'analyses seront bientôt mis à disposition dans Noctaliæ, patience!
+  </Text>
+
 </Text>
             {/* Section Limites */}
             <Text style={[styles.sectionTitle, { color: '#39FF88' }]}>

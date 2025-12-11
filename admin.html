@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌙 Noctaliæ Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 2em; }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 { margin-bottom: 15px; font-size: 1.2em; }
+        .status { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .green { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
+        .red { background: #f87171; box-shadow: 0 0 10px #f87171; }
+        .orange { background: #fb923c; box-shadow: 0 0 10px #fb923c; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .stat-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #D2B14C; }
+        .stat-label { font-size: 0.9em; opacity: 0.7; margin-top: 5px; }
+        .token-row { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin: 5px 0; }
+        .refresh-btn {
+            background: #D2B14C;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .refresh-btn:hover { background: #b89a3e; }
+        .loading { opacity: 0.5; }
+        .error { color: #f87171; }
+        .last-update { text-align: center; opacity: 0.5; font-size: 0.8em; margin-top: 10px; }
+        #login-screen { position: fixed; inset: 0; background: #1a1a2e; display: flex; align-items: center; justify-content: center; z-index: 100; }
+        #login-box { background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; text-align: center; }
+        #login-box input { padding: 15px; border-radius: 8px; border: none; margin: 10px 0; width: 100%; font-size: 1em; }
+        #login-box button { background: #D2B14C; color: #1a1a2e; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <div id="login-box">
+            <h1>🌙 Noctaliæ Admin</h1>
+            <p style="margin: 20px 0; opacity: 0.7;">Entrez le mot de passe</p>
+            <input type="password" id="pwd" placeholder="Mot de passe" onkeypress="if(event.key==='Enter')login()">
+            <button onclick="login()">Accéder</button>
+        </div>
+    </div>
+
+    <div class="container" id="dashboard" style="display:none;">
+        <h1>🌙 Noctaliæ Admin Dashboard</h1>
+
+        <div class="card">
+            <h2>⚡ Statut Serveur</h2>
+            <div class="status">
+                <div class="dot" id="server-dot"></div>
+                <span id="server-status">Chargement...</span>
+            </div>
+            <div class="status">
+                <div class="dot" id="kill-dot"></div>
+                <span id="kill-status">Kill Switch: ...</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 Statistiques</h2>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="total-requests">-</div>
+                    <div class="stat-label">Total Requêtes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="active-tokens">-</div>
+                    <div class="stat-label">Tokens Actifs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎫 Usage par Token</h2>
+            <div id="tokens-list">Chargement...</div>
+        </div>
+
+        <button class="refresh-btn" onclick="refresh()">🔄 Rafraîchir</button>
+        <div class="last-update">Dernière mise à jour: <span id="last-update">-</span></div>
+    </div>
+
+    <script>
+        const API = 'https://api.thomasmaury.fr';
+        const TOKEN = 'tok_dev_thomas_2025_main';
+        const PWD = 'noctaliae2025';
+
+        function login() {
+            if(document.getElementById('pwd').value === PWD) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                refresh();
+            } else {
+                alert('Mot de passe incorrect');
+            }
+        }
+
+        async function refresh() {
+            // Health check
+            try {
+                const health = await fetch(API + '/health').then(r => r.json());
+                document.getElementById('server-dot').className = 'dot green';
+                document.getElementById('server-status').textContent = 'Serveur EN LIGNE ✓';
+                
+                if(health.killSwitch) {
+                    document.getElementById('kill-dot').className = 'dot red';
+                    document.getElementById('kill-status').textContent = 'Kill Switch: ACTIF ⚠️';
+                } else {
+                    document.getElementById('kill-dot').className = 'dot green';
+                    document.getElementById('kill-status').textContent = 'Kill Switch: OFF ✓';
+                }
+            } catch(e) {
+                document.getElementById('server-dot').className = 'dot red';
+                document.getElementById('server-status').textContent = 'Serveur HORS LIGNE ✗';
+            }
+
+            // Token stats
+            try {
+                const stats = await fetch(API + '/api/token-stats', {
+                    headers: { 'x-api-token': TOKEN }
+                }).then(r => r.json());
+                
+                if(stats.tokens) {
+                    let total = 0;
+                    let html = '';
+                    stats.tokens.forEach(t => {
+                        total += t.usage || 0;
+                        const pct = t.limit ? Math.round((t.usage/t.limit)*100) : 0;
+                        html += '<div class="token-row"><span>' + t.name + '</span><span>' + (t.usage||0) + '/' + (t.limit||'∞') + '</span></div>';
+                    });
+                    document.getElementById('tokens-list').innerHTML = html;
+                    document.getElementById('total-requests').textContent = total;
+                    document.getElementById('active-tokens').textContent = stats.tokens.length;
+                }
+            } catch(e) {
+                document.getElementById('tokens-list').innerHTML = '<span class="error">Erreur chargement stats</span>';
+            }
+
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
+        }
+    </script>
+</body>
+</html>

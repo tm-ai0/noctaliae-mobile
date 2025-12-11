@@ -9,7 +9,8 @@ import {
   Alert,
   Linking,
   Animated,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { analyzeDreamFromText } from '../services/apiService';
 import { saveAnalysis } from '../services/storageService';
 import { securityService } from '../services/securityService';
+import { premiumService } from '../services/premiumService'; // 🆕 Import Premium
 import * as FileSystem from 'expo-file-system/legacy';
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
@@ -132,21 +134,105 @@ function EngineCard({
 }
 
 // ============================================
+// 🆕 MODAL ACTIVER DEEPDREAM
+// ============================================
+function ActivateDeepDreamModal({ visible, onClose, onActivate }) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <MaterialCommunityIcons name="electron-framework" size={40} color="#4F8DFF" />
+            <Text style={styles.modalTitle}>Activer DeepDream ?</Text>
+          </View>
+          
+          {/* Body */}
+          <Text style={styles.modalDescription}>
+            DeepDream Engine utilise Claude Sonnet 4.5 pour des analyses plus profondes et personnalisées.
+          </Text>
+          
+          <View style={styles.modalFeatures}>
+            <View style={styles.modalFeatureRow}>
+              <MaterialIcons name="check" size={18} color="#4F8DFF" />
+              <Text style={styles.modalFeatureText}>6 grilles d'analyse scientifiques</Text>
+            </View>
+            <View style={styles.modalFeatureRow}>
+              <MaterialIcons name="check" size={18} color="#4F8DFF" />
+              <Text style={styles.modalFeatureText}>Réponses détaillées et nuancées</Text>
+            </View>
+            <View style={styles.modalFeatureRow}>
+              <MaterialIcons name="check" size={18} color="#4F8DFF" />
+              <Text style={styles.modalFeatureText}>Personnalisation avec vos empreintes</Text>
+            </View>
+          </View>
+          
+          {/* Buttons */}
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={styles.modalButtonSecondary}
+              onPress={onClose}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalButtonSecondaryText}>Rester sur QuickDream</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.modalButtonPrimary}
+              onPress={onActivate}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="auto-awesome" size={18} color="#0c0e27" />
+              <Text style={styles.modalButtonPrimaryText}>Activer DeepDream</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 export default function PostRecordingScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { dreamId, audioUri, transcription, duration } = route.params;
   
-  const [selectedModel, setSelectedModel] = useState('llama');
+  // 🆕 État premium chargé depuis le service
+  const [isPremium, setIsPremium] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('llama'); // Default, sera mis à jour
   const [activeTab, setActiveTab] = useState('choice');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [limitInfo, setLimitInfo] = useState(null);
   const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false); // 🆕 Modal activation
   
   // 💡 Tooltip de guidance (première utilisation)
   const [showGuidanceTooltip, setShowGuidanceTooltip] = useState(false);
   const [tooltipAnim] = useState(new Animated.Value(0));
+  
+  // 🆕 Charger le statut Premium au mount et présélectionner le modèle
+  useEffect(() => {
+    async function loadPremiumAndSetModel() {
+      try {
+        const premium = await premiumService.isPremium();
+        setIsPremium(premium);
+        // Présélectionner le modèle selon le statut Premium
+        setSelectedModel(premium ? 'claude' : 'llama');
+        console.log(`💎 Premium: ${premium} → Modèle présélectionné: ${premium ? 'Claude' : 'Llama'}`);
+      } catch (error) {
+        console.error('❌ Erreur chargement Premium:', error);
+        setSelectedModel('llama'); // Fallback sécurisé
+      }
+    }
+    loadPremiumAndSetModel();
+  }, []);
   
   // 💡 Vérifier si c'est la première utilisation au mount
   useEffect(() => {
@@ -185,6 +271,30 @@ export default function PostRecordingScreen({ route, navigation }) {
       await AsyncStorage.setItem(GUIDANCE_TOOLTIP_KEY, 'true');
     } catch (error) {
       console.error('❌ Erreur dismiss guidance:', error);
+    }
+  }
+
+  // 🆕 Handler pour sélection du modèle avec vérification Premium
+  function handleSelectModel(model) {
+    if (model === 'claude' && !isPremium) {
+      // User veut Claude mais n'a pas DeepDream activé → afficher modal
+      setShowActivateModal(true);
+    } else {
+      setSelectedModel(model);
+    }
+  }
+
+  // 🆕 Handler pour activer DeepDream depuis le modal
+  async function handleActivateDeepDream() {
+    try {
+      await premiumService.enablePremium();
+      setIsPremium(true);
+      setSelectedModel('claude');
+      setShowActivateModal(false);
+      console.log('🌕 DeepDream activé depuis PostRecordingScreen');
+    } catch (error) {
+      console.error('❌ Erreur activation DeepDream:', error);
+      Alert.alert('Erreur', 'Impossible d\'activer DeepDream', [{ text: 'OK' }], { userInterfaceStyle: 'dark' });
     }
   }
 
@@ -381,7 +491,7 @@ export default function PostRecordingScreen({ route, navigation }) {
               subtitle="Llama 3.3 70B • Gratuit et illimité"
               description="Analyses rapides et efficaces pour explorer vos rêves au quotidien."
               selected={selectedModel === 'llama'}
-              onPress={() => setSelectedModel('llama')}
+              onPress={() => handleSelectModel('llama')}
             />
 
             {/* ============================================ */}
@@ -393,10 +503,10 @@ export default function PostRecordingScreen({ route, navigation }) {
               title="DeepDream Engine"
               subtitle="Claude Sonnet 4.5 • Qualité d'analyses optimales"
               description="Analyse neuroscientifique approfondie avec 6 grilles (Hobson, Domhoff...). Réponses détaillées et personnalisées."
-              badge="⭐ Recommandé"
-              badgeColor="#4F8DFF"
+              badge={isPremium ? "✅ Activé" : "⭐ Recommandé"}
+              badgeColor={isPremium ? "#00FFB0" : "#4F8DFF"}
               selected={selectedModel === 'claude'}
-              onPress={() => setSelectedModel('claude')}
+              onPress={() => handleSelectModel('claude')}
             />
 
             {/* ============================================ */}
@@ -485,6 +595,13 @@ export default function PostRecordingScreen({ route, navigation }) {
         visible={showRateLimitModal}
         onClose={() => setShowRateLimitModal(false)}
         minutesLeft={limitInfo?.resetIn || 60}
+      />
+
+      {/* 🆕 Modal Activer DeepDream */}
+      <ActivateDeepDreamModal
+        visible={showActivateModal}
+        onClose={() => setShowActivateModal(false)}
+        onActivate={handleActivateDeepDream}
       />
     </View>
   );
@@ -884,6 +1001,90 @@ const styles = StyleSheet.create({
   },
   stickyAnalyzeButtonText: {
     fontSize: 16,
+    fontWeight: '700',
+    color: '#0c0e27',
+  },
+  
+  // ============================================
+  // 🆕 MODAL ACTIVER DEEPDREAM
+  // ============================================
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#4F8DFF30',
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: THEME.colors.text,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: THEME.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  modalFeatures: {
+    backgroundColor: 'rgba(79, 141, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  modalFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  modalFeatureText: {
+    fontSize: 14,
+    color: THEME.colors.text,
+  },
+  modalButtons: {
+    gap: 12,
+  },
+  modalButtonSecondary: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  modalButtonSecondaryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
+  },
+  modalButtonPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#4F8DFF',
+    gap: 8,
+  },
+  modalButtonPrimaryText: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#0c0e27',
   },
