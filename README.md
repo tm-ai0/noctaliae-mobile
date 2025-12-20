@@ -2,10 +2,12 @@
 
 **AI-powered dream analysis with neuroscience**
 
-[![Version](https://img.shields.io/badge/version-0.9.10-blue)]
+[![Version](https://img.shields.io/badge/version-0.9.11-blue)]
 [![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61dafb)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-54-000020)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+
+📖 **[Lire en français](./README.fr.md)** | 🇫🇷 **Read in French**
 
 ---
 
@@ -20,11 +22,21 @@ A React Native (Expo) mobile app for scientific dream analysis, based on the neu
   - Claude Sonnet 4.5 (deep analysis)
   - Llama 3.3 70B (quick analysis)
 - 💬 **Deep Conversation** : Chat with AI about your dreams
-- 🗺️ **Dream Atlas** : Educational content about dream science
-  - Explorer: Interactive learning cards
-  - Décrypter: Scientific fact sheets
-- 📊 **Trends** : Track your dream patterns over time
+- 🎨 **Customizable Themes** : 6 night-inspired themes
+- 🗺️ **Dream Atlas** : Your gateway to understanding dreams
+  - 🧭 Explorer: Interactive learning cards (Kinnu-style)
+  - 🔬 Laboratoire: Coming soon
+  - 🗺️ Cartographie: Coming soon
+  - 🔓 Décrypter: Scientific fact sheets about dreams
 - 🔒 **Privacy-First** : Everything stays on your device
+
+---
+
+## 📚 Scientific Resources
+
+The science behind Noctaliæ is based on cutting-edge neuroscience research. Explore our curated resources:
+
+- 📓 **[NotebookLM Research Hub](https://notebooklm.google.com/notebook/b9f1abfc-0d66-42d7-a92a-20e0b55cbdcb?artifactId=dccf3bfc-2347-4532-8ed5-52a884e184b5)** - Interactive AI-powered research notes, podcasts, and flashcards
 
 ---
 
@@ -38,6 +50,7 @@ A React Native (Expo) mobile app for scientific dream analysis, based on the neu
 - Android device or Android Studio emulator
 
 ### Installation
+
 ```bash
 # Clone the project
 git clone https://github.com/tm-ai0/noctaliae-mobile.git
@@ -53,65 +66,178 @@ cp .env.example .env
 npm start
 ```
 
+### Development
+
+```bash
+# Run on Android
+npm run android
+
+# Run on iOS (macOS only)
+npm run ios
+
+# Clear cache and restart
+npm run start:clear
+```
+
 ---
 
 ## 📱 Tech Stack
 
 ### Frontend
 - **React Native** 0.81.5
-- **Expo** SDK 54
+- **Expo** 54
+- **TypeScript** (migration in progress)
 - **React Navigation** 7
+- **Zustand** (state management)
 
 ### Backend
-- **Node.js** + Express (v2.8)
+- **Node.js** + Express (v2.11)
 - **Claude Sonnet 4.5** (Anthropic)
 - **Llama 3.3 70B** (Groq)
 - **Whisper** (Groq) for transcription
-- **Google Cloud TTS** for voice synthesis
 
 ### Infrastructure
-- **Hosting**: Infomaniak
+- **Hosting**: Infomaniak (backend)
+- **CI/CD**: GitHub Actions
 - **Build**: EAS Build (Expo)
+- **Monitoring**: Sentry (crash reporting)
+- **Analytics**: Amplitude
+
+---
+
+## 📚 Documentation
+
+- [Architecture](./docs/ARCHITECTURE.md) - Project structure
+- [Deployment](./DEPLOYMENT.md) - Complete deployment guide
+- [Testing](./TESTING.md) - Testing guide
+- [Style Guide](./STYLE_GUIDE.md) - Code style conventions
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm test:watch
+
+# Coverage
+npm test:coverage
+
+# Type checking
+npm run typecheck
+```
+
+---
+
+## 🏗️ Build & Deploy
+
+### Preview Build (APK)
+
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login
+eas login
+
+# Build preview
+eas build --platform android --profile preview
+```
+
+### Production Build (AAB)
+
+```bash
+eas build --platform android --profile production
+```
+
+---
+
+## 🎨 Themes
+
+Noctaliæ offers 6 night-inspired themes:
+
+- **Midnight** (default): Deep night blue with neon green accents
+- **Aurora**: Purple and pink, inspired by northern lights
+- **Sunset**: Orange and pink, like a sunset
+- **Ocean**: Ocean blue with turquoise touches
+- **Forest**: Forest green and earth tones
+- **Lavender**: Soft and soothing purple
+
+All themes include Noctaliæ brand colors:
+- Warm gold (`#D2B14C`)
+- Soft brown (`#88735C`)
+- Gray-green (`#A0B4D4`)
+
+---
+
+## 🔐 Security & Privacy
+
+### Data Protection
+- ✅ Dreams stored locally (AsyncStorage + SecureStore for sensitive data)
+- ✅ No cloud sync by default
+- ✅ Transcriptions and analyses deleted after backend processing
+- ✅ Opt-in analytics (can be disabled in settings)
+- ✅ Open-source code
+
+### API Security
+- ✅ No API keys exposed in frontend code
+- ✅ Token-based authentication with revocable tokens
+- ✅ Rate limiting protection (10 requests/day per IP)
+- ✅ HTTPS-only communication
+- ✅ Backend hosted on secure European servers (Infomaniak, Switzerland)
 
 ---
 
 ## 🗺️ Roadmap
 
 ### ✅ Phase 1: MVP (Completed)
-- [x] Voice recording & transcription
-- [x] DeepDream & QuickDream analysis
-- [x] Interactive chat
-- [x] Dream Atlas (Explorer + Décrypter)
-- [x] Backend v2.8
+- [x] Audio recording
+- [x] Whisper transcription
+- [x] Claude & Llama analysis
+- [x] Deep chat
+- [x] Customizable themes
+- [x] Backend v2.11
+- [x] Dream Atlas with Explorer & Décrypter sections
+- [x] Installation tracking & admin dashboard
 
-### 🚧 Phase 2: Wearable Integration (Dec 2025)
-- [ ] Health Connect integration
-- [ ] Sleep data from smartwatch
-- [ ] Physiological context in analysis
+### 🚧 Phase 2: Pro Foundations (In Progress)
+- [x] Complete TypeScript migration
+- [x] Automated tests (>50% coverage)
+- [x] Production monitoring (Sentry + Amplitude)
+- [x] GitHub Actions CI/CD
+- [x] Complete documentation
+- [ ] In-app update notifications
 
-### 📅 Phase 3: Dream Capture Alarm (Jan 2026)
-- [ ] Smart alarm based on REM detection
-- [ ] Optimal wake-up timing
-- [ ] Immediate dream capture screen
+### 📅 Phase 3: Premium Features (Q1 2026)
+- [ ] Premium subscription (Stripe)
+- [ ] Optional cloud backup
+- [ ] PDF/Email export
+- [ ] Advanced statistics
+- [ ] Voice assistant (Gemini Live)
 
-### 📅 Phase 4: Insights & Trends (Feb 2026)
-- [ ] Visual timeline
-- [ ] Pattern detection
-- [ ] Word cloud
-- [ ] Sleep-dream correlations
-
-### 📅 Phase 5: Production (Q2 2026)
-- [ ] Google Play Store publication
+### 📅 Phase 4: Scale (Q2 2026)
 - [ ] iOS version
+- [ ] Multilingual (EN, ES, DE, FR)
+- [ ] A/B testing
+- [ ] Performance optimization
+- [ ] Google Play Store publication
 
 ---
 
-## 🔐 Privacy
+## 🤝 Contributing
 
-- ✅ Dreams stored locally (AsyncStorage)
-- ✅ AES-256 encryption for sensitive dreams
-- ✅ No cloud sync by default
-- ✅ Audio deleted after transcription
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
+
+### How to Contribute
+
+1. Fork this repository
+2. Create your branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'Add X'`
+4. Push: `git push origin feature/my-feature`
+5. Open a Pull Request
 
 ---
 
@@ -121,13 +247,14 @@ npm start
 - Graphic & Motion Designer
 - Montpellier, France
 - [GitHub](https://github.com/tm-ai0)
+- Email: contact@thomasmaury.fr
 - [Portfolio](https://thomasmaury.fr)
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](./LICENSE) file
+MIT License - see [LICENSE](./LICENSE) file for details
 
 ---
 
@@ -135,14 +262,24 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ### Scientific Research
 - **Isabelle Arnulf** - Dream neuroscience (Paris Brain Institute)
-- **Antti Revonsuo** - Threat Simulation Theory
-- **Matthew Walker** - Memory Consolidation (UC Berkeley)
+- **Allan Hobson** - Activation-Synthesis Model
 - **G. William Domhoff** - Continuity Hypothesis
+- **Matthew Walker** - Memory Consolidation (UC Berkeley)
+- *...and more*
 
 ### Technologies
 - **Anthropic** - Claude API
 - **Groq** - Llama & Whisper APIs
 - **Expo** - React Native framework
+
+---
+
+## 📊 Project Stats
+
+![GitHub stars](https://img.shields.io/github/stars/tm-ai0/noctaliae-mobile?style=social)
+![GitHub forks](https://img.shields.io/github/forks/tm-ai0/noctaliae-mobile?style=social)
+![GitHub issues](https://img.shields.io/github/issues/tm-ai0/noctaliae-mobile)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/tm-ai0/noctaliae-mobile)
 
 ---
 

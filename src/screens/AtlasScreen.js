@@ -8,7 +8,7 @@
  * - Décrypter : Fiches scientifiques (LIVE - première fiche 82%)
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -16,7 +16,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-  Alert
+  Alert,
+  Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -36,6 +37,26 @@ const CARD_COLORS = {
 export default function AtlasScreen({ navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  
+  // 🎭 Animation pulse pour la section WIP
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.7,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   // 🚧 Handler pour les sections Coming Soon
   const handleComingSoon = (title, description) => {
@@ -195,6 +216,64 @@ export default function AtlasScreen({ navigation }) {
           <MaterialCommunityIcons name="chevron-right" size={28} color={CARD_COLORS.decrypter} />
         </TouchableOpacity>
 
+        {/* 🚧 Section WIP - En construction */}
+        <View style={styles.wipSection}>
+          {/* Divider avec label */}
+          <View style={styles.wipDivider}>
+            <View style={[styles.wipLine, { backgroundColor: theme.colors.cardBorder }]} />
+            <View style={[styles.wipLabelContainer, { backgroundColor: theme.colors.background }]}>
+              <MaterialCommunityIcons name="hammer-wrench" size={14} color={theme.colors.textSecondary} />
+              <Text style={[styles.wipLabel, { color: theme.colors.textSecondary }]}>
+                En construction
+              </Text>
+            </View>
+            <View style={[styles.wipLine, { backgroundColor: theme.colors.cardBorder }]} />
+          </View>
+
+          {/* Ghost cards avec animation pulse */}
+          <View style={styles.ghostCardsGrid}>
+            <Animated.View 
+              style={[
+                styles.ghostCard, 
+                { 
+                  backgroundColor: theme.colors.cardBackground,
+                  borderColor: theme.colors.cardBorder,
+                  opacity: pulseAnim
+                }
+              ]}
+            >
+              <View style={[styles.ghostIcon, { backgroundColor: theme.colors.cardBorder }]} />
+              <View style={[styles.ghostLine, { backgroundColor: theme.colors.cardBorder, width: '60%' }]} />
+              <View style={[styles.ghostLine, { backgroundColor: theme.colors.cardBorder, width: '80%' }]} />
+              <Text style={[styles.ghostText, { color: theme.colors.textSecondary }]}>Bientôt...</Text>
+            </Animated.View>
+
+            <Animated.View 
+              style={[
+                styles.ghostCard, 
+                { 
+                  backgroundColor: theme.colors.cardBackground,
+                  borderColor: theme.colors.cardBorder,
+                  opacity: pulseAnim
+                }
+              ]}
+            >
+              <View style={[styles.ghostIcon, { backgroundColor: theme.colors.cardBorder }]} />
+              <View style={[styles.ghostLine, { backgroundColor: theme.colors.cardBorder, width: '70%' }]} />
+              <View style={[styles.ghostLine, { backgroundColor: theme.colors.cardBorder, width: '50%' }]} />
+              <Text style={[styles.ghostText, { color: theme.colors.textSecondary }]}>Bientôt...</Text>
+            </Animated.View>
+          </View>
+
+          {/* Message encourageant */}
+          <View style={[styles.wipMessage, { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.cardBorder }]}>
+            <MaterialCommunityIcons name="rocket-launch-outline" size={20} color={theme.colors.primary} />
+            <Text style={[styles.wipMessageText, { color: theme.colors.textSecondary }]}>
+              Plus de contenus arrivent avec les prochaines mises à jour !
+            </Text>
+          </View>
+        </View>
+
       </ScrollView>
     </View>
   );
@@ -321,5 +400,71 @@ const styles = StyleSheet.create({
   },
   teaserSubtitle: {
     fontSize: 13,
+  },
+  // 🚧 WIP Section
+  wipSection: {
+    marginTop: 30,
+  },
+  wipDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  wipLine: {
+    flex: 1,
+    height: 1,
+  },
+  wipLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+  },
+  wipLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  ghostCardsGrid: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 20,
+  },
+  ghostCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  ghostIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  ghostLine: {
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 8,
+  },
+  ghostText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+  wipMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  wipMessageText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

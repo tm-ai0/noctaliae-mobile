@@ -11,6 +11,9 @@ import * as Application from 'expo-application';
 const API_URL = 'https://api.thomasmaury.fr';
 const INSTALL_PING_KEY = '@noctaliae_install_pinged';
 
+// 🚩 Flag mémoire pour éviter logs multiples
+let pingCheckDone = false;
+
 /**
  * Génère un ID unique pour ce device
  */
@@ -36,6 +39,10 @@ const getDeviceId = async () => {
  * Envoie le ping d'installation (une seule fois)
  */
 export const sendInstallPing = async () => {
+  // 🚩 Skip si déjà checké dans cette session
+  if (pingCheckDone) return { alreadySent: true, skipped: true };
+  pingCheckDone = true;
+  
   try {
     // Vérifie si déjà envoyé
     const alreadyPinged = await AsyncStorage.getItem(INSTALL_PING_KEY);

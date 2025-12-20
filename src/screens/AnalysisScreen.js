@@ -7,7 +7,8 @@ import {
   TextInput,
   FlatList,
   Alert,
-  Dimensions
+  Dimensions,
+  Linking
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const MENU_HINT_KEY = '@noctaliae_menu_hint_shown';
+const FIRST_ARCHIVE_KEY = '@noctaliae_first_archive_shown';
 
 import * as Haptics from 'expo-haptics';
 
@@ -206,12 +208,28 @@ export default function AnalysisScreen({ navigation, route }) {
     );
   }
 
+  // 📦 Vérifier si c'est la première archivage
+  async function checkFirstArchive() {
+    try {
+      const shown = await AsyncStorage.getItem(FIRST_ARCHIVE_KEY);
+      if (!shown) {
+        await AsyncStorage.setItem(FIRST_ARCHIVE_KEY, 'true');
+        return true; // C'est la première fois
+      }
+      return false; // Déjà vu
+    } catch (error) {
+      console.error('❌ Erreur check first archive:', error);
+      return false;
+    }
+  }
+
   function renderDreamCard({ item: dream, index, isFirstOverall }) {
     return (
       <DreamCard 
         dream={dream}
         index={index}
         onArchive={handleArchiveDream}
+        onFirstArchive={checkFirstArchive}
         onSecretToggle={handleSecretToggle}
         isSelectionMode={isSelectionMode}
         isSelected={selectedDreams.has(dream.id)}
@@ -381,9 +399,9 @@ export default function AnalysisScreen({ navigation, route }) {
             styles.iconButton,
             { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.cardBorder }
           ]}
-          onPress={() => Alert.alert('Calendrier', 'Fonctionnalité à venir', [{text: 'OK'}], {userInterfaceStyle: 'dark'})}
+          onPress={() => Linking.openURL('https://nocty.thomasmaury.fr')}
         >
-          <MaterialIcons name="calendar-today" size={22} color={theme.colors.text} />
+          <MaterialIcons name="help-outline" size={22} color={theme.colors.text} />
         </TouchableOpacity>
         
         <TouchableOpacity 

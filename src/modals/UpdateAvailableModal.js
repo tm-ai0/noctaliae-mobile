@@ -24,6 +24,7 @@ export function UpdateAvailableModal({
   latestVersion,
   downloadUrl,
   releaseNotes,
+  customMessage,
   isCritical,
 }) {
   
@@ -55,18 +56,18 @@ export function UpdateAvailableModal({
           
           {/* Header avec icône */}
           <View style={styles.iconContainer}>
-            <View style={[styles.iconCircle, isCritical && styles.iconCircleCritical]}>
+            <View style={styles.iconCircle}>
               <MaterialIcons 
-                name={isCritical ? "warning" : "system-update"} 
+                name="system-update" 
                 size={40} 
-                color={isCritical ? "#FF6B6B" : THEME.colors.primary} 
+                color={THEME.colors.primary} 
               />
             </View>
           </View>
           
           {/* Titre */}
-          <Text style={[styles.title, { color: isCritical ? "#FF6B6B" : THEME.colors.primary }]}>
-            {isCritical ? "Mise à jour critique !" : "Nouvelle version disponible !"}
+          <Text style={[styles.title, { color: THEME.colors.primary }]}>
+            Nouvelle version disponible !
           </Text>
           
           {/* Versions */}
@@ -84,9 +85,11 @@ export function UpdateAvailableModal({
           
           {/* Description */}
           <Text style={[styles.description, { color: THEME.colors.textPrimary }]}>
-            {isCritical 
-              ? "Cette mise à jour est essentielle pour le bon fonctionnement de l'application. Veuillez mettre à jour maintenant."
-              : "Une nouvelle version de Noctaliæ est disponible avec des améliorations et corrections de bugs."}
+            {customMessage 
+              ? customMessage
+              : isCritical 
+                ? "Une nouvelle version est disponible !\nTéléchargez-la pour continuer à utiliser Noctaliæ."
+                : "Une nouvelle version de Noctaliæ est disponible avec des améliorations et corrections de bugs."}
           </Text>
           
           {/* Notes de version (si disponibles) */}

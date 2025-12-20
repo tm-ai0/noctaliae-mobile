@@ -7,8 +7,7 @@ import {
   ScrollView, 
   TouchableOpacity,
   Platform,
-  Linking,
-  Alert
+  Linking
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import { useTheme } from '../config/ThemeContext';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { DeepDreamInfoModal } from '../components/DeepDreamInfoModal';
 import { ContributeResearchModal } from '../components/ContributeResearchModal';
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
 const PLAYGROUND_KOFI_KEY = '@noctaliae_playground_kofi';
@@ -31,6 +31,7 @@ export default function SettingsScreen({ navigation }) {
   const { theme, currentThemeId, changeTheme, availableThemes } = useTheme();
   const { refreshGlowStates } = useGlow();
   const insets = useSafeAreaInsets();
+  const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
   const [isPremium, setIsPremium] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -144,12 +145,12 @@ export default function SettingsScreen({ navigation }) {
         MENU_HINT_KEY,
         FINGERPRINTS_KEY,
       ]);
-      Alert.alert(
-        '✅ Reset effectué !',
-        'Vous pouvez maintenant tester comme un nouveau utilisateur. Relancez l\'app.',
-        [{ text: 'OK' }],
-        { userInterfaceStyle: 'dark' }
-      );
+      showAlert({
+        type: 'success',
+        title: 'Reset effectué !',
+        message: 'Vous pouvez maintenant tester comme un nouveau utilisateur. Relancez l\'app.',
+        confirmText: 'OK'
+      });
       console.log('🧪 Reset new user effectué');
     } catch (error) {
       console.error('❌ Erreur reset:', error);
@@ -197,16 +198,21 @@ export default function SettingsScreen({ navigation }) {
       for (const dream of allDreams) {
         await deleteDream(dream.id);
       }
-      Alert.alert(
-        '✅ Terminé',
-        'Tous vos rêves ont été supprimés.',
-        [{ text: 'OK' }],
-        { userInterfaceStyle: 'dark' }
-      );
+      showAlert({
+        type: 'success',
+        title: 'Terminé',
+        message: 'Tous vos rêves ont été supprimés.',
+        confirmText: 'OK'
+      });
       console.log(`🗑️ ${allDreams.length} rêves supprimés`);
     } catch (error) {
       console.error('❌ Erreur suppression totale:', error);
-      Alert.alert('❌ Erreur', 'Impossible de supprimer les rêves', [{ text: 'OK' }], { userInterfaceStyle: 'dark' });
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de supprimer les rêves',
+        confirmText: 'OK'
+      });
     }
   };
 
@@ -487,52 +493,39 @@ export default function SettingsScreen({ navigation }) {
             <MaterialIcons name="open-in-new" size={18} color={theme.colors.primary} />
           </TouchableOpacity>
 
-          {/* 💚 Bouton Café - Neon */}
+          {/* 💚 Bouton Café - Neon (🔧 FIX: Styles fixes pour cohérence) */}
           <TouchableOpacity
-            style={[styles.kofiButton, { 
-              backgroundColor: kofiStyles?.bgColor ? `${kofiStyles.bgColor}26` : '#39ff8826',
-              borderWidth: 1.5,
-              borderColor: kofiStyles?.borderColor || '#39FF88',
-              borderRadius: kofiStyles?.borderRadius || 16,
-              padding: kofiStyles?.padding || 16,
-            }]}
+            style={styles.kofiButton}
             onPress={() => handleKofi(1.99)}
             activeOpacity={0.8}
           >
             <View style={styles.kofiContent}>
-              <View style={[styles.kofiLeft, { gap: kofiStyles?.gap || 12 }]}>
-                <MaterialIcons name="local-cafe" size={28} color={kofiStyles?.priceColor1 || '#39FF88'} />
-                <View>
-                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary, fontSize: kofiStyles?.fontSize || 18 }]}>Un café</Text>
-                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~13 analyses DeepDream Engine</Text>
+              <View style={styles.kofiLeft}>
+                <MaterialIcons name="local-cafe" size={28} color="#39FF88" />
+                <View style={styles.kofiTextContainer}>
+                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary }]}>Un café</Text>
+                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~13 analyses DeepDream</Text>
                 </View>
               </View>
-              <Text style={[styles.kofiPrice, { color: kofiStyles?.priceColor1 || '#39FF88', fontSize: kofiStyles?.priceSize || 24 }]}>1,99€</Text>
+              <Text style={styles.kofiPrice}>1,99€</Text>
             </View>
           </TouchableOpacity>
 
-          {/* 💚 Bouton P'tit Déj - Neon */}
+          {/* 💚 Bouton P'tit Déj - Neon (🔧 FIX: Styles fixes pour cohérence) */}
           <TouchableOpacity
-            style={[styles.kofiButton, { 
-              backgroundColor: kofiStyles?.bgColor ? `${kofiStyles.bgColor}26` : '#39ff8826',
-              borderWidth: 1.5,
-              borderColor: kofiStyles?.borderColor || '#39FF88',
-              borderRadius: kofiStyles?.borderRadius || 16,
-              padding: kofiStyles?.padding || 16,
-              marginBottom: 0,
-            }]}
+            style={[styles.kofiButton, { marginBottom: 0 }]}
             onPress={() => handleKofi(3.39)}
             activeOpacity={0.8}
           >
             <View style={styles.kofiContent}>
-              <View style={[styles.kofiLeft, { gap: kofiStyles?.gap || 12 }]}>
-                <MaterialIcons name="restaurant" size={28} color={kofiStyles?.priceColor2 || '#39FF88'} />
-                <View>
-                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary, fontSize: kofiStyles?.fontSize || 18 }]}>Un p'tit déj</Text>
-                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~23 analyses DeepDream Engine</Text>
+              <View style={styles.kofiLeft}>
+                <MaterialIcons name="restaurant" size={28} color="#39FF88" />
+                <View style={styles.kofiTextContainer}>
+                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary }]}>Un p'tit déj</Text>
+                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~23 analyses DeepDream</Text>
                 </View>
               </View>
-              <Text style={[styles.kofiPrice, { color: kofiStyles?.priceColor2 || '#39FF88', fontSize: kofiStyles?.priceSize || 24 }]}>3,39€</Text>
+              <Text style={styles.kofiPrice}>3,39€</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -613,8 +606,36 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <Text style={[styles.infoTextBottom, { color: theme.colors.textSecondary }]}>
             Noctaliæ - Analyse scientifique des rêves{'\n'}
-            Version: MVP 1.0 (Phase 1.7)
+            Version: Beta 0.9.13
           </Text>
+          
+          {/* 📜 Lien Privacy Policy */}
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://nocty.thomasmaury.fr/privacy.html')}
+            activeOpacity={0.7}
+            style={[styles.privacyLink, { borderBottomColor: theme.colors.cardBorder }]}
+          >
+            <MaterialIcons name="privacy-tip" size={18} color={theme.colors.primary} />
+            <Text style={[styles.privacyLinkText, { color: theme.colors.primary }]}>
+              Politique de confidentialité
+            </Text>
+            <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
+          </TouchableOpacity>
+
+          {/* 👤 Lien créateur */}
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://linktr.ee/thomasmaury')}
+            activeOpacity={0.7}
+            style={styles.creatorLink}
+          >
+            <Text style={[styles.creatorText, { color: theme.colors.textSecondary }]}>
+              Conçu par{' '}
+            </Text>
+            <Text style={[styles.creatorName, { color: theme.colors.primary }]}>
+              Thomas Maury
+            </Text>
+            <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
         </View>
         
         {/* Padding en bas pour voir "À propos" correctement */}
@@ -627,6 +648,9 @@ export default function SettingsScreen({ navigation }) {
         onClose={() => setShowDeepDreamModal(false)}
         onSupport={handleSupport}
       />
+      
+      {/* 🌙 Alert custom Noctaliaæ */}
+      <AlertComponent />
     </View>
   );
 }
@@ -788,13 +812,13 @@ const styles = StyleSheet.create({
   overflow: 'hidden',  // 🔧 FIX GLOW CORNERS
 },
   premiumBadgeText: {
-    fontSize: 16,
+    fontSize: 14, // 🔧 FIX: Réduit de 16 à 14 pour éviter retour ligne
     fontWeight: '700',
     textAlign: 'center',
   },
   premiumBadgeSubtext: {
-    fontSize: 12,
-    marginTop: 5,
+    fontSize: 11, // 🔧 FIX: Réduit de 12 à 11
+    marginTop: 4,
     textAlign: 'center',
   },
   
@@ -859,8 +883,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   
-  // === KO-FI BUTTONS ===
+  // === KO-FI BUTTONS (🔧 FIX: Styles fixes pour cohérence entre devices) ===
   kofiButton: {
+    backgroundColor: '#39ff8826',
+    borderWidth: 1.5,
+    borderColor: '#39FF88',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -874,9 +901,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1, // 🔧 FIX: Prend l'espace restant
+  },
+  kofiTextContainer: {
+    flex: 1, // 🔧 FIX: Évite débordement texte
+    marginRight: 8,
   },
   kofiTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
   kofiSubtitle: {
@@ -884,8 +916,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   kofiPrice: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
+    color: '#39FF88',
+    minWidth: 60, // 🔧 FIX: Largeur min pour alignement
+    textAlign: 'right',
   },
   
   // === LEARN MORE BUTTON ===
@@ -943,5 +978,34 @@ const styles = StyleSheet.create({
   },
   storageNoteText: {
     fontSize: 13,
+  },
+  
+  // === PRIVACY LINK ===
+  privacyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  privacyLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  
+  // === CREATOR LINK ===
+  creatorLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  creatorText: {
+    fontSize: 14,
+  },
+  creatorName: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

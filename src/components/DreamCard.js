@@ -20,11 +20,12 @@ import BiometricService from '../services/biometricService';
  * @param {Function} onArchive - Callback archivage
  * @param {Function} onShare - Callback partage (optionnel, fallback interne)
  */
-export default function DreamCard({ dream, onPress, onArchive, onShare, onSecretToggle, isSelectionMode, isSelected, onSelectionToggle, showMenuHint, onMenuHintDismiss }) {
+export default function DreamCard({ dream, onPress, onArchive, onShare, onSecretToggle, isSelectionMode, isSelected, onSelectionToggle, showMenuHint, onMenuHintDismiss, onFirstArchive }) {
   const { theme } = useTheme();
   const swipeableRef = useRef(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false); // 🆕 Modal première archivage
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
@@ -125,11 +126,22 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
   };
 
   // Handler quand swipe complété
-  const handleSwipeOpen = (direction) => {
+  const handleSwipeOpen = async (direction) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     if (direction === 'right') {
       // Swipe vers la droite = Archiver
+      // Vérifier si c'est la première fois
+      if (onFirstArchive) {
+        const isFirst = await onFirstArchive();
+        if (isFirst) {
+          // Première fois → afficher modal explicatif
+          setShowArchiveModal(true);
+          swipeableRef.current?.close();
+          return;
+        }
+      }
+      // Archiver directement
       if (onArchive) {
         onArchive(dream.id);
       }
@@ -141,6 +153,14 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
       }
       setShowShareModal(true);
       swipeableRef.current?.close();
+    }
+  };
+
+  // 📦 Confirmer l'archivage depuis le modal
+  const handleConfirmArchive = () => {
+    setShowArchiveModal(false);
+    if (onArchive) {
+      onArchive(dream.id, true); // true = trigger animation tab
     }
   };
 
@@ -862,9 +882,9 @@ Analysé avec Noctaliæ`;
       onSwipeableOpen={handleSwipeOpen}
       overshootLeft={false}
       overshootRight={false}
-      friction={2}
-      leftThreshold={80}
-      rightThreshold={80}
+      friction={2.2}
+      leftThreshold={100}
+      rightThreshold={100}
     >
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <TouchableOpacity
@@ -976,7 +996,11 @@ Analysé avec Noctaliæ`;
                       ]} 
                     />
                   )}
-                  <MaterialIcons name="more-vert" size={20} color={showMenuHint ? '#8B5CF6' : theme.colors.textSecondary} />
+                  <MaterialCommunityIcons 
+                    name="lock-outline" 
+                    size={20} 
+                    color={dream.isSecret ? '#8B5CF6' : theme.colors.textSecondary} 
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -1166,6 +1190,63 @@ Analysé avec Noctaliæ`;
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* ============================================ */}
+      {/* 📦 MODAL PREMIÈRE ARCHIVAGE */}
+      {/* ============================================ */}
+      <Modal
+        visible={showArchiveModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowArchiveModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.cardBackground }]}>
+            <View style={styles.archiveModalHeader}>
+              <MaterialIcons name="archive" size={48} color={theme.colors.warmGold || '#D2B14C'} />
+            </View>
+            
+            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>
+              Rêve archivé !
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>
+              Ce rêve sera déplacé dans tes archives. Tu pourras le retrouver dans l'onglet Archives accessible depuis les Paramètres.
+            </Text>
+            
+            <View style={styles.archiveFeatures}>
+              <View style={styles.archiveFeature}>
+                <MaterialIcons name="folder" size={20} color={theme.colors.warmGold || '#D2B14C'} />
+                <Text style={[styles.archiveFeatureText, { color: theme.colors.textSecondary }]}>
+                  Accès : Paramètres → Archives
+                </Text>
+              </View>
+              <View style={styles.archiveFeature}>
+                <MaterialIcons name="restore" size={20} color={theme.colors.warmGold || '#D2B14C'} />
+                <Text style={[styles.archiveFeatureText, { color: theme.colors.textSecondary }]}>
+                  Tu peux restaurer à tout moment
+                </Text>
+              </View>
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.archiveActionButton, { backgroundColor: theme.colors.warmGold || '#D2B14C' }]}
+              onPress={handleConfirmArchive}
+            >
+              <MaterialIcons name="check" size={20} color="#0c0e27" />
+              <Text style={styles.archiveActionButtonText}>Compris !</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]}
+              onPress={() => setShowArchiveModal(false)}
+            >
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>
+                Annuler
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </Swipeable>
   );
@@ -1443,5 +1524,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // 📦 MODAL ARCHIVAGE
+  archiveModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  archiveFeatures: {
+    width: '100%',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  archiveFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  archiveFeatureText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  archiveActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    width: '100%',
+    marginBottom: 8,
+  },
+  archiveActionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0c0e27',
   },
 });

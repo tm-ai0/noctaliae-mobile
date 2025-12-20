@@ -9,7 +9,8 @@ import Constants from 'expo-constants';
 // CONFIGURATION
 // ============================================
 
-const SENTRY_DSN = process.env.SENTRY_DSN || '';
+// DSN Sentry - Projet noctaliae (créé le 20/12/2025)
+const SENTRY_DSN = 'https://b0221e1923c892950642a4f80d0d2240@o4510567791067136.ingest.de.sentry.io/4510567805943888';
 
 const SENTRY_CONFIG = {
   dsn: SENTRY_DSN,

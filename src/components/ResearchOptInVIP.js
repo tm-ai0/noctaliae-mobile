@@ -114,7 +114,13 @@ export function ResearchOptInVIP() {
             <View style={styles.badgeContent}>
               <MaterialCommunityIcons name="brain" size={16} color="#6B5CFF" />
               <Text style={styles.badgeText}>
-                Le résultats de vos analyses rêves aident la DreamTeam (ICM Paris).
+                Le résultats de vos analyses rêves aident la DreamTeam (ICM Paris) - à titre d'exemple seulement.
+              </Text>
+            </View>
+            <View style={styles.betaWarning}>
+              <MaterialCommunityIcons name="flask-outline" size={14} color="#F59E0B" />
+              <Text style={styles.betaWarningText}>
+                Non fonctionnel pour l'instant
               </Text>
             </View>
           </View>
@@ -219,5 +225,19 @@ const styles = StyleSheet.create({
     color: '#DDE2EA',
     fontWeight: '600',
     lineHeight: 18,
+  },
+  betaWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(245, 158, 11, 0.2)',
+    gap: 6,
+  },
+  betaWarningText: {
+    fontSize: 12,
+    color: '#F59E0B',
+    fontWeight: '600',
   },
 });

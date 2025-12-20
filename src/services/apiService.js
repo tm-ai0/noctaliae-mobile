@@ -145,7 +145,7 @@ export async function transcribeAudio(audioUri) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        audio: audioBase64,
+        audioBase64: audioBase64,
       }),
     });
 
@@ -172,6 +172,103 @@ export async function transcribeAudio(audioUri) {
   } catch (error) {
     console.error('❌ Erreur transcription complète:', error);
     throw new Error(`Erreur lors de la transcription audio`);
+  }
+}
+
+/**
+ * 🖼️ Conversation avec IMAGE (Claude Vision)
+ */
+export async function chatWithDreamAndImage(dreamTranscription, dreamAnalysis, conversationHistory, userMessage, imageBase64) {
+  try {
+    console.log('🖼️ Envoi message avec image vers Claude Vision...');
+
+    const headers = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_BASE_URL}/chat-with-image`,
+      {
+        message: userMessage,
+        dreamTranscription: dreamTranscription,
+        dreamAnalysis: dreamAnalysis,
+        conversation_history: conversationHistory,
+        imageBase64: imageBase64
+      },
+      {
+        headers,
+        timeout: 60000, // 60s pour Vision (plus lent)
+      }
+    );
+
+    console.log('✅ Réponse Claude Vision reçue');
+    return {
+      response: response.data.reply,
+      model: 'claude-vision'
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur Claude Vision:', error);
+    
+    const tokenError = handleTokenError(error.response);
+    if (tokenError) {
+      throw new Error(tokenError.message);
+    }
+    
+    throw new Error(error.response?.data?.error || 'Erreur d\'analyse d\'image');
+  }
+}
+
+/**
+ * 📷 Analyse d'une image de carnet/dessin de rêve (Claude Vision)
+ * Auto-détecte texte manuscrit ou dessin
+ */
+export async function analyzeImageDream(imageBase64) {
+  try {
+    console.log('📷 Envoi image pour analyse de rêve...');
+
+    const userFingerprints = await loadUserFingerprints();
+    const headers = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.analyzeImage}`,
+      {
+        imageBase64: imageBase64,
+        userFingerprints: userFingerprints
+      },
+      {
+        headers,
+        timeout: 90000, // 90s pour Vision + analyse complète
+      }
+    );
+
+    console.log('✅ Analyse image rêve reçue');
+    console.log('📦 Backend response:', {
+      type: response.data.type,
+      emoji: response.data.emoji,
+      title: response.data.title,
+      hasTranscription: !!response.data.transcription,
+      hasAnalysis: !!response.data.analysis
+    });
+
+    return {
+      type: response.data.type, // 'text' ou 'drawing'
+      transcription: response.data.transcription,
+      analysis: response.data.analysis,
+      emoji: response.data.emoji || '📷',
+      title: response.data.title || 'Rêve capturé',
+      tags: response.data.tags || [],
+      suggestedQuestions: response.data.suggestedQuestions || [],
+      model: 'claude-vision'
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur analyse image rêve:', error);
+    
+    const tokenError = handleTokenError(error.response);
+    if (tokenError) {
+      throw new Error(tokenError.message);
+    }
+    
+    throw new Error(error.response?.data?.error || 'Erreur d\'analyse d\'image');
   }
 }
 

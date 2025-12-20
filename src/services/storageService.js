@@ -36,6 +36,17 @@ export async function getAllDreams() {
   }
 }
 
+// Récupérer un rêve par ID
+export async function getDream(id) {
+  try {
+    const dreams = await getAllDreams();
+    return dreams.find(d => d.id === id) || null;
+  } catch (error) {
+    console.error('Erreur récupération rêve:', error);
+    return null;
+  }
+}
+
 // Archiver un rêve (30 jours)
 export async function archiveDream(id) {
   try {

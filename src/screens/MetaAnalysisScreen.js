@@ -167,9 +167,6 @@ export default function MetaAnalysisScreen({ route, navigation }) {
           isUser ? styles.userMessageContainer : styles.assistantMessageContainer
         ]}
       >
-        {!isUser && (
-          <Text style={styles.avatarIcon}>💡</Text>
-        )}
         <View
           style={[
             styles.messageBubble,
@@ -219,7 +216,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
         
         <View style={styles.headerContent}>
           <View style={styles.headerTitleRow}>
-            <Text style={styles.headerIcon}>💡</Text>
+            <MaterialCommunityIcons name="lightbulb-on" size={22} color={theme.colors.primary} />
             <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Mes rêves</Text>
           </View>
         </View>
@@ -444,9 +441,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   userMessageContainer: {
+    alignSelf: 'flex-end', // Aligne à droite
     justifyContent: 'flex-end',
   },
   assistantMessageContainer: {
+    alignSelf: 'flex-start', // Aligne à gauche
     justifyContent: 'flex-start',
   },
   avatarIcon: {

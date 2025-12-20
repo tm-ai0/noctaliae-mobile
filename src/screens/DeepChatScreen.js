@@ -10,22 +10,26 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
-  Alert,
-  Dimensions
+  Dimensions,
+  Image,
+  Modal,
+  Pressable
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { MaterialIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
-import { chatWithDream, transcribeAudio } from '../services/apiService';
+import { chatWithDream, chatWithDreamAndImage, transcribeAudio } from '../services/apiService';
 import { MarkdownText } from '../components/MarkdownText';
 import { THEME } from '../config/theme';
 import { saveConversation, loadConversation, clearConversation } from '../services/conversationService';
-import { deleteDream } from '../services/storageService';
+import { deleteDream, setDreamSecret, getDream } from '../services/storageService';
 import { premiumService } from '../services/premiumService';
 import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -70,10 +74,11 @@ function generateSmartSuggestions(analysis, transcription) {
     vehicle: ["Où allez-vous ?", "Contrôle de votre vie ?", "Destination symbolique ?"]
   };
   
-  // Détecter les thèmes présents
+  // Détecter les thèmes présents (avec word boundaries pour éviter faux positifs)
   const detectedThemes = [];
   for (const [theme, keywords] of Object.entries(themes)) {
-    if (keywords.some(kw => text.includes(kw))) {
+    // Regex word boundary : "vol" ne matche PAS "évolution"
+    if (keywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(text))) {
       detectedThemes.push(theme);
     }
   }
@@ -118,6 +123,7 @@ function cleanAIResponse(text) {
 export default function DeepChatScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { dreamId, dreamAnalysis: initialAnalysis, dreamTranscription, dreamTitle, suggestedQuestions: initialSuggestions } = route.params;
+  const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
   const [messages, setMessages] = useState([
     {
@@ -134,6 +140,7 @@ export default function DeepChatScreen({ route, navigation }) {
   const [modelSelectorExpanded, setModelSelectorExpanded] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const [isSecret, setIsSecret] = useState(false);
   
   const [dreamAnalysis] = useState(initialAnalysis);
   const [suggestedQuestions, setSuggestedQuestions] = useState([]);
@@ -145,6 +152,11 @@ export default function DeepChatScreen({ route, navigation }) {
   const scrollViewRef = useRef();
   const [contentHeight, setContentHeight] = useState(0);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  
+  // 📷 États image (bouton "+")
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
 
   // 🔄 Charger statut Premium et présélectionner modèle
   useEffect(() => {
@@ -155,6 +167,36 @@ export default function DeepChatScreen({ route, navigation }) {
     };
     loadPremiumStatus();
   }, []);
+
+  // 🔐 Charger le statut secret au montage
+  useEffect(() => {
+    const loadSecretStatus = async () => {
+      try {
+        const dream = await getDream(dreamId);
+        if (dream) setIsSecret(dream.isSecret || false);
+      } catch (error) {
+        console.error('❌ Erreur chargement statut secret:', error);
+      }
+    };
+    loadSecretStatus();
+  }, [dreamId]);
+
+  // 🔐 Toggle secret
+  const handleToggleSecret = async () => {
+    try {
+      const newStatus = !isSecret;
+      await setDreamSecret(dreamId, newStatus);
+      setIsSecret(newStatus);
+      showAlert({
+        type: 'success',
+        title: newStatus ? '🔐 Rêve protégé' : '🔓 Rêve déverrouillé',
+        message: newStatus ? 'Ce rêve est maintenant secret.' : 'Ce rêve n\'est plus secret.',
+        confirmText: 'OK'
+      });
+    } catch (error) {
+      console.error('❌ Erreur toggle secret:', error);
+    }
+  };
 
   // 🏆 Activer DeepDream depuis le modal
   const handleActivateDeepDream = async () => {
@@ -224,11 +266,83 @@ export default function DeepChatScreen({ route, navigation }) {
     }, 200);
   };
 
+  // 📷 FONCTIONS IMAGE (bouton "+")
+  const handleTakePhoto = async () => {
+    setShowImagePicker(false);
+    
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert({
+        type: 'error',
+        title: 'Permission refusée',
+        message: 'Autorisez l\'accès à la caméra dans les paramètres.',
+        confirmText: 'OK'
+      });
+      return;
+    }
+    
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.7,
+      base64: true,
+    });
+    
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage({
+        uri: result.assets[0].uri,
+        base64: result.assets[0].base64,
+        width: result.assets[0].width,
+        height: result.assets[0].height,
+      });
+    }
+  };
+  
+  const handleChooseFromGallery = async () => {
+    setShowImagePicker(false);
+    
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert({
+        type: 'error',
+        title: 'Permission refusée',
+        message: 'Autorisez l\'accès à la galerie dans les paramètres.',
+        confirmText: 'OK'
+      });
+      return;
+    }
+    
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.7,
+      base64: true,
+    });
+    
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage({
+        uri: result.assets[0].uri,
+        base64: result.assets[0].base64,
+        width: result.assets[0].width,
+        height: result.assets[0].height,
+      });
+    }
+  };
+  
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+  };
+
   async function startVoiceRecording() {
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
-        Alert.alert('Permission refusée', 'Permission microphone refusée', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+        showAlert({
+          type: 'error',
+          title: 'Permission refusée',
+          message: 'Permission microphone refusée',
+          confirmText: 'OK'
+        });
         return;
       }
 
@@ -245,7 +359,12 @@ export default function DeepChatScreen({ route, navigation }) {
       setIsRecording(true);
     } catch (error) {
       console.error('❌ Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de démarrer l\'enregistrement', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de démarrer l\'enregistrement',
+        confirmText: 'OK'
+      });
     }
   }
 
@@ -263,7 +382,12 @@ export default function DeepChatScreen({ route, navigation }) {
       await handleSendMessage(transcript);
     } catch (error) {
       console.error('❌ Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de traiter la question vocale', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de traiter la question vocale',
+        confirmText: 'OK'
+      });
     } finally {
       setIsTranscribing(false);
       recordingRef.current = null;
@@ -272,20 +396,29 @@ export default function DeepChatScreen({ route, navigation }) {
 
   async function handleSendMessage(messageText) {
     const textToSend = messageText || inputText.trim();
-    if (!textToSend) return;
+    const hasImage = selectedImage !== null;
+    
+    // Au moins du texte OU une image
+    if (!textToSend && !hasImage) return;
 
     setInputText('');
     Keyboard.dismiss();
     
+    // 📷 Message user avec image optionnelle
     const newUserMessage = {
       role: 'user',
-      content: textToSend,
-      timestamp: Date.now()
+      content: textToSend || '🖼️ Image envoyée',
+      timestamp: Date.now(),
+      imageUri: hasImage ? selectedImage.uri : null
     };
     
     setMessages(prev => [...prev, newUserMessage]);
-    scrollToBottomForUserMessage(); // ✅ SCROLL complet pour TON message
+    scrollToBottomForUserMessage();
     setIsLoading(true);
+    
+    // Récupérer l'image avant de la clear
+    const imageToSend = hasImage ? selectedImage.base64 : null;
+    setSelectedImage(null); // Clear l'image après envoi
 
     try {
       const isPremium = selectedModel === 'claude';
@@ -294,13 +427,27 @@ export default function DeepChatScreen({ route, navigation }) {
         content: msg.content
       }));
 
-      const response = await chatWithDream(
-        dreamTranscription,
-        dreamAnalysis,
-        conversationHistory,
-        textToSend,
-        isPremium
-      );
+      let response;
+      
+      // 📷 Si image présente → Claude Vision
+      if (imageToSend) {
+        console.log('🖼️ Envoi avec image vers Claude Vision...');
+        response = await chatWithDreamAndImage(
+          dreamTranscription,
+          dreamAnalysis,
+          conversationHistory,
+          textToSend || 'Analyse cette image en lien avec mon rêve.',
+          imageToSend
+        );
+      } else {
+        response = await chatWithDream(
+          dreamTranscription,
+          dreamAnalysis,
+          conversationHistory,
+          textToSend,
+          isPremium
+        );
+      }
 
       // 🏆 NETTOYER le contenu IA (virer "STYLE: ...")
       const cleanedResponse = cleanAIResponse(response.response);
@@ -313,7 +460,7 @@ export default function DeepChatScreen({ route, navigation }) {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      scrollMinimalToShowAIResponse(); // ✅ Scroll MINIMAL pour montrer réponse
+      scrollMinimalToShowAIResponse();
 
       if (response.suggestedQuestions && Array.isArray(response.suggestedQuestions)) {
         setSuggestedQuestions(response.suggestedQuestions.slice(0, 3));
@@ -323,7 +470,12 @@ export default function DeepChatScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('❌ Erreur chat:', error);
-      Alert.alert('❌ Erreur', error.message || 'Impossible de communiquer avec le serveur', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: error.message || 'Impossible de communiquer avec le serveur',
+        confirmText: 'OK'
+      });
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -335,28 +487,23 @@ export default function DeepChatScreen({ route, navigation }) {
   }
 
   async function handleRestart() {
-    Alert.alert(
-      'Nouvelle conversation ?',
-      'Tous les messages seront effacés.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Effacer',
-          style: 'destructive',
-          onPress: async () => {
-            await clearConversation(dreamId);
-            setMessages([{
-              role: 'assistant',
-              content: 'Explorons ensemble votre rêve en profondeur. Quelle dimension souhaitez-vous approfondir ?',
-              timestamp: Date.now()
-            }]);
-            const newSuggestions = generateSmartSuggestions(dreamAnalysis, dreamTranscription);
-            setSuggestedQuestions(newSuggestions);
-          }
-        }
-      ],
-      { userInterfaceStyle: 'dark' }
-    );
+    showAlert({
+      type: 'confirm',
+      title: 'Nouvelle conversation ?',
+      message: 'Tous les messages seront effacés.',
+      confirmText: 'Effacer',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        await clearConversation(dreamId);
+        setMessages([{
+          role: 'assistant',
+          content: 'Explorons ensemble votre rêve en profondeur. Quelle dimension souhaitez-vous approfondir ?',
+          timestamp: Date.now()
+        }]);
+        const newSuggestions = generateSmartSuggestions(dreamAnalysis, dreamTranscription);
+        setSuggestedQuestions(newSuggestions);
+      }
+    });
   }
 
   // ============================================
@@ -574,7 +721,12 @@ export default function DeepChatScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('❌ Erreur export PDF:', error);
-      Alert.alert('❌ Erreur', 'Impossible de générer le PDF', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de générer le PDF',
+        confirmText: 'OK'
+      });
     } finally {
       setIsExportingPdf(false);
     }
@@ -584,32 +736,31 @@ export default function DeepChatScreen({ route, navigation }) {
   // 🗑️ SUPPRIMER LE RÊVE
   // ============================================
   const handleDelete = () => {
-    Alert.alert(
-      '🗑️ Supprimer ce rêve ?',
-      'Cette action est irréversible. Le rêve, son analyse et cette conversation seront définitivement supprimés.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearConversation(dreamId);
-              await deleteDream(dreamId);
-              // 🔧 FIX Android: Reset navigation stack pour éviter retour sur écran vide
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainTabs' }],
-              });
-            } catch (error) {
-              console.error('❌ Erreur suppression:', error);
-              Alert.alert('❌ Erreur', 'Impossible de supprimer le rêve', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
-            }
-          }
+    showAlert({
+      type: 'confirm',
+      title: 'Supprimer ce rêve ?',
+      message: 'Cette action est irréversible. Le rêve, son analyse et cette conversation seront définitivement supprimés.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        try {
+          await clearConversation(dreamId);
+          await deleteDream(dreamId);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
+        } catch (error) {
+          console.error('❌ Erreur suppression:', error);
+          showAlert({
+            type: 'error',
+            title: 'Erreur',
+            message: 'Impossible de supprimer le rêve',
+            confirmText: 'OK'
+          });
         }
-      ],
-      { userInterfaceStyle: 'dark' }
-    );
+      }
+    });
   };
 
   function renderMessage(message, index) {
@@ -624,6 +775,15 @@ export default function DeepChatScreen({ route, navigation }) {
         ]}
       >
         <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
+          {/* 📷 Image dans le message (si présente) */}
+          {message.imageUri && (
+            <Image 
+              source={{ uri: message.imageUri }} 
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          )}
+          
           {isUser ? (
             <Text style={styles.userText}>{message.content}</Text>
           ) : (
@@ -634,12 +794,13 @@ export default function DeepChatScreen({ route, navigation }) {
           {message.model && (
             <View style={styles.modelBadgeContainer}>
               <MaterialIcons 
-                name={message.model === 'claude' ? 'science' : message.model === 'gemini' ? 'psychology' : 'flash-on'} 
+                name={message.model === 'claude-vision' ? 'visibility' : message.model === 'claude' ? 'science' : message.model === 'gemini' ? 'psychology' : 'flash-on'} 
                 size={14} 
                 color={THEME.colors.textSecondary}
               />
               <Text style={styles.modelBadgeText}>
-                {message.model === 'claude' ? 'DeepDream' : 
+                {message.model === 'claude-vision' ? 'Vision' :
+                 message.model === 'claude' ? 'DeepDream' : 
                  message.model === 'gemini' ? 'NoctaliaeAI+' : 
                  'QuickDream'}
               </Text>
@@ -684,6 +845,18 @@ export default function DeepChatScreen({ route, navigation }) {
           )}
         </TouchableOpacity>
 
+        {/* 🔐 Bouton Secret */}
+        <TouchableOpacity 
+          onPress={handleToggleSecret}
+          style={styles.iconButton}
+        >
+          <MaterialCommunityIcons 
+            name={isSecret ? "lock" : "lock-open-outline"} 
+            size={24} 
+            color={isSecret ? '#8B5CF6' : THEME.colors.textSecondary} 
+          />
+        </TouchableOpacity>
+
         <TouchableOpacity 
           onPress={handleDelete}
           style={styles.iconButton}
@@ -696,24 +869,6 @@ export default function DeepChatScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* 🏆 NOCTALIAEAI+ LIVE (Material icons) */}
-      <View style={styles.actionsSection}>
-        <TouchableOpacity 
-          style={styles.geminiButton}
-          onPress={() => {
-            navigation.navigate('GeminiLive', {
-              dreamId,
-              dreamAnalysis,
-              dreamTranscription,
-              dreamTitle
-            });
-          }}
-        >
-          <MaterialIcons name="psychology" size={22} color={THEME.colors.warmGold} />
-          <Text style={styles.geminiButtonText}>NoctaliaeAI+ Live</Text>
-          <MaterialIcons name="chevron-right" size={20} color={THEME.colors.warmGold} />
-        </TouchableOpacity>
-      </View>
 
       {/* 🏆 MESSAGES */}
       <ScrollView 
@@ -765,9 +920,43 @@ export default function DeepChatScreen({ route, navigation }) {
         </ScrollView>
       )}
 
+      {/* 🖼️ APERÇU IMAGE SÉLECTIONNÉE */}
+      {selectedImage && (
+        <View style={styles.imagePreviewContainer}>
+          <Image 
+            source={{ uri: selectedImage.uri }} 
+            style={styles.imagePreview}
+            resizeMode="cover"
+          />
+          <TouchableOpacity 
+            style={styles.imageRemoveButton}
+            onPress={handleRemoveImage}
+          >
+            <MaterialIcons name="close" size={18} color="#FFF" />
+          </TouchableOpacity>
+          <View style={styles.imagePreviewBadge}>
+            <MaterialIcons name="visibility" size={12} color={THEME.colors.warmGold} />
+            <Text style={styles.imagePreviewBadgeText}>Claude Vision</Text>
+          </View>
+        </View>
+      )}
+
       {/* 🏆 INPUT BAR (WhatsApp style) */}
       <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 15) }]}>
-        {/* Badge modèle Material (à gauche) */}
+        {/* 📷 BOUTON "+" (ajouter image) */}
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => setShowImagePicker(true)}
+          disabled={isInputDisabled}
+        >
+          <MaterialIcons 
+            name="add" 
+            size={24} 
+            color={isInputDisabled ? THEME.colors.textSecondary : THEME.colors.warmGold} 
+          />
+        </TouchableOpacity>
+
+        {/* Badge modèle Material */}
         <View style={styles.modelBadgeContainerInput}>
           <TouchableOpacity 
             style={styles.modelBadgeInput}
@@ -826,7 +1015,7 @@ export default function DeepChatScreen({ route, navigation }) {
         {/* Input texte */}
         <TextInput
           style={styles.input}
-          placeholder="Posez votre question..."
+          placeholder={selectedImage ? "Ajoutez un commentaire..." : "Posez votre question..."}
           placeholderTextColor={THEME.colors.textSecondary}
           value={inputText}
           onChangeText={setInputText}
@@ -844,18 +1033,66 @@ export default function DeepChatScreen({ route, navigation }) {
             styles.actionButton,
             isRecording && styles.actionButtonRecording,
             isInputDisabled && !isRecording && styles.actionButtonDisabled,
-            hasText && !isInputDisabled && styles.actionButtonSend
+            (hasText || selectedImage) && !isInputDisabled && styles.actionButtonSend
           ]}
-          onPress={hasText ? handleSend : (isRecording ? stopVoiceRecording : startVoiceRecording)}
+          onPress={(hasText || selectedImage) ? handleSend : (isRecording ? stopVoiceRecording : startVoiceRecording)}
           disabled={isInputDisabled && !isRecording}
         >
           <MaterialIcons 
-            name={hasText ? "send" : (isRecording ? "stop" : "mic")}
+            name={(hasText || selectedImage) ? "send" : (isRecording ? "stop" : "mic")}
             size={24} 
             color={THEME.colors.background}
           />
         </TouchableOpacity>
       </View>
+
+      {/* 📷 MODAL IMAGE PICKER (ActionSheet) */}
+      <Modal
+        visible={showImagePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImagePicker(false)}
+      >
+        <Pressable 
+          style={styles.imagePickerOverlay}
+          onPress={() => setShowImagePicker(false)}
+        >
+          <View style={styles.imagePickerSheet}>
+            <View style={styles.imagePickerHandle} />
+            <Text style={styles.imagePickerTitle}>Ajouter une image</Text>
+            <Text style={styles.imagePickerSubtitle}>Photo ou dessin de votre rêve</Text>
+            
+            <TouchableOpacity 
+              style={styles.imagePickerOption}
+              onPress={handleTakePhoto}
+            >
+              <View style={styles.imagePickerIconContainer}>
+                <MaterialIcons name="camera-alt" size={24} color={THEME.colors.primary} />
+              </View>
+              <Text style={styles.imagePickerOptionText}>Prendre une photo</Text>
+              <MaterialIcons name="chevron-right" size={24} color={THEME.colors.textSecondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.imagePickerOption}
+              onPress={handleChooseFromGallery}
+            >
+              <View style={styles.imagePickerIconContainer}>
+                <MaterialIcons name="photo-library" size={24} color={THEME.colors.warmGold} />
+              </View>
+              <Text style={styles.imagePickerOptionText}>Choisir depuis la galerie</Text>
+              <MaterialIcons name="chevron-right" size={24} color={THEME.colors.textSecondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.imagePickerCancel}
+              onPress={() => setShowImagePicker(false)}
+            >
+              <Text style={styles.imagePickerCancelText}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* 🏆 MODAL ACTIVATION DEEPDREAM */}
       <ActivateDeepDreamModal
@@ -863,6 +1100,9 @@ export default function DeepChatScreen({ route, navigation }) {
         onClose={() => setShowActivateModal(false)}
         onActivate={handleActivateDeepDream}
       />
+
+      {/* 🌙 Alert custom Noctaliaæ */}
+      <AlertComponent />
     </ContainerComponent>
   );
 }
@@ -908,33 +1148,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 🏆 ACTIONS SECTION
-  actionsSection: {
-    backgroundColor: THEME.colors.cardBackground,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.cardBorder,
-  },
-  geminiButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.colors.warmGoldSubtle,
-    height: 48,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: THEME.colors.warmGold,
-    gap: 8,
-  },
-  geminiButtonText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: THEME.colors.warmGold,
-    textAlign: 'center',
-  },
+
   // 🏆 MESSAGES (WhatsApp style)
   messagesContainer: {
     flex: 1,
@@ -954,7 +1168,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   messageBubble: {
-    maxWidth: '85%', // ✅ 85% au lieu de 80%
     padding: 14,
     borderRadius: 18,
     ...Platform.select({
@@ -970,10 +1183,14 @@ const styles = StyleSheet.create({
     }),
   },
   userBubble: {
+    maxWidth: SCREEN_WIDTH * 0.8, // 80% pour messages user (courts)
+    minWidth: 60,
     backgroundColor: THEME.colors.primary,
     borderBottomRightRadius: 4, // ✅ Asymétrique WhatsApp
   },
   assistantBubble: {
+    maxWidth: SCREEN_WIDTH * 0.92, // 🔧 FIX: 92% pour réponses IA (plus de place)
+    minWidth: 60,
     backgroundColor: THEME.colors.cardBackground,
     borderBottomLeftRadius: 4, // ✅ Asymétrique WhatsApp
     borderWidth: 1,
@@ -1163,5 +1380,134 @@ const styles = StyleSheet.create({
     opacity: 0.5,
     shadowOpacity: 0,
     elevation: 0,
+  },
+  // 📷 BOUTON "+" (ajouter image)
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.background,
+    borderWidth: 1.5,
+    borderColor: THEME.colors.warmGold,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 🖼️ APERÇU IMAGE
+  imagePreviewContainer: {
+    backgroundColor: THEME.colors.cardBackground,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.cardBorder,
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 120,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: THEME.colors.background,
+  },
+  imageRemoveButton: {
+    position: 'absolute',
+    top: 5,
+    left: 125,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePreviewBadge: {
+    position: 'absolute',
+    bottom: 15,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  imagePreviewBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: THEME.colors.warmGold,
+  },
+  // 🖼️ IMAGE DANS MESSAGE
+  messageImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 10,
+    backgroundColor: THEME.colors.background,
+  },
+  // 📷 MODAL IMAGE PICKER
+  imagePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  imagePickerSheet: {
+    backgroundColor: THEME.colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  imagePickerHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: THEME.colors.cardBorder,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  imagePickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: THEME.colors.text,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  imagePickerSubtitle: {
+    fontSize: 13,
+    color: THEME.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  imagePickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.background,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    gap: 12,
+  },
+  imagePickerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.colors.cardBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePickerOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: THEME.colors.text,
+  },
+  imagePickerCancel: {
+    marginTop: 10,
+    padding: 16,
+    alignItems: 'center',
+  },
+  imagePickerCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
   },
 });

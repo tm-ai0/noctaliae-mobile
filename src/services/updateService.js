@@ -13,6 +13,9 @@ const UPDATE_CHECK_KEY = '@noctaliae_last_update_check';
 const UPDATE_DISMISSED_KEY = '@noctaliae_update_dismissed';
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 heures entre chaque vérification
 
+// 🚩 Flag mémoire pour éviter logs multiples
+let updateCheckDone = false;
+
 /**
  * Obtenir la version actuelle de l'app
  */
@@ -51,7 +54,23 @@ export async function checkForUpdate() {
       timeout: 10000,
     });
     
-    const { latestAppVersion, downloadUrl, releaseNotes, criticalUpdate } = response.data;
+    const { latestAppVersion, downloadUrl, releaseNotes, criticalUpdate, killSwitch, killMessage } = response.data;
+    
+    // 🚨 KILL SWITCH - Force la mise à jour depuis le .env backend
+    if (killSwitch) {
+      console.log('🚨 KILL SWITCH ACTIVÉ ! Mise à jour forcée.');
+      const currentVersion = getCurrentAppVersion();
+      return {
+        available: true,
+        currentVersion,
+        latestVersion: latestAppVersion || 'Nouvelle version',
+        downloadUrl: downloadUrl || null,
+        releaseNotes: releaseNotes || 'Une mise à jour importante est disponible.',
+        customMessage: killMessage || null, // Message personnalisé depuis le .env backend
+        isCritical: true, // Toujours critique quand kill switch actif
+        isKillSwitch: true, // Flag pour savoir que c'est un kill switch
+      };
+    }
     
     // Si le serveur ne renvoie pas d'info de version, pas de mise à jour
     if (!latestAppVersion) {
@@ -72,7 +91,9 @@ export async function checkForUpdate() {
         latestVersion: latestAppVersion,
         downloadUrl: downloadUrl || null,
         releaseNotes: releaseNotes || null,
+        customMessage: customMessage || null,
         isCritical: criticalUpdate || false,
+        isKillSwitch: false,
       };
     }
     
@@ -94,6 +115,10 @@ export async function checkForUpdate() {
  * (respecte l'intervalle et les dismissals)
  */
 export async function shouldShowUpdateModal() {
+  // 🚩 Skip si déjà checké dans cette session
+  if (updateCheckDone) return null;
+  updateCheckDone = true;
+  
   try {
     // Vérifier le dernier check
     const lastCheck = await AsyncStorage.getItem(UPDATE_CHECK_KEY);
@@ -118,6 +143,12 @@ export async function shouldShowUpdateModal() {
     }
     
     // Vérifier si l'utilisateur a déjà refusé cette version
+    // 🚨 Kill switch bypass TOUT - on affiche toujours le modal
+    if (updateInfo.isKillSwitch) {
+      console.log('🚨 Kill switch actif - modal forcé');
+      return updateInfo;
+    }
+    
     const dismissed = await AsyncStorage.getItem(UPDATE_DISMISSED_KEY);
     if (dismissed === updateInfo.latestVersion && !updateInfo.isCritical) {
       console.log('🚫 Mise à jour déjà refusée pour cette version');

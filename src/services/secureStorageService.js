@@ -13,6 +13,9 @@ const SECURE_KEYS = {
   PREMIUM_EXPIRY: 'secure_premium_expiry',
 };
 
+// 🚩 Flag pour éviter les logs multiples
+let migrationDone = false;
+
 export const secureStorageService = {
   /**
    * Sauvegarder une valeur de façon sécurisée
@@ -116,6 +119,10 @@ export const secureStorageService = {
    * Migration : Transférer les données d'AsyncStorage vers SecureStore
    */
   async migrateFromAsyncStorage() {
+    // 🚩 Skip si déjà fait dans cette session
+    if (migrationDone) return true;
+    migrationDone = true;
+    
     try {
       console.log('🔄 Migration vers stockage sécurisé...');
       

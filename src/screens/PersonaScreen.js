@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -15,13 +14,16 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../config/ThemeContext';
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
+const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
 
 export default function PersonaScreen({ navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
   const [fingerprints, setFingerprints] = useState([]);
   const [newFingerprint, setNewFingerprint] = useState('');
@@ -62,7 +64,9 @@ export default function PersonaScreen({ navigation }) {
       tooShort: 'Trop court',
       tooShortMessage: 'Minimum 5 caractères',
       ok: 'OK',
-      counter: (count) => `${count} empreinte${count > 1 ? 's' : ''}`
+      counter: (count) => `${count} empreinte${count > 1 ? 's' : ''}`,
+      restartOnboarding: 'Refaire l\'introduction',
+      restartOnboardingConfirm: 'Cela relancera le tutoriel de bienvenue. Continuer ?'
     },
     en: {
       title: 'My Fingerprints',
@@ -123,7 +127,12 @@ export default function PersonaScreen({ navigation }) {
       setFingerprints(updatedFingerprints);
     } catch (error) {
       console.error('❌ Erreur sauvegarde empreintes:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder', [{text: t.ok}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de sauvegarder',
+        confirmText: t.ok
+      });
     }
   }
 
@@ -131,12 +140,22 @@ export default function PersonaScreen({ navigation }) {
     const trimmed = newFingerprint.trim();
     
     if (!trimmed) {
-      Alert.alert(t.fieldEmpty, t.fieldEmptyMessage, [{text: t.ok}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'warning',
+        title: t.fieldEmpty,
+        message: t.fieldEmptyMessage,
+        confirmText: t.ok
+      });
       return;
     }
 
     if (trimmed.length < 5) {
-      Alert.alert(t.tooShort, t.tooShortMessage, [{text: t.ok}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'warning',
+        title: t.tooShort,
+        message: t.tooShortMessage,
+        confirmText: t.ok
+      });
       return;
     }
 
@@ -153,22 +172,39 @@ export default function PersonaScreen({ navigation }) {
   }
 
   function handleDeleteFingerprint(id) {
-    Alert.alert(
-      t.deleteTitle,
-      t.deleteMessage,
-      [
-        { text: t.cancel, style: 'cancel' },
-        {
-          text: t.deleteTitle,
-          style: 'destructive',
-          onPress: () => {
-            const updated = fingerprints.filter(f => f.id !== id);
-            saveFingerprints(updated);
-          }
+    showAlert({
+      type: 'confirm',
+      title: t.deleteTitle,
+      message: t.deleteMessage,
+      confirmText: t.deleteTitle,
+      cancelText: t.cancel,
+      onConfirm: () => {
+        const updated = fingerprints.filter(f => f.id !== id);
+        saveFingerprints(updated);
+      }
+    });
+  }
+
+  // 🔄 Refaire l'onboarding
+  function handleRestartOnboarding() {
+    showAlert({
+      type: 'confirm',
+      title: t.restartOnboarding,
+      message: t.restartOnboardingConfirm,
+      confirmText: t.ok,
+      cancelText: t.cancel,
+      onConfirm: async () => {
+        try {
+          await AsyncStorage.removeItem(ONBOARDING_COMPLETED_KEY);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'OnboardingWelcome' }],
+          });
+        } catch (error) {
+          console.error('❌ Erreur reset onboarding:', error);
         }
-      ],
-      {userInterfaceStyle: 'dark'}
-    );
+      }
+    });
   }
 
   function renderFingerprintCard(fingerprint) {
@@ -287,6 +323,24 @@ export default function PersonaScreen({ navigation }) {
         ) : (
           fingerprints.map(fingerprint => renderFingerprintCard(fingerprint))
         )}
+
+        {/* 🔄 Bouton Refaire l'onboarding */}
+        <TouchableOpacity
+          style={[
+            styles.restartOnboardingButton,
+            { 
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder
+            }
+          ]}
+          onPress={handleRestartOnboarding}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="replay" size={20} color={theme.colors.textSecondary} />
+          <Text style={[styles.restartOnboardingText, { color: theme.colors.textSecondary }]}>
+            {t.restartOnboarding}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Add Fingerprint Section */}
@@ -358,6 +412,9 @@ export default function PersonaScreen({ navigation }) {
           <MaterialIcons name="add" size={28} color={theme.colors.background} />
         </TouchableOpacity>
       )}
+
+      {/* 🌙 Alert custom dark mode */}
+      <AlertComponent />
     </KeyboardAvoidingView>
   );
 }
@@ -524,5 +581,20 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  // 🔄 Bouton refaire onboarding
+  restartOnboardingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 30,
+  },
+  restartOnboardingText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

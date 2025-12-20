@@ -15,6 +15,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../config/ThemeContext';
+import { useGlow } from '../../contexts/GlowContext';
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
@@ -91,6 +92,7 @@ function hasValidUserData(markers, selectedTags, customText) {
 
 export default function OnboardingFingerprints({ route, navigation }) {
   const { theme } = useTheme();
+  const { triggerCelebration } = useGlow(); // 🎉 Glow post-onboarding
   const insets = useSafeAreaInsets();
   const { markers } = route.params || {};
 
@@ -220,6 +222,9 @@ export default function OnboardingFingerprints({ route, navigation }) {
       await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
       
       console.log(`✅ Onboarding terminé avec ${fingerprints.length} empreintes`);
+      
+      // 🎉 Déclencher le glow de célébration (vert néon pendant 5s)
+      triggerCelebration(5000);
       
       // Naviguer vers l'app principale
       navigation.replace('MainTabs');

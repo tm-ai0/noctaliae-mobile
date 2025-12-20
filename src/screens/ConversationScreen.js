@@ -6,7 +6,6 @@ import {
   TouchableOpacity, 
   ScrollView,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
@@ -17,14 +16,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '../config/theme';
 import { MarkdownText } from '../components/MarkdownText';
 import { analyzeDreamFromText } from '../services/apiService';
-import { saveAnalysis, deleteDream } from '../services/storageService';
+import { saveAnalysis, deleteDream, setDreamSecret, getDream } from '../services/storageService';
 import { premiumService } from '../services/premiumService';
 import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 
 export default function ConversationScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { dreamId, dreamAnalysis, dreamTranscription, dreamTitle, dreamDate, modelUsed, dreamTags } = route.params;
+  const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
   const [activeTab, setActiveTab] = useState('analysis');
   const [isReanalyzing, setIsReanalyzing] = useState(false);
@@ -33,6 +34,37 @@ export default function ConversationScreen({ route, navigation }) {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const [isSecret, setIsSecret] = useState(false);
+
+  // 🔐 Charger le statut secret au montage
+  useEffect(() => {
+    const loadSecretStatus = async () => {
+      try {
+        const dream = await getDream(dreamId);
+        if (dream) setIsSecret(dream.isSecret || false);
+      } catch (error) {
+        console.error('❌ Erreur chargement statut secret:', error);
+      }
+    };
+    loadSecretStatus();
+  }, [dreamId]);
+
+  // 🔐 Toggle secret
+  const handleToggleSecret = async () => {
+    try {
+      const newStatus = !isSecret;
+      await setDreamSecret(dreamId, newStatus);
+      setIsSecret(newStatus);
+      showAlert({
+        type: 'success',
+        title: newStatus ? '🔐 Rêve protégé' : '🔓 Rêve déverrouillé',
+        message: newStatus ? 'Ce rêve est maintenant secret.' : 'Ce rêve n\'est plus secret.',
+        confirmText: 'OK'
+      });
+    } catch (error) {
+      console.error('❌ Erreur toggle secret:', error);
+    }
+  };
 
   // 🔄 Charger le statut Premium au montage
   useEffect(() => {
@@ -75,10 +107,20 @@ export default function ConversationScreen({ route, navigation }) {
       const result = await analyzeDreamFromText(dreamTranscription, useClaude);
       await saveAnalysis(dreamId, result.analysis, useClaude ? 'claude' : 'llama');
       setCurrentAnalysis(result.analysis);
-      Alert.alert('✅', 'Analyse mise à jour', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'success',
+        title: 'Analyse mise à jour',
+        message: 'Votre rêve a été ré-analysé avec succès.',
+        confirmText: 'Super !'
+      });
     } catch (error) {
       console.error('❌ Erreur re-analyse:', error);
-      Alert.alert('❌ Erreur', 'Impossible de re-analyser le rêve. Veuillez réessayer.', [{text: 'OK'}], {userInterfaceStyle: 'dark'})
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de re-analyser le rêve. Veuillez réessayer.',
+        confirmText: 'Compris'
+      });
     } finally {
       setIsReanalyzing(false);
     }
@@ -328,7 +370,12 @@ export default function ConversationScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('❌ Erreur export PDF:', error);
-      Alert.alert('❌ Erreur', 'Impossible de générer le PDF', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de générer le PDF',
+        confirmText: 'OK'
+      });
     } finally {
       setIsExportingPdf(false);
     }
@@ -338,31 +385,30 @@ export default function ConversationScreen({ route, navigation }) {
   // 🗑️ SUPPRIMER LE RÊVE
   // ============================================
   const handleDelete = () => {
-    Alert.alert(
-      '🗑️ Supprimer ce rêve ?',
-      'Cette action est irréversible. Le rêve et son analyse seront définitivement supprimés.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteDream(dreamId);
-              // 🔧 FIX Android: Reset navigation stack pour éviter retour sur écran vide
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainTabs' }],
-              });
-            } catch (error) {
-              console.error('❌ Erreur suppression:', error);
-              Alert.alert('❌ Erreur', 'Impossible de supprimer le rêve', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
-            }
-          }
+    showAlert({
+      type: 'confirm',
+      title: 'Supprimer ce rêve ?',
+      message: 'Cette action est irréversible. Le rêve et son analyse seront définitivement supprimés.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        try {
+          await deleteDream(dreamId);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
+        } catch (error) {
+          console.error('❌ Erreur suppression:', error);
+          showAlert({
+            type: 'error',
+            title: 'Erreur',
+            message: 'Impossible de supprimer le rêve',
+            confirmText: 'OK'
+          });
         }
-      ],
-      { userInterfaceStyle: 'dark' }
-    );
+      }
+    });
   };
 
   const ContainerComponent = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
@@ -401,6 +447,18 @@ export default function ConversationScreen({ route, navigation }) {
           ) : (
             <MaterialIcons name="picture-as-pdf" size={24} color={THEME.colors.warmGold} />
           )}
+        </TouchableOpacity>
+
+        {/* 🔐 Bouton Secret */}
+        <TouchableOpacity 
+          onPress={handleToggleSecret}
+          style={styles.iconButton}
+        >
+          <MaterialCommunityIcons 
+            name={isSecret ? "lock" : "lock-open-outline"} 
+            size={24} 
+            color={isSecret ? '#8B5CF6' : THEME.colors.textSecondary} 
+          />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -607,6 +665,8 @@ export default function ConversationScreen({ route, navigation }) {
         onClose={() => setShowActivateModal(false)}
         onActivate={handleActivateDeepDream}
       />
+      {/* 🌙 Alert custom Noctaliaæ */}
+      <AlertComponent />
     </ContainerComponent>
   );
 }

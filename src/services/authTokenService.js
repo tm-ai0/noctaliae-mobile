@@ -4,6 +4,12 @@
 // src/services/authTokenService.js
 
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+
+// 📱 Récupérer la version de l'app
+const getAppVersion = () => {
+  return Constants.expoConfig?.version || Constants.manifest?.version || '0.0.0';
+};
 
 // ============================================
 // 🔑 CONFIGURATION
@@ -33,13 +39,15 @@ export const getAuthHeaders = async () => {
     
     return {
       'x-api-token': token,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-App-Version': getAppVersion() // 📱 Envoie la version pour le kill switch
     };
   } catch (error) {
     console.error('❌ Erreur lors de la récupération du token:', error);
     return {
       'x-api-token': DEFAULT_DEV_TOKEN,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-App-Version': getAppVersion() // 📱 Envoie la version pour le kill switch
     };
   }
 };
@@ -63,6 +71,16 @@ export const handleTokenError = (error) => {
     return { 
       type: 'REVOKED_TOKEN', 
       message: 'Votre accès a été révoqué. Veuillez contacter le support.' 
+    };
+  }
+  
+  // 🆕 426 = Mise à jour requise (version trop ancienne)
+  if (error.status === 426) {
+    console.error('🚨 Mise à jour requise - version trop ancienne');
+    return { 
+      type: 'UPDATE_REQUIRED', 
+      message: error.data?.message || 'Nouvelle version disponible !\n\nTélécharge-la sur :\nhttps://nocty.thomasmaury.fr',
+      downloadUrl: error.data?.downloadUrl || 'https://nocty.thomasmaury.fr'
     };
   }
   

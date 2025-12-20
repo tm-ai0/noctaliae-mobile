@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
   transcribe: '/transcribe',
   analyze: '/analyze-dream',
   analyzeFree: '/analyze-dream-free',
+  analyzeImage: '/analyze-image',  // 📷 Analyse image (carnet, dessin)
   health: '/health',
   chatText: '/chat-text',
   synthesize: '/synthesize',  // 🔊 Synthèse vocale

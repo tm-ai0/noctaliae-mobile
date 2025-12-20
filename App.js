@@ -1,7 +1,8 @@
-// FORCE RELOAD - Build: 2025-11-08-16:00:00
+// FORCE RELOAD - Build: 2025-12-20-SENTRY
 // Theme version: 1.0.2
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Dimensions, Platform, Modal, Text, Animated, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { initSentry } from './src/config/sentry.config';
+import { View, TouchableOpacity, StyleSheet, Dimensions, Platform, Modal, Text, Animated, ActivityIndicator, Alert, ScrollView, TextInput, Image } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
@@ -9,13 +10,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Audio } from 'expo-av';
 import { AudioModule } from 'expo-audio';
+import * as ImagePicker from 'expo-image-picker';
 import { ThemeProvider } from './src/config/ThemeContext';
 import { THEME } from './src/config/theme';
 import { GlowProvider } from './src/contexts/GlowContext';
 import GlobalGlowOverlay from './src/components/GlobalGlowOverlay';
-import { saveDream } from './src/services/storageService';
-import { transcribeAudio } from './src/services/apiService';
-import LiquidGlassAnimation from './src/components/LiquidGlassAnimation';
+import { saveDream, saveAnalysis } from './src/services/storageService';
+import { transcribeAudio, analyzeImageDream } from './src/services/apiService';
+import OrganicBlobVisualizer from './src/components/OrganicBlobVisualizer';
 import FABRecordButton from './src/components/FABRecordButton';
 import CustomTabBar from './src/components/CustomTabBar';
 
@@ -57,6 +59,14 @@ function MainTabsWithFAB({ navigation }) {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState(''); // 🆕 Transcription live
   const [audioLevel, setAudioLevel] = useState(0); // 🆕 Niveau audio 0-1
+  const [showWriteModal, setShowWriteModal] = useState(false); // ✏️ Modal écriture
+  const [writtenDream, setWrittenDream] = useState(''); // ✏️ Texte du rêve écrit
+  
+  // 📷 États photo
+  const [showPhotoModal, setShowPhotoModal] = useState(false); // ActionSheet camera/galerie
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false); // Aperçu avant analyse
+  const [selectedPhoto, setSelectedPhoto] = useState(null); // { uri, base64 }
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false); // Loader analyse
   
   // ✅ FIX: Utiliser Recording au lieu du hook
   const recordingRef = React.useRef(null);
@@ -193,7 +203,8 @@ function MainTabsWithFAB({ navigation }) {
         dreamId: newDream.id,
         audioUri: uri,
         transcription: transcript,
-        duration: duration
+        duration: duration,
+        source: 'record' // 💡 Pour afficher le bon tooltip
       });
 
       setDuration(0);
@@ -209,6 +220,114 @@ function MainTabsWithFAB({ navigation }) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  // 📷 PHOTO - Prendre une photo
+  async function handleTakePhoto() {
+    setShowPhotoModal(false);
+    
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', 'Autorisez l\'accès à la caméra dans les paramètres.', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      return;
+    }
+    
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.7,
+      base64: true,
+    });
+    
+    if (!result.canceled && result.assets[0]) {
+      setSelectedPhoto({
+        uri: result.assets[0].uri,
+        base64: result.assets[0].base64,
+      });
+      setShowPhotoPreview(true);
+    }
+  }
+
+  // 📷 PHOTO - Choisir depuis la galerie
+  async function handleChooseFromGallery() {
+    setShowPhotoModal(false);
+    
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', 'Autorisez l\'accès à la galerie dans les paramètres.', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      return;
+    }
+    
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.7,
+      base64: true,
+    });
+    
+    if (!result.canceled && result.assets[0]) {
+      setSelectedPhoto({
+        uri: result.assets[0].uri,
+        base64: result.assets[0].base64,
+      });
+      setShowPhotoPreview(true);
+    }
+  }
+
+  // 📷 PHOTO - Reprendre (annuler preview)
+  function handleRetakePhoto() {
+    setSelectedPhoto(null);
+    setShowPhotoPreview(false);
+    setShowPhotoModal(true);
+  }
+
+  // 📷 PHOTO - Analyser l'image
+  async function handleAnalyzePhoto() {
+    if (!selectedPhoto?.base64) return;
+    
+    setIsAnalyzingPhoto(true);
+    
+    try {
+      const result = await analyzeImageDream(selectedPhoto.base64);
+      
+      // Sauvegarder le rêve avec la transcription
+      const newDream = await saveDream(null, result.transcription, {
+        imageUri: selectedPhoto.uri,
+        imageType: result.type,
+        emoji: result.emoji,
+        title: result.title,
+        tags: result.tags,
+      });
+      
+      // 🎯 Sauvegarder l'analyse directement (car déjà faite par le backend)
+      await saveAnalysis(newDream.id, {
+        analysis: result.analysis,
+        title: result.title,
+        emoji: result.emoji,
+        tags: result.tags,
+        suggestedQuestions: result.suggestedQuestions,
+      }, result.model || 'claude-vision');
+      
+      setShowPhotoPreview(false);
+      setSelectedPhoto(null);
+      setIsAnalyzingPhoto(false);
+      
+      // 🚀 Naviguer DIRECTEMENT vers Conversation (analyse déjà faite !)
+      navigation.navigate('Conversation', {
+        dreamId: newDream.id,
+        dreamAnalysis: result.analysis,
+        dreamTranscription: result.transcription,
+        dreamTitle: result.title || `Rêve du ${new Date().toLocaleDateString('fr-FR')}`,
+        dreamDate: new Date().toISOString(),
+        suggestedQuestions: result.suggestedQuestions,
+        source: result.type === 'text' ? 'photo-text' : 'photo-drawing',
+      });
+      
+    } catch (error) {
+      console.error('❌ Erreur analyse photo:', error);
+      Alert.alert('Erreur', error.message || 'Impossible d\'analyser l\'image', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      setIsAnalyzingPhoto(false);
+    }
   }
 
   return (
@@ -256,12 +375,104 @@ function MainTabsWithFAB({ navigation }) {
         />
       </Tab.Navigator>
 
-      {/* FAB Central style Omi avec Liquid Glass */}
-      {!isRecording && !isTranscribing && (
+      {/* FAB Central + Boutons Photo & Écrire */}
+      {!isRecording && !isTranscribing && !showPhotoPreview && (
         <View style={styles.fabContainer}>
+          {/* 📷 Petit bouton Photo (à gauche) */}
+          <TouchableOpacity 
+            style={styles.photoButton}
+            onPress={() => setShowPhotoModal(true)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="photo-camera" size={24} color={THEME.colors.background} />
+          </TouchableOpacity>
+          
+          {/* ✏️ Petit bouton Écrire (à droite) */}
+          <TouchableOpacity 
+            style={styles.writeButton}
+            onPress={() => setShowWriteModal(true)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="edit" size={24} color={THEME.colors.background} />
+          </TouchableOpacity>
+          
+          {/* 🎤 Gros bouton Enregistrer (centre) */}
           <FABRecordButton onPress={startRecording} />
         </View>
       )}
+
+      {/* ✏️ Modal Écriture */}
+      <Modal
+        visible={showWriteModal}
+        transparent
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.writeModal}>
+            {/* Header avec icône */}
+            <View style={styles.writeModalHeader}>
+              <MaterialIcons name="edit-note" size={28} color={THEME.colors.primary} />
+              <Text style={styles.writeModalTitle}>Écris ton rêve</Text>
+            </View>
+            
+            {/* 💡 Tooltip instruction */}
+            <View style={styles.writeTooltip}>
+              <MaterialIcons name="lightbulb-outline" size={18} color={THEME.colors.primary} />
+              <Text style={styles.writeTooltipText}>
+                Raconte ton rêve naturellement, comme si tu le racontais à quelqu'un.
+              </Text>
+            </View>
+            
+            <ScrollView style={styles.writeInputContainer}>
+              <TextInput
+                style={styles.writeInput}
+                placeholder="J'étais dans un endroit étrange..."
+                placeholderTextColor={THEME.colors.textSecondary}
+                value={writtenDream}
+                onChangeText={setWrittenDream}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+              />
+            </ScrollView>
+            
+            <View style={styles.writeModalButtons}>
+              <TouchableOpacity 
+                style={styles.writeModalCancel}
+                onPress={() => {
+                  setShowWriteModal(false);
+                  setWrittenDream('');
+                }}
+              >
+                <Text style={styles.writeModalCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.writeModalSubmit,
+                  !writtenDream.trim() && styles.writeModalSubmitDisabled
+                ]}
+                onPress={async () => {
+                  if (!writtenDream.trim()) return;
+                  setShowWriteModal(false);
+                  const newDream = await saveDream(null, writtenDream.trim());
+                  setWrittenDream('');
+                  navigation.navigate('PostRecording', {
+                    dreamId: newDream.id,
+                    audioUri: null,
+                    transcription: writtenDream.trim(),
+                    duration: 0,
+                    source: 'write' // 💡 Pour afficher le bon tooltip
+                  });
+                }}
+                disabled={!writtenDream.trim()}
+              >
+                <Text style={styles.writeModalSubmitText}>Analyser →</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal Enregistrement */}
       <Modal
@@ -270,43 +481,162 @@ function MainTabsWithFAB({ navigation }) {
         animationType="fade"
       >
         <View style={styles.modalOverlay}>
+          {/* 🌊 Organic Blob Animation - DERRIÈRE TOUT */}
+          {(isRecording || isTranscribing) && (
+            <OrganicBlobVisualizer 
+              isRecording={isRecording} 
+              isTranscribing={isTranscribing}
+              audioLevel={audioLevel} 
+            />
+          )}
+          
           <View style={styles.recordingModal}>
-            {/* Liquid Glass Animation Réactive */}
-            {isRecording && <LiquidGlassAnimation isRecording={isRecording} audioLevel={audioLevel} />}
+            {/* 🔝 TEXTE EN HAUT */}
+            {isTranscribing ? (
+              <Text style={styles.recordingInstructionTop}>Transcription en cours...</Text>
+            ) : (
+              <Text style={styles.recordingInstructionTop}>Racontez votre rêve...</Text>
+            )}
 
+            {/* ⏱️ TIMER */}
             <Text style={styles.timer}>{formatDuration(duration)}</Text>
           
-          {/* 🆕 TRANSCRIPTION LIVE */}
-          {liveTranscript.length > 0 && (
-            <View style={styles.liveTranscriptContainer}>
-              <Text style={styles.liveTranscriptLabel}>🗣️ Transcription en cours...</Text>
-              <ScrollView 
-                style={styles.liveTranscriptScroll}
-                contentContainerStyle={styles.liveTranscriptContent}
-              >
-                <Text style={styles.liveTranscriptText}>{liveTranscript}</Text>
-              </ScrollView>
-            </View>
-          )}
-            
-            {isTranscribing ? (
-              <>
-                <Text style={styles.recordingInstruction}>Transcription en cours...</Text>
-                <ActivityIndicator color={THEME.colors.primary} size="large" style={{ marginTop: 20 }} />
-              </>
-            ) : (
-              <>
-                <Text style={styles.recordingInstruction}>Racontez votre rêve...</Text>
-                <TouchableOpacity
-                  style={styles.stopButton}
-                  onPress={stopRecording}
-                  activeOpacity={0.8}
+            {/* 🆕 TRANSCRIPTION LIVE */}
+            {liveTranscript.length > 0 && (
+              <View style={styles.liveTranscriptContainer}>
+                <Text style={styles.liveTranscriptLabel}>🗣️ Transcription en cours...</Text>
+                <ScrollView 
+                  style={styles.liveTranscriptScroll}
+                  contentContainerStyle={styles.liveTranscriptContent}
                 >
-                  <MaterialIcons name="stop" size={48} color="#FFFFFF" />
-                </TouchableOpacity>
-              </>
+                  <Text style={styles.liveTranscriptText}>{liveTranscript}</Text>
+                </ScrollView>
+              </View>
+            )}
+            
+            {/* 🔴 BOUTON STOP EN BAS */}
+            {isTranscribing ? (
+              <ActivityIndicator color={THEME.colors.primary} size="large" style={styles.transcribingIndicator} />
+            ) : (
+              <TouchableOpacity
+                style={styles.stopButton}
+                onPress={stopRecording}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="stop" size={48} color="#FFFFFF" />
+              </TouchableOpacity>
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* 📷 Modal ActionSheet - Camera/Galerie */}
+      <Modal
+        visible={showPhotoModal}
+        transparent
+        animationType="fade"
+      >
+        <TouchableOpacity 
+          style={styles.photoModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowPhotoModal(false)}
+        >
+          <View style={styles.photoActionSheet}>
+            {/* Header */}
+            <View style={styles.photoActionHeader}>
+              <MaterialIcons name="photo-camera" size={28} color={THEME.colors.primary} />
+              <Text style={styles.photoActionTitle}>Photo de rêve</Text>
+            </View>
+            
+            {/* Tooltip */}
+            <View style={styles.photoTooltip}>
+              <MaterialIcons name="lightbulb-outline" size={18} color={THEME.colors.primary} />
+              <Text style={styles.photoTooltipText}>
+                Photographiez votre carnet de rêves ou un dessin. Claude Vision le transcrira automatiquement.
+              </Text>
+            </View>
+            
+            {/* Boutons */}
+            <TouchableOpacity 
+              style={styles.photoActionButton}
+              onPress={handleTakePhoto}
+            >
+              <MaterialIcons name="camera-alt" size={24} color={THEME.colors.primary} />
+              <Text style={styles.photoActionButtonText}>Prendre une photo</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.photoActionButton}
+              onPress={handleChooseFromGallery}
+            >
+              <MaterialIcons name="photo-library" size={24} color={THEME.colors.primary} />
+              <Text style={styles.photoActionButtonText}>Choisir depuis la galerie</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.photoActionCancel}
+              onPress={() => setShowPhotoModal(false)}
+            >
+              <Text style={styles.photoActionCancelText}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* 📷 Modal Preview Photo */}
+      <Modal
+        visible={showPhotoPreview}
+        transparent
+        animationType="fade"
+      >
+        <View style={styles.photoPreviewOverlay}>
+          {isAnalyzingPhoto ? (
+            // 🔄 Loader pendant l'analyse
+            <View style={styles.photoAnalyzingContainer}>
+              <ActivityIndicator size="large" color={THEME.colors.primary} />
+              <Text style={styles.photoAnalyzingText}>Analyse en cours...</Text>
+              <Text style={styles.photoAnalyzingSubtext}>Claude Vision transcrit votre image</Text>
+            </View>
+          ) : (
+            // 🖼️ Aperçu de la photo
+            <View style={styles.photoPreviewContainer}>
+              <Text style={styles.photoPreviewTitle}>🖼️ Aperçu</Text>
+              
+              {selectedPhoto && (
+                <Image 
+                  source={{ uri: selectedPhoto.uri }}
+                  style={styles.photoPreviewImage}
+                  resizeMode="contain"
+                />
+              )}
+              
+              {/* Info stockage local */}
+              <View style={styles.photoStorageInfo}>
+                <MaterialIcons name="security" size={16} color={THEME.colors.textSecondary} />
+                <Text style={styles.photoStorageText}>
+                  Image stockée uniquement sur votre appareil
+                </Text>
+              </View>
+              
+              {/* Boutons */}
+              <View style={styles.photoPreviewButtons}>
+                <TouchableOpacity 
+                  style={styles.photoRetakeButton}
+                  onPress={handleRetakePhoto}
+                >
+                  <MaterialIcons name="refresh" size={20} color={THEME.colors.textSecondary} />
+                  <Text style={styles.photoRetakeText}>Reprendre</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.photoAnalyzeButton}
+                  onPress={handleAnalyzePhoto}
+                >
+                  <Text style={styles.photoAnalyzeText}>Analyser ✨</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
     </>
@@ -367,8 +697,9 @@ export default function App() {
   // 🧪 TEST MODE - Mettre à true pour tester le modal
   const TEST_UPDATE_MODAL = false;
 
-  // 🔄 Migration + Ping installation + Vérification mise à jour au démarrage
+  // 🔄 Migration + Ping installation + Sentry + Vérification mise à jour au démarrage
   React.useEffect(() => {
+    initSentry(); // 🛡️ Crash reporting
     secureStorageService.migrateFromAsyncStorage();
     sendInstallPing(); // Track les installations
     
@@ -427,6 +758,7 @@ export default function App() {
               latestVersion={updateInfo.latestVersion}
               downloadUrl={updateInfo.downloadUrl}
               releaseNotes={updateInfo.releaseNotes}
+              customMessage={updateInfo.customMessage}
               isCritical={updateInfo.isCritical}
             />
           )}
@@ -456,15 +788,17 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: THEME.colors.overlay,
+    backgroundColor: '#0A0F1C', // 100% opaque - cache tout derrière
     justifyContent: 'center',
     alignItems: 'center',
   },
   recordingModal: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     width: '100%',
     height: '100%',
+    paddingTop: 100,
+    paddingBottom: 120,
   },
   recordingInfo: {
     flexDirection: 'row',
@@ -526,6 +860,16 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     marginBottom: 40,
   },
+  // 🔝 TEXTE EN HAUT
+  recordingInstructionTop: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: THEME.colors.textSecondary,
+    textAlign: 'center',
+  },
+  transcribingIndicator: {
+    marginBottom: 20,
+  },
   stopButton: {
     width: 80,
     height: 80,
@@ -538,5 +882,275 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 12,
+  },
+  // ✏️ BOUTON ÉCRIRE
+  writeButton: {
+    position: 'absolute',
+    right: -60,
+    top: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  // ✏️ MODAL ÉCRITURE
+  writeModal: {
+    width: width - 40,
+    maxHeight: '80%',
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  writeModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  writeModalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+  },
+  writeTooltip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(57, 255, 136, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  writeTooltipText: {
+    flex: 1,
+    fontSize: 14,
+    color: THEME.colors.primary,
+    lineHeight: 20,
+  },
+  writeInputContainer: {
+    maxHeight: 250,
+    marginBottom: 20,
+  },
+  writeInput: {
+    backgroundColor: THEME.colors.backgroundElevated,
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 16,
+    color: THEME.colors.textPrimary,
+    minHeight: 150,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+    lineHeight: 24,
+  },
+  writeModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  writeModalCancel: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: THEME.colors.backgroundElevated,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  writeModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
+  },
+  writeModalSubmit: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: THEME.colors.primary,
+    alignItems: 'center',
+  },
+  writeModalSubmitDisabled: {
+    opacity: 0.5,
+  },
+  writeModalSubmitText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.background,
+  },
+  // 📷 BOUTON PHOTO
+  photoButton: {
+    position: 'absolute',
+    left: -60,
+    top: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: THEME.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  // 📷 MODAL ACTIONSHEET
+  photoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  photoActionSheet: {
+    backgroundColor: THEME.colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  photoActionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  photoActionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+  },
+  photoTooltip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(57, 255, 136, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    gap: 10,
+  },
+  photoTooltipText: {
+    flex: 1,
+    fontSize: 14,
+    color: THEME.colors.primary,
+    lineHeight: 20,
+  },
+  photoActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.backgroundElevated,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  photoActionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.textPrimary,
+  },
+  photoActionCancel: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  photoActionCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
+  },
+  // 📷 MODAL PREVIEW
+  photoPreviewOverlay: {
+    flex: 1,
+    backgroundColor: '#0A0F1C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoPreviewContainer: {
+    width: width - 40,
+    alignItems: 'center',
+  },
+  photoPreviewTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: THEME.colors.textPrimary,
+    marginBottom: 20,
+  },
+  photoPreviewImage: {
+    width: width - 60,
+    height: width - 60,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.cardBackground,
+  },
+  photoStorageInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  photoStorageText: {
+    fontSize: 13,
+    color: THEME.colors.textSecondary,
+  },
+  photoPreviewButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    width: '100%',
+  },
+  photoRetakeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.backgroundElevated,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  photoRetakeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
+  },
+  photoAnalyzeButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.primary,
+  },
+  photoAnalyzeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.colors.background,
+  },
+  // 📷 LOADER ANALYSE
+  photoAnalyzingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoAnalyzingText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: THEME.colors.textPrimary,
+    marginTop: 20,
+  },
+  photoAnalyzingSubtext: {
+    fontSize: 14,
+    color: THEME.colors.textSecondary,
+    marginTop: 8,
   },
 });

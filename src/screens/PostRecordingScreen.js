@@ -6,12 +6,13 @@ import {
   TouchableOpacity, 
   ScrollView,
   ActivityIndicator,
-  Alert,
   Linking,
   Animated,
   Platform,
-  Modal
+  Modal,
+  TextInput
 } from 'react-native';
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -85,23 +86,51 @@ function EngineCard({
   subtitle, 
   description, 
   badge,
+  badgeIcon, // 🆕 Icône Material optionnelle
   badgeColor,
+  accentColor, // 🎨 Couleur d'accent (barre + glow)
   selected, 
   disabled, 
   onPress 
 }) {
   const Wrapper = disabled ? View : TouchableOpacity;
   
+  // ✨ Glow effect selon plateforme
+  const glowStyle = selected && accentColor ? Platform.select({
+    ios: {
+      shadowColor: accentColor,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.6,
+      shadowRadius: 15,
+    },
+    android: {
+      elevation: 12,
+      borderColor: accentColor,
+      borderWidth: 2,
+    }
+  }) : {};
+  
   return (
     <Wrapper 
       style={[
         styles.engineCard, 
         selected && styles.engineCardSelected,
+        glowStyle,
         disabled && styles.engineCardDisabled
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {/* 🎨 BARRE COLORÉE GAUCHE - Top 0.1% indicator */}
+      {accentColor && (
+        <View 
+          style={[
+            styles.engineAccentBar,
+            { backgroundColor: accentColor },
+            selected && { width: 6 } // Plus épaisse si sélectionné
+          ]} 
+        />
+      )}
       {/* === HEADER ROW : Icon + Title + Check === */}
       <View style={styles.engineHeader}>
         <View style={styles.engineHeaderLeft}>
@@ -126,6 +155,9 @@ function EngineCard({
       {/* === FOOTER : Badge (si présent) === */}
       {badge && (
         <View style={[styles.engineBadge, { backgroundColor: `${badgeColor}20` }]}>
+          {badgeIcon && (
+            <MaterialIcons name={badgeIcon} size={14} color={badgeColor} style={{ marginRight: 4 }} />
+          )}
           <Text style={[styles.engineBadgeText, { color: badgeColor }]}>{badge}</Text>
         </View>
       )}
@@ -202,7 +234,13 @@ function ActivateDeepDreamModal({ visible, onClose, onActivate }) {
 // ============================================
 export default function PostRecordingScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const { dreamId, audioUri, transcription, duration } = route.params;
+  const { dreamId, audioUri, transcription, duration, source } = route.params;
+  
+  // 🎨 Hook NoctaliaeAlert (remplace Alert.alert)
+  const { showAlert, AlertComponent } = useNoctaliaeAlert();
+  
+  // ✏️ Transcript éditable
+  const [editableTranscript, setEditableTranscript] = useState(transcription || '');
   
   // 🆕 État premium chargé depuis le service
   const [isPremium, setIsPremium] = useState(false);
@@ -294,13 +332,55 @@ export default function PostRecordingScreen({ route, navigation }) {
       console.log('🌕 DeepDream activé depuis PostRecordingScreen');
     } catch (error) {
       console.error('❌ Erreur activation DeepDream:', error);
-      Alert.alert('Erreur', 'Impossible d\'activer DeepDream', [{ text: 'OK' }], { userInterfaceStyle: 'dark' });
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible d\'activer DeepDream',
+        confirmText: 'OK'
+      });
     }
   }
 
+  // 🔒 DURÉE MINIMUM pour éviter erreurs backend (transcription trop courte)
+  const MIN_DURATION_SECONDS = 3;
+  const MIN_TEXT_LENGTH = 10; // 🆕 Minimum pour rêves écrits
+
   async function handleAnalyze() {
-    if (!transcription || transcription.trim().length === 0) {
-      Alert.alert('❌ Erreur', 'Impossible d\'analyser le rêve sans transcription.', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+    // ✅ Validation selon le type de source
+    const isPhotoSource = source?.startsWith('photo-');
+    
+    if (source === 'write' || isPhotoSource) {
+      // Rêve écrit ou photo : vérifier la longueur du texte
+      if (!editableTranscript || editableTranscript.trim().length < MIN_TEXT_LENGTH) {
+        showAlert({
+          type: 'warning',
+          title: isPhotoSource ? '📷 Contenu trop court' : '✏️ Texte trop court',
+          message: `Votre rêve doit contenir au moins ${MIN_TEXT_LENGTH} caractères pour une analyse fiable.`,
+          confirmText: 'Compris'
+        });
+        return;
+      }
+    } else {
+      // Enregistrement audio : vérifier la durée
+      if (duration < MIN_DURATION_SECONDS) {
+        showAlert({
+          type: 'warning',
+          title: '⏱️ Enregistrement trop court',
+          message: `Votre enregistrement fait ${duration} seconde${duration > 1 ? 's' : ''}. Minimum requis : ${MIN_DURATION_SECONDS} secondes pour une analyse fiable.`,
+          confirmText: 'Compris'
+        });
+        return;
+      }
+    }
+
+    // Vérifier qu'il y a du contenu à analyser
+    if (!editableTranscript || editableTranscript.trim().length === 0) {
+      showAlert({
+        type: 'error',
+        title: '❌ Aucun contenu',
+        message: 'Impossible d\'analyser le rêve sans contenu.',
+        confirmText: 'OK'
+      });
       return;
     }
 
@@ -309,7 +389,8 @@ export default function PostRecordingScreen({ route, navigation }) {
     try {
       console.log(`🧠 Analyse avec ${selectedModel === 'claude' ? 'DeepDream (Claude)' : 'QuickDream (Llama)'}...`);
       
-      const result = await analyzeDreamFromText(transcription, selectedModel === 'claude');
+      // 🔧 Utiliser le transcript édité, pas l'original
+      const result = await analyzeDreamFromText(editableTranscript, selectedModel === 'claude');
       
       if (result.limitInfo) {
         setLimitInfo(result.limitInfo);
@@ -330,7 +411,7 @@ export default function PostRecordingScreen({ route, navigation }) {
       navigation.navigate('Conversation', {
         dreamId: dreamId,
         dreamAnalysis: result.analysis,
-        dreamTranscription: transcription,
+        dreamTranscription: editableTranscript,
         dreamTitle: extractedTitle,
         dreamDate: new Date().toISOString()
       });
@@ -338,7 +419,12 @@ export default function PostRecordingScreen({ route, navigation }) {
       await securityService.deleteAudioIfNeeded(audioUri, FileSystem);
     } catch (error) {
       console.error('❌ Erreur analyse:', error);
-      Alert.alert('❌ Erreur', 'Une erreur est survenue lors de l\'analyse.', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      showAlert({
+        type: 'error',
+        title: '❌ Erreur',
+        message: 'Une erreur est survenue lors de l\'analyse.',
+        confirmText: 'OK'
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -482,11 +568,12 @@ export default function PostRecordingScreen({ route, navigation }) {
             <Text style={styles.sectionTitle}>Choisissez le moteur d'analyse</Text>
 
             {/* ============================================ */}
-            {/* QUICKDREAM - Gratuit */}
+            {/* QUICKDREAM - Gratuit - VERT */}
             {/* ============================================ */}
             <EngineCard
               icon="flash"
               iconColor="#00FFB0"
+              accentColor="#00FFB0"
               title="QuickDream"
               subtitle="Llama 3.3 70B • Gratuit et illimité"
               description="Analyses rapides et efficaces pour explorer vos rêves au quotidien."
@@ -495,15 +582,17 @@ export default function PostRecordingScreen({ route, navigation }) {
             />
 
             {/* ============================================ */}
-            {/* DEEPDREAM - Premium */}
+            {/* DEEPDREAM - Premium - BLEU */}
             {/* ============================================ */}
             <EngineCard
               icon="electron-framework"
               iconColor="#4F8DFF"
+              accentColor="#4F8DFF"
               title="DeepDream Engine"
               subtitle="Claude Sonnet 4.5 • Qualité d'analyses optimales"
               description="Analyse neuroscientifique approfondie avec 6 grilles (Hobson, Domhoff...). Réponses détaillées et personnalisées."
-              badge={isPremium ? "✅ Activé" : "⭐ Recommandé"}
+              badge={isPremium ? "Activé" : "Recommandé"}
+              badgeIcon={isPremium ? "check-circle" : "star"}
               badgeColor={isPremium ? "#00FFB0" : "#4F8DFF"}
               selected={selectedModel === 'claude'}
               onPress={() => handleSelectModel('claude')}
@@ -518,7 +607,8 @@ export default function PostRecordingScreen({ route, navigation }) {
               title="Opus Noctis"
               subtitle="Claude Opus 4.5 • L'œuvre de la nuit"
               description="DeepDream amplifié : raisonnement étendu, mémoire profonde, synthèse nuancée. Interprétation fine et contextuelle."
-              badge="🌙 Prochainement"
+              badge="Prochainement"
+              badgeIcon="schedule"
               badgeColor="#D2B14C"
               disabled
             />
@@ -540,51 +630,53 @@ export default function PostRecordingScreen({ route, navigation }) {
             </TouchableOpacity>
           </>
         ) : (
-          // TAB TRANSCRIPT
+          // TAB TRANSCRIPT - ✏️ ÉDITABLE
           <View style={styles.transcriptContainer}>
             <View style={styles.transcriptHeader}>
-              <MaterialIcons name="text-fields" size={24} color={THEME.colors.primary} />
-              <Text style={styles.transcriptTitle}>Transcription complète</Text>
+              <MaterialIcons name="edit-note" size={24} color={THEME.colors.primary} />
+              <Text style={styles.transcriptTitle}>
+                {source === 'write' ? 'Ton rêve' : 'Transcription'}
+              </Text>
             </View>
             
+            {/* 💡 Tooltip contextuel selon la source */}
+            <View style={styles.transcriptTooltip}>
+              <MaterialIcons name="lightbulb-outline" size={16} color={THEME.colors.primary} />
+              <Text style={styles.transcriptTooltipText}>
+                {source === 'write' 
+                  ? "Raconte ton rêve naturellement, comme si tu le racontais à quelqu'un."
+                  : "Tu peux modifier le texte si la transcription contient des erreurs."
+                }
+              </Text>
+            </View>
+            
+            {/* ✏️ Zone de texte éditable */}
             <View style={styles.transcriptBox}>
-              <ScrollView>
-                <Text style={styles.transcriptText}>{transcription}</Text>
-              </ScrollView>
+              <TextInput
+                style={styles.transcriptInput}
+                value={editableTranscript}
+                onChangeText={setEditableTranscript}
+                multiline
+                textAlignVertical="top"
+                placeholder="Décris ton rêve ici..."
+                placeholderTextColor={THEME.colors.textSecondary}
+              />
             </View>
             
-            {/* 🎯 CTA FEEDBACK */}
+            {/* 🎯 CTA Valider */}
             <View style={styles.feedbackContainer}>
-              <Text style={styles.feedbackLabel}>La transcription est-elle correcte ?</Text>
-              <View style={styles.feedbackButtons}>
-                <TouchableOpacity 
-                  style={styles.feedbackButtonPositive}
-                  onPress={() => setActiveTab('choice')}
-                  activeOpacity={0.8}
-                >
-                  <MaterialIcons name="check" size={18} color="#0c0e27" />
-                  <Text style={styles.feedbackButtonPositiveText}>C'est bon</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.feedbackButtonNegative}
-                  onPress={() => {
-                    Alert.alert(
-                      '✏️ Signaler une erreur',
-                      'La transcription vocale peut parfois faire des erreurs. Souhaitez-vous continuer avec cette version ou réenregistrer ?',
-                      [
-                        { text: 'Réenregistrer', onPress: () => navigation.goBack(), style: 'destructive' },
-                        { text: 'Continuer quand même', onPress: () => setActiveTab('choice') },
-                      ],
-                      { userInterfaceStyle: 'dark' }
-                    );
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <MaterialIcons name="edit" size={18} color={THEME.colors.warmGold} />
-                  <Text style={styles.feedbackButtonNegativeText}>Problème</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity 
+                style={[
+                  styles.feedbackButtonPositive,
+                  !editableTranscript.trim() && styles.feedbackButtonDisabled
+                ]}
+                onPress={() => setActiveTab('choice')}
+                activeOpacity={0.8}
+                disabled={!editableTranscript.trim()}
+              >
+                <MaterialIcons name="check" size={18} color="#0c0e27" />
+                <Text style={styles.feedbackButtonPositiveText}>Valider et choisir l'analyse</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -603,6 +695,9 @@ export default function PostRecordingScreen({ route, navigation }) {
         onClose={() => setShowActivateModal(false)}
         onActivate={handleActivateDeepDream}
       />
+      
+      {/* 🎨 Modal NoctaliaeAlert */}
+      <AlertComponent />
     </View>
   );
 }
@@ -713,21 +808,35 @@ const styles = StyleSheet.create({
   },
   
   // ============================================
-  // ENGINE CARDS - Pure Flexbox, no absolute
+  // ENGINE CARDS - Top 0.1% design
   // ============================================
   engineCard: {
     backgroundColor: THEME.colors.cardBackground,
     borderRadius: 14,
     padding: 16,
+    paddingLeft: 20, // Espace pour la barre
     marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+    position: 'relative',
+    overflow: 'hidden',
   },
   engineCardSelected: {
     borderColor: THEME.colors.primary,
+    borderWidth: 2,
   },
   engineCardDisabled: {
     opacity: 0.5,
+  },
+  // 🎨 Barre colorée gauche (indicator)
+  engineAccentBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
   
   // Header Row : Icon + Title + Check
@@ -771,6 +880,8 @@ const styles = StyleSheet.create({
   
   // Badge - Dans le flux, pas en absolute
   engineBadge: {
+    flexDirection: 'row', // 🔧 FIX: Pour aligner icône + texte
+    alignItems: 'center',
     alignSelf: 'flex-start',
     marginLeft: 34,
     marginTop: 10,
@@ -859,14 +970,34 @@ const styles = StyleSheet.create({
   transcriptBox: {
     backgroundColor: THEME.colors.cardBackground,
     borderRadius: 16,
-    padding: 20,
-    minHeight: 300,
+    padding: 16,
+    minHeight: 280,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
   },
-  transcriptText: {
+  transcriptInput: {
     fontSize: 16,
     color: THEME.colors.text,
     lineHeight: 26,
+    minHeight: 250,
+    textAlignVertical: 'top',
+  },
+  // 💡 Tooltip contextuel
+  transcriptTooltip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(57, 255, 136, 0.1)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  transcriptTooltipText: {
+    flex: 1,
+    fontSize: 13,
+    color: THEME.colors.primary,
+    lineHeight: 18,
   },
   // 🎯 CTA Feedback
   feedbackContainer: {
@@ -896,6 +1027,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#0c0e27',
+  },
+  feedbackButtonDisabled: {
+    opacity: 0.5,
   },
   feedbackButtonNegative: {
     flex: 1,

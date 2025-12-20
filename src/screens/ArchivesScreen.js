@@ -5,7 +5,6 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   FlatList,
-  Alert,
   Platform
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,10 +14,12 @@ import { getAllDreams, deleteDream, restoreDream } from '../services/storageServ
 import { THEME } from '../config/theme';
 import { Swipeable } from 'react-native-gesture-handler';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 
 export default function ArchivesScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [archivedDreams, setArchivedDreams] = useState([]);
+  const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
   useFocusEffect(
     React.useCallback(() => {
@@ -38,21 +39,17 @@ export default function ArchivesScreen({ navigation }) {
   }
 
   async function handleDeleteDream(dreamId) {
-    Alert.alert(
-      'Supprimer définitivement',
-      'Cette action est irréversible.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteDream(dreamId);
-            loadArchivedDreams();
-          }
-        }
-      ]
-    );
+    showAlert({
+      type: 'confirm',
+      title: 'Supprimer définitivement',
+      message: 'Cette action est irréversible.',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        await deleteDream(dreamId);
+        loadArchivedDreams();
+      }
+    });
   }
 
   async function handleRestoreDream(dreamId) {
@@ -63,23 +60,19 @@ export default function ArchivesScreen({ navigation }) {
   async function handleDeleteAll() {
     if (archivedDreams.length === 0) return;
     
-    Alert.alert(
-      'Tout supprimer',
-      `Voulez-vous supprimer définitivement les ${archivedDreams.length} rêve(s) archivé(s) ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Tout supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            for (const dream of archivedDreams) {
-              await deleteDream(dream.id);
-            }
-            loadArchivedDreams();
-          }
+    showAlert({
+      type: 'warning',
+      title: 'Tout supprimer',
+      message: `Voulez-vous supprimer définitivement les ${archivedDreams.length} rêve(s) archivé(s) ?`,
+      confirmText: 'Tout supprimer',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        for (const dream of archivedDreams) {
+          await deleteDream(dream.id);
         }
-      ]
-    );
+        loadArchivedDreams();
+      }
+    });
   }
 
   function getDaysRemaining(archivedAt) {
@@ -202,6 +195,9 @@ export default function ArchivesScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* 🌙 Alert custom Noctaliaæ */}
+      <AlertComponent />
     </View>
   );
 }

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Noctaliae",
     "slug": "noctaliae-mobile",
-    "version": "0.9.11",
+    "version": "0.9.15",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -20,15 +20,18 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Noctaliae a besoin du microphone pour enregistrer vos reves.",
         "NSSpeechRecognitionUsageDescription": "Noctaliae utilise la reconnaissance vocale.",
-        "NSFaceIDUsageDescription": "Noctaliae utilise Face ID pour proteger vos reves secrets."
+        "NSFaceIDUsageDescription": "Noctaliae utilise Face ID pour proteger vos reves secrets.",
+        "NSCameraUsageDescription": "Noctaliae utilise la camera pour photographier vos dessins de reves.",
+        "NSPhotoLibraryUsageDescription": "Noctaliae accede a vos photos pour analyser vos dessins de reves."
       }
     },
     "android": {
-      "versionCode": 11,
+      "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a0b2e"
       },
+      "navigationBarColor": "#0A0F1C",
       "package": "com.noctaliae.mobile",
       "permissions": [
         "RECORD_AUDIO",
@@ -37,7 +40,9 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -57,6 +62,13 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Utiliser Face ID pour acceder a vos reves proteges."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Noctaliae accede a vos photos pour analyser vos dessins de reves.",
+          "cameraPermission": "Noctaliae utilise la camera pour photographier vos dessins de reves."
         }
       ]
     ],
