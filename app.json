@@ -2,7 +2,7 @@
   "expo": {
     "name": "Noctaliae",
     "slug": "noctaliae-mobile",
-    "version": "0.9.15",
+    "version": "0.9.16",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -26,7 +26,7 @@
       }
     },
     "android": {
-      "versionCode": 15,
+      "versionCode": 16,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a0b2e"

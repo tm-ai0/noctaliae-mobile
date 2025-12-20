@@ -91,7 +91,7 @@ export async function checkForUpdate() {
         latestVersion: latestAppVersion,
         downloadUrl: downloadUrl || null,
         releaseNotes: releaseNotes || null,
-        customMessage: customMessage || null,
+        customMessage: null,
         isCritical: criticalUpdate || false,
         isKillSwitch: false,
       };
