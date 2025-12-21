@@ -10,7 +10,7 @@
 
 ---
 
-A React Native (Expo) mobile app for scientific dream analysis, based on the neuroscience research of Isabelle Arnulf (Paris Brain Institute) and powered by Claude Sonnet 4.5 and Llama 3.3 70B.
+A React Native (Expo) mobile app for scientific dream analysis, based on cutting-edge neuroscience research from Isabelle Arnulf (Paris Brain Institute), Matthew Walker (UC Berkeley), Allan Hobson, G. William Domhoff and more. Powered by Claude Sonnet 4.5 and Llama 3.3 70B.
 
 ---
 
@@ -153,26 +153,6 @@ eas build --platform android --profile preview
 ```bash
 eas build --platform android --profile production
 ```
-
----
-
-## 🎨 Themes
-
-Noctaliæ offers 6 night-inspired themes:
-
-- **Midnight** (default): Deep night blue with neon green accents
-- **Aurora**: Purple and pink, inspired by northern lights
-- **Sunset**: Orange and pink, like a sunset
-- **Ocean**: Ocean blue with turquoise touches
-- **Forest**: Forest green and earth tones
-- **Lavender**: Soft and soothing purple
-
-All themes include Noctaliæ brand colors:
-- Warm gold (`#D2B14C`)
-- Soft brown (`#88735C`)
-- Gray-green (`#A0B4D4`)
-
----
 
 ## 🔐 Security & Privacy
 
