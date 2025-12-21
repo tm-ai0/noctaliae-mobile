@@ -606,7 +606,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <Text style={[styles.infoTextBottom, { color: theme.colors.textSecondary }]}>
             Noctaliæ - Analyse scientifique des rêves{'\n'}
-            Version: Beta 0.9.13
+            Version: Beta 0.9.17
           </Text>
           
           {/* 📜 Lien Privacy Policy */}
