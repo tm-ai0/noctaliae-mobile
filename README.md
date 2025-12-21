@@ -2,7 +2,7 @@
 
 **AI-powered dream analysis with neuroscience**
 
-[![Version](https://img.shields.io/badge/version-0.9.11-blue)]
+[![Version](https://img.shields.io/badge/version-0.9.17-blue)]
 [![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61dafb)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-54-000020)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
@@ -28,6 +28,8 @@ A React Native (Expo) mobile app for scientific dream analysis, based on the neu
   - 🔬 Laboratoire: Coming soon
   - 🗺️ Cartographie: Coming soon
   - 🔓 Décrypter: Scientific fact sheets about dreams
+- 📷 **Photo Capture** : Take photos of your dream journal or drawings (Claude Vision)
+- 🔐 **Secret Dreams** : Biometric-protected private dreams (Face ID/Touch ID/PIN)
 - 🔒 **Privacy-First** : Everything stays on your device
 
 ---
@@ -91,7 +93,7 @@ npm run start:clear
 - **Zustand** (state management)
 
 ### Backend
-- **Node.js** + Express (v2.11)
+- **Node.js** + Express (v2.14)
 - **Claude Sonnet 4.5** (Anthropic)
 - **Llama 3.3 70B** (Groq)
 - **Whisper** (Groq) for transcription
@@ -209,7 +211,11 @@ All themes include Noctaliæ brand colors:
 - [x] Production monitoring (Sentry + Amplitude)
 - [x] GitHub Actions CI/CD
 - [x] Complete documentation
-- [ ] In-app update notifications
+- [x] In-app update notifications
+- [x] Kill switch system for forced updates
+- [x] Photo capture with Claude Vision
+- [x] Secret dreams with biometric protection
+- [x] Sentry crash reporting
 
 ### 📅 Phase 3: Premium Features (Q1 2026)
 - [ ] Premium subscription (Stripe)
