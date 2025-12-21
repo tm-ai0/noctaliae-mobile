@@ -7,7 +7,6 @@
 [![Expo](https://img.shields.io/badge/Expo-54-000020)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-📖 **[Lire en français](./README.fr.md)** | 🇫🇷 **Read in French**
 
 ---
 
