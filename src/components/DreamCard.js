@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Animated, ScrollView, Share, Modal, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, Animated, ScrollView, Share, Modal, ActivityIndicator, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../config/ThemeContext';
 import BiometricService from '../services/biometricService';
+
 
 /**
  * DreamCard - Carte de rêve avec swipe actions Gmail style
@@ -26,8 +28,10 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false); // 🆕 Modal première archivage
+  const [showOptionsModal, setShowOptionsModal] = useState(false); // 🆕 Menu (⋮) 3 options
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   // 💡 Animation pulse pour le hint
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -92,7 +96,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
         style={[
           styles.swipeAction,
           styles.archiveAction,
-          { backgroundColor: theme.colors.warmGold || '#D2B14C' },
+          { backgroundColor: '#FF9966' },
           { transform: [{ scale }] }
         ]}
       >
@@ -115,12 +119,12 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
         style={[
           styles.swipeAction,
           styles.shareAction,
-          { backgroundColor: '#FF9966' },
+          { backgroundColor: '#00FFB0' },
           { transform: [{ scale }] }
         ]}
       >
-        <MaterialIcons name="share" size={28} color="#FFFFFF" />
-        <Text style={styles.swipeActionText}>Partager</Text>
+        <MaterialIcons name="share" size={28} color="#0c0e27" />
+        <Text style={[styles.swipeActionText, { color: '#0c0e27' }]}>Partager</Text>
       </Animated.View>
     );
   };
@@ -168,6 +172,8 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
   // 🔐 GESTION DES SECRETS
   // ============================================
   const handleLongPress = () => {
+    // 🔐 Si rêve secret et non déverrouillé → ne pas ouvrir le modal
+    if (dream.isSecret && !isUnlocked) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setShowSecretModal(true);
   };
@@ -194,25 +200,52 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
     onPress();
   };
 
-  // Partage interne - FORMAT PRO COMPLET
-  const handleShare = async () => {
-    if (onShare) {
-      onShare(dream);
-      return;
-    }
-    
-    // Fallback: partage natif FORMAT COMPLET
+  // ── Partage FRIENDLY (famille, amis) ───────────────────────────
+  const handleShareFriendly = async () => {
     try {
       const title = getDynamicTitle();
-      const shareContent = getProShareContent();
+      const date = new Date(dream.date).toLocaleDateString('fr-FR', {
+        weekday: 'long', day: 'numeric', month: 'long'
+      });
       
+      // 1 phrase de résumé max
+      const rawAnalysis = typeof dream.analysis === 'string'
+        ? dream.analysis
+        : (dream.analysis?.shortSummary || dream.analysis?.fullAnalysis || '');
+      const summaryMatch = rawAnalysis
+        .replace(/[#*]/g, '')
+        .replace(/[\n\r]+/g, ' ')
+        .match(/[^\.!\?]+[\.!\?]/);
+      const oneLiner = summaryMatch ? summaryMatch[0].trim() : '';
+
+      const tagsLine = dream.tags?.length
+        ? dream.tags.slice(0,3).map(t => `#${t}`).join(' ')
+        : '';
+
+      // Message composé : image en URL si dispo + texte
+      const lines = [
+        `🌙 ${title}`,
+        `📅 ${date.charAt(0).toUpperCase() + date.slice(1)}`,
+        oneLiner ? `\n“${oneLiner}”` : '',
+        tagsLine ? `\n${tagsLine}` : '',
+        `\nAnalysé avec Noctaliæ`,
+      ].filter(Boolean).join('\n');
+
+      // Sur Android, l'URL en titre affiche l'image dans la preview WhatsApp
       await Share.share({
-        message: shareContent,
+        message: lines,
         title: title,
+        ...(dream.imageUrl ? { url: dream.imageUrl } : {}),
       });
     } catch (error) {
-      console.error('Erreur partage:', error);
+      console.error('Erreur partage friendly:', error);
     }
+  };
+
+  // ── Partage interne (rétro-compat) ─────────────────────────────
+  const handleShare = async () => {
+    if (onShare) { onShare(dream); return; }
+    handleShareFriendly();
   };
 
   // ============================================
@@ -233,9 +266,9 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
     let analysisType = 'Non analysé';
     if (dream.modelUsed) {
       if (dream.modelUsed.toLowerCase().includes('claude')) {
-        analysisType = 'DeepDream (Claude Sonnet 4.5)';
+        analysisType = 'DeepDream';
       } else if (dream.modelUsed.toLowerCase().includes('llama')) {
-        analysisType = 'QuickDream (Llama 3.3 70B)';
+        analysisType = 'QuickDream';
       } else {
         analysisType = dream.modelUsed;
       }
@@ -310,10 +343,10 @@ Analysé avec Noctaliæ`;
     let analysisColor = '#64748B';
     if (dream.modelUsed) {
       if (dream.modelUsed.toLowerCase().includes('claude')) {
-        analysisType = 'DeepDream (Claude Sonnet 4.5)';
+        analysisType = 'DeepDream';
         analysisColor = '#8A2BE2';
       } else if (dream.modelUsed.toLowerCase().includes('llama')) {
-        analysisType = 'QuickDream (Llama 3.3 70B)';
+        analysisType = 'QuickDream';
         analysisColor = '#10B981';
       }
     }
@@ -498,7 +531,7 @@ Analysé avec Noctaliæ`;
           
           <div class="footer">
             Analysé avec <strong>Noctaliæ</strong><br/>
-            <a href="https://www.notion.so/2b7976346b368160aff2d919d8563643">https://www.notion.so/2b7976346b368160aff2d919d8563643</a>
+            <a href="https://nocty.thomasmaury.fr">nocty.thomasmaury.fr</a>
           </div>
         </div>
       </body>
@@ -873,6 +906,12 @@ Analysé avec Noctaliæ`;
   
   // Sélectionner le bon composant d'icône
   const IconComponent = icon.family === 'MaterialIcons' ? MaterialIcons : MaterialCommunityIcons;
+  
+  // 🎨 Hero image disponible ?
+  const hasHeroImage = dream.imageUrl && !imageError;
+  
+  // Gradient: transparent → noir → cardBackground (simple et fiable)
+  const cardBg = theme.colors.cardBackground || '#1a1f3a';
 
   return (
     <Swipeable
@@ -890,6 +929,7 @@ Analysé avec Noctaliæ`;
         <TouchableOpacity
           style={[
             styles.card,
+            hasHeroImage && styles.cardWithHero,
             { 
               backgroundColor: theme.colors.cardBackground,
               borderColor: isSelected ? '#39FF88' : (dream.isSecret ? '#8B5CF6' : theme.colors.cardBorder),
@@ -940,165 +980,232 @@ Analysé avec Noctaliæ`;
             </TouchableOpacity>
           )}
 
-          {/* Header: Tags à gauche + Heure + Menu à droite */}
-          <View style={styles.topBar}>
-            {/* Tags automatiques IA - Scroll horizontal */}
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.tagsScrollContainer}
-              contentContainerStyle={styles.tagsContainer}
-            >
-              {tags.map((tag, idx) => (
-                <View 
-                  key={idx}
-                  style={[
-                    styles.tag,
-                    { backgroundColor: tag.color + '20' }
-                  ]}
-                >
-                  <Text style={[styles.tagText, { color: tag.color }]}>
-                    {tag.label}
+          {/* 🎨 HERO IMAGE MODE */}
+          {hasHeroImage ? (
+            <>
+                  <View style={styles.heroContainer}>
+                <Image
+                  source={{ uri: dream.imageUrl }}
+                  style={styles.heroImage}
+                  resizeMode="cover"
+                  onError={() => setImageError(true)}
+                />
+                {/* Gradient overlay bas */}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.6)', cardBg]}
+                  locations={[0.2, 0.65, 1]}
+                  style={styles.heroGradient}
+                />
+                {/* Titre sur le gradient */}
+                <View style={styles.heroTitleContainer}>
+                  <Text 
+                    style={[styles.heroTitle, { color: '#00FFB0' }]}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {title}
                   </Text>
                 </View>
-              ))}
-            </ScrollView>
-            
-            {/* Heure + Menu */}
-            <View style={styles.timeMenuContainer}>
-              <View style={styles.timeContainer}>
-                <MaterialIcons name="schedule" size={14} color={theme.colors.textSecondary} />
-                <Text style={[styles.timeText, { color: theme.colors.textSecondary }]}>
-                  {time}
+                {/* Heure + Menu en haut à droite */}
+                <View style={styles.heroTopRight}>
+                  <View style={[styles.heroTimeBadge, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+                    <MaterialIcons name="schedule" size={12} color="#FFFFFF" />
+                    <Text style={styles.heroTimeText}>{time}</Text>
+                  </View>
+                  {!isSelectionMode && (
+                    <TouchableOpacity 
+                      style={[styles.heroMenuButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                      onPress={() => {
+                        if (dream.isSecret && !isUnlocked) return;
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (showMenuHint && onMenuHintDismiss) onMenuHintDismiss();
+                        setShowOptionsModal(true);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      {showMenuHint && (
+                        <Animated.View 
+                          style={[styles.menuHintPulse, { transform: [{ scale: pulseAnim }] }]} 
+                        />
+                      )}
+                      <MaterialCommunityIcons 
+                        name={dream.isSecret ? 'lock-outline' : 'dots-vertical'} 
+                        size={18} 
+                        color={dream.isSecret ? '#8B5CF6' : '#FFFFFF'} 
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Tags sous l'image */}
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.heroTagsScroll}
+                contentContainerStyle={styles.tagsContainer}
+              >
+                {tags.map((tag, idx) => (
+                  <View key={idx} style={[styles.tag, { backgroundColor: tag.color + '20' }]}>
+                    <Text style={[styles.tagText, { color: tag.color }]}>{tag.label}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* Résumé */}
+              <Text 
+                style={[styles.summary, styles.heroSummary, { color: theme.colors.textSecondary }]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {summary}
+              </Text>
+            </>
+          ) : (
+            <>
+              {/* 📌 DESIGN CLASSIQUE (sans image) */}
+              {/* Header: Tags à gauche + Heure + Menu à droite */}
+              <View style={styles.topBar}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.tagsScrollContainer}
+                  contentContainerStyle={styles.tagsContainer}
+                >
+                  {tags.map((tag, idx) => (
+                    <View key={idx} style={[styles.tag, { backgroundColor: tag.color + '20' }]}>
+                      <Text style={[styles.tagText, { color: tag.color }]}>{tag.label}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+                
+                <View style={styles.timeMenuContainer}>
+                  <View style={styles.timeContainer}>
+                    <MaterialIcons name="schedule" size={14} color={theme.colors.textSecondary} />
+                    <Text style={[styles.timeText, { color: theme.colors.textSecondary }]}>{time}</Text>
+                  </View>
+                  {!isSelectionMode && (
+                    <TouchableOpacity 
+                      style={styles.menuButton}
+                      onPress={() => {
+                        if (dream.isSecret && !isUnlocked) return;
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (showMenuHint && onMenuHintDismiss) onMenuHintDismiss();
+                        setShowOptionsModal(true);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      {showMenuHint && (
+                        <Animated.View 
+                          style={[styles.menuHintPulse, { transform: [{ scale: pulseAnim }] }]} 
+                        />
+                      )}
+                      <MaterialCommunityIcons 
+                        name={dream.isSecret ? 'lock-outline' : 'dots-vertical'} 
+                        size={22} 
+                        color={dream.isSecret ? '#8B5CF6' : theme.colors.textSecondary} 
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Layout principal: Icône + Titre */}
+              <View style={styles.mainRow}>
+                <IconComponent name={icon.name} size={32} color={icon.color} />
+                <Text 
+                  style={[styles.title, { color: theme.colors.primary }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {title}
                 </Text>
               </View>
-              
-              {/* ⋮ Bouton Menu (caché en mode sélection) */}
-              {!isSelectionMode && (
-                <TouchableOpacity 
-                  style={styles.menuButton}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    // 💡 Dismiss le hint si actif
-                    if (showMenuHint && onMenuHintDismiss) {
-                      onMenuHintDismiss();
-                    }
-                    setShowSecretModal(true);
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  {/* 💡 Cercle pulse derrière si hint actif */}
-                  {showMenuHint && (
-                    <Animated.View 
-                      style={[
-                        styles.menuHintPulse,
-                        { transform: [{ scale: pulseAnim }] }
-                      ]} 
-                    />
-                  )}
-                  <MaterialCommunityIcons 
-                    name="lock-outline" 
-                    size={20} 
-                    color={dream.isSecret ? '#8B5CF6' : theme.colors.textSecondary} 
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
 
-          {/* Layout principal: Icône + Titre */}
-          <View style={styles.mainRow}>
-            <IconComponent name={icon.name} size={32} color={icon.color} />
-            
-            <Text 
-              style={[styles.title, { color: theme.colors.primary }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {title}
-            </Text>
-          </View>
-
-          {/* Résumé (2 lignes max) */}
-          <Text 
-            style={[styles.summary, { color: theme.colors.textSecondary }]}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {summary}
-          </Text>
+              {/* Résumé (2 lignes max) */}
+              <Text 
+                style={[styles.summary, { color: theme.colors.textSecondary }]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {summary}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </Animated.View>
 
       {/* ============================================ */}
-      {/* MODAL DE PARTAGE */}
+      {/* MODAL DE PARTAGE — Friendly vs Pro           */}
       {/* ============================================ */}
       <Modal
         visible={showShareModal}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowShareModal(false)}
       >
         <TouchableOpacity 
-          style={styles.modalOverlay}
+          style={styles.shareSheetOverlay}
           activeOpacity={1}
           onPress={() => setShowShareModal(false)}
         >
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.cardBackground }]}>
+          <View style={[styles.shareSheet, { backgroundColor: theme.colors.cardBackground }]}>
+            {/* Handle */}
+            <View style={styles.sheetHandle} />
+
             <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>
               Partager ce rêve
             </Text>
-            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>
-              Choisissez le format d'export
-            </Text>
-            
-            {/* Option 1: Texte */}
+
+            {/* ── Friendly ── */}
             <TouchableOpacity
-              style={[styles.modalOption, { backgroundColor: theme.colors.backgroundElevated }]}
+              style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]}
               onPress={() => {
                 setShowShareModal(false);
-                handleShare();
+                handleShareFriendly();
               }}
             >
-              <View style={[styles.modalOptionIcon, { backgroundColor: '#FF9966' }]}>
-                <MaterialIcons name="share" size={24} color="#FFFFFF" />
+              <View style={[styles.shareOptionIcon, { backgroundColor: '#FF9966' }]}>
+                <MaterialCommunityIcons name="heart-outline" size={24} color="#FFFFFF" />
               </View>
-              <View style={styles.modalOptionText}>
-                <Text style={[styles.modalOptionTitle, { color: theme.colors.textPrimary }]}>
-                  Partager en texte
+              <View style={styles.shareOptionText}>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>
+                  Partage Friendly
                 </Text>
-                <Text style={[styles.modalOptionDesc, { color: theme.colors.textSecondary }]}>
-                  WhatsApp, SMS, Email...
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>
+                  Famille, amis, proches — résumé illustré
                 </Text>
               </View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
-            
-            {/* Option 2: PDF */}
+
+            {/* ── Pro ── */}
             <TouchableOpacity
-              style={[styles.modalOption, { backgroundColor: theme.colors.backgroundElevated }]}
-              onPress={handleExportPdf}
+              style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]}
+              onPress={() => {
+                setShowShareModal(false);
+                handleExportPdf();
+              }}
               disabled={isGeneratingPdf}
             >
-              <View style={[styles.modalOptionIcon, { backgroundColor: '#EF4444' }]}>
+              <View style={[styles.shareOptionIcon, { backgroundColor: '#8B5CF6' }]}>
                 {isGeneratingPdf ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <MaterialIcons name="picture-as-pdf" size={24} color="#FFFFFF" />
+                  <MaterialCommunityIcons name="stethoscope" size={24} color="#FFFFFF" />
                 )}
               </View>
-              <View style={styles.modalOptionText}>
-                <Text style={[styles.modalOptionTitle, { color: theme.colors.textPrimary }]}>
-                  {isGeneratingPdf ? 'Génération...' : 'Exporter en PDF'}
+              <View style={styles.shareOptionText}>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>
+                  {isGeneratingPdf ? 'Génération...' : 'Rapport Professionnel'}
                 </Text>
-                <Text style={[styles.modalOptionDesc, { color: theme.colors.textSecondary }]}>
-                  Format professionnel pour psy
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>
+                  Psy, médecin, recherche — PDF complet
                 </Text>
               </View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
-            
-            {/* Bouton Annuler */}
+
             <TouchableOpacity
               style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]}
               onPress={() => setShowShareModal(false)}
@@ -1193,6 +1300,103 @@ Analysé avec Noctaliæ`;
       </Modal>
 
       {/* ============================================ */}
+      {/* ⋮ MODAL OPTIONS (3 actions)                  */}
+      {/* ============================================ */}
+      <Modal
+        visible={showOptionsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowOptionsModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.shareSheetOverlay}
+          activeOpacity={1}
+          onPress={() => setShowOptionsModal(false)}
+        >
+          <View style={[styles.shareSheet, { backgroundColor: theme.colors.cardBackground }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary, marginBottom: 16 }]}>
+              {getDynamicTitle()}
+            </Text>
+
+            {/* Partager */}
+            <TouchableOpacity
+              style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]}
+              onPress={() => {
+                setShowOptionsModal(false);
+                setTimeout(() => setShowShareModal(true), 300);
+              }}
+            >
+              <View style={[styles.shareOptionIcon, { backgroundColor: '#00FFB0' }]}>
+                <MaterialIcons name="share" size={24} color="#0c0e27" />
+              </View>
+              <View style={styles.shareOptionText}>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>Partager</Text>
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>Friendly ou rapport professionnel</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+
+            {/* Archiver */}
+            <TouchableOpacity
+              style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]}
+              onPress={async () => {
+                setShowOptionsModal(false);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (onFirstArchive) {
+                  const isFirst = await onFirstArchive();
+                  if (isFirst) { setShowArchiveModal(true); return; }
+                }
+                if (onArchive) onArchive(dream.id);
+              }}
+            >
+              <View style={[styles.shareOptionIcon, { backgroundColor: '#FF9966' }]}>
+                <MaterialIcons name="archive" size={24} color="#FFFFFF" />
+              </View>
+              <View style={styles.shareOptionText}>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>Archiver</Text>
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>Déplacer dans les archives</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+
+            {/* Secret */}
+            <TouchableOpacity
+              style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]}
+              onPress={() => {
+                setShowOptionsModal(false);
+                setTimeout(() => setShowSecretModal(true), 300);
+              }}
+            >
+              <View style={[styles.shareOptionIcon, { backgroundColor: '#8B5CF6' }]}>
+                <MaterialCommunityIcons
+                  name={dream.isSecret ? 'lock-open-variant' : 'lock'}
+                  size={24}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={styles.shareOptionText}>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>
+                  {dream.isSecret ? 'Retirer la protection' : 'Protéger ce rêve'}
+                </Text>
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>
+                  {dream.isSecret ? 'Rendre visible normalement' : 'Masquer et protéger par bio'}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]}
+              onPress={() => setShowOptionsModal(false)}
+            >
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ============================================ */}
       {/* 📦 MODAL PREMIÈRE ARCHIVAGE */}
       {/* ============================================ */}
       <Modal
@@ -1262,6 +1466,84 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     minHeight: 180,
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  cardWithHero: {
+    padding: 0,
+    paddingBottom: 16,
+  },
+  
+  // 🎨 HERO IMAGE STYLES
+  heroContainer: {
+    width: '100%',
+    height: 180,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 12,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '80%',
+  },
+  heroTitleContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 16,
+    right: 16,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
+    lineHeight: 32,
+    paddingBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  heroTopRight: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroTimeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  heroTimeText: {
+    fontSize: 11,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: '#FFFFFF',
+  },
+  heroMenuButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTagsScroll: {
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    maxHeight: 32,
+  },
+  heroSummary: {
+    paddingHorizontal: 16,
   },
   
   // Top bar (Tags + Heure)
@@ -1302,7 +1584,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     letterSpacing: 0.3,
   },
   menuButton: {
@@ -1333,22 +1615,24 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     letterSpacing: 0.2,
   },
   
   // Titre (à côté de l'icône)
   title: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 22,
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
+    lineHeight: 36,
+    paddingBottom: 6,
   },
   
   // Résumé
   summary: {
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
   
   // ============================================
@@ -1372,12 +1656,59 @@ const styles = StyleSheet.create({
   swipeActionText: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   
   // ============================================
-  // MODAL DE PARTAGE
+  // MODAL DE PARTAGE — Sheet bottom
   // ============================================
+  shareSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  shareSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  shareOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  shareOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  shareOptionText: {
+    flex: 1,
+  },
+  shareOptionTitle: {
+    fontSize: 16,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    marginBottom: 2,
+  },
+  shareOptionDesc: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
+  // Modals génériques
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -1392,8 +1723,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -1401,32 +1732,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  modalOptionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  modalOptionText: {
-    flex: 1,
-  },
-  modalOptionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  modalOptionDesc: {
-    fontSize: 13,
   },
   modalCancel: {
     marginTop: 8,
@@ -1436,7 +1741,7 @@ const styles = StyleSheet.create({
   },
   modalCancelText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'AtkinsonHyperlegibleNext-Medium',
   },
   
   // ============================================
@@ -1456,7 +1761,7 @@ const styles = StyleSheet.create({
   },
   secretText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#8B5CF6',
     marginTop: 8,
   },
@@ -1521,8 +1826,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   secretActionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#FFFFFF',
   },
   // 📦 MODAL ARCHIVAGE
@@ -1557,8 +1862,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   archiveActionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
 });
