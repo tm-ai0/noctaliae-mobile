@@ -10,7 +10,7 @@ import {
   Alert,
   Animated,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { Clipboard } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';

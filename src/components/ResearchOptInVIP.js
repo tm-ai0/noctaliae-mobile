@@ -1,136 +1,109 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Switch, StyleSheet, Animated, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME } from '../config/theme';
 import { ContributeResearchModal } from './ContributeResearchModal';
-import { useGlow } from '../contexts/GlowContext';
 
-const RESEARCH_OPT_IN_KEY = '@noctaliae_research_opt_in';
+const VOTE_KEY = '@noctaliae_vote_research';
+
+// 📊 Google Form pour voter (remplace par ton lien)
+const VOTE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe9TVWMzCk761X4jLwoGBR53WNyfPirQD_EjdWhxRvvOlhaNg/viewform';
 
 export function ResearchOptInVIP() {
-  const [isOptedIn, setIsOptedIn] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [glowAnim] = useState(new Animated.Value(0));
-  const { refreshGlowStates } = useGlow();
+  const [hasVoted, setHasVoted] = useState(false);
 
   useEffect(() => {
-    loadOptInStatus();
+    AsyncStorage.getItem(VOTE_KEY).then(v => {
+      if (v === 'true') setHasVoted(true);
+    });
   }, []);
 
-  useEffect(() => {
-    if (isOptedIn) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-          Animated.timing(glowAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-        ])
-      ).start();
-    }
-  }, [isOptedIn]);
-
-  const loadOptInStatus = async () => {
-    try {
-      const status = await AsyncStorage.getItem(RESEARCH_OPT_IN_KEY);
-      setIsOptedIn(status === 'true');
-    } catch (error) {
-      console.error('❌ Erreur chargement opt-in:', error);
-    }
-  };
-
-  const handleToggle = async (value) => {
-    if (value) {
-      setShowModal(true);
-    } else {
-      await AsyncStorage.setItem(RESEARCH_OPT_IN_KEY, 'false');
-      setIsOptedIn(false);
-      refreshGlowStates(); // 🔄 Actualiser le glow global
-    }
-  };
-
-  const handleAccept = async () => {
-    await AsyncStorage.setItem(RESEARCH_OPT_IN_KEY, 'true');
-    setIsOptedIn(true);
+  const handleVote = async () => {
+    setHasVoted(true);
     setShowModal(false);
-    refreshGlowStates(); // 🔄 Actualiser le glow global
+    await AsyncStorage.setItem(VOTE_KEY, 'true');
+    Linking.openURL(VOTE_FORM_URL);
   };
 
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
-  });
+  const openKofi = () => {
+    Linking.openURL('https://ko-fi.com/tm_ai0');
+  };
 
   return (
     <>
-      <View style={[
-        styles.container,
-        isOptedIn && styles.containerActive
-      ]}>
-        {/* Glow effect when active */}
-        {isOptedIn && (
-          <Animated.View style={[styles.glowEffect, { opacity: glowOpacity }]} />
-        )}
-
+      <View style={styles.container}>
         <View style={styles.row}>
-          <View style={[styles.iconCircle, isOptedIn && styles.iconCircleActive]}>
+          <View style={styles.iconCircle}>
             <MaterialCommunityIcons 
-              name={isOptedIn ? "flask-outline" : "flask"} 
+              name="flask" 
               size={24} 
-              color={isOptedIn ? "#00FFB0" : "#666"} 
+              color={hasVoted ? "#00FFB0" : "#666"} 
             />
           </View>
 
           <View style={styles.textContainer}>
-            <Text style={[styles.title, isOptedIn && styles.titleActive]}>
+            <Text style={styles.title}>
               Contribuer à la recherche
             </Text>
-            <Text style={[styles.subtitle, isOptedIn && styles.subtitleActive]}>
-              {isOptedIn 
-                ? "Vous participez à faire avancer la science des rêves !" 
-                : "Partager vos analyses pour aider la recherche sur les rêves."}
+            <Text style={styles.subtitle}>
+              {hasVoted
+                ? "Merci pour votre intérêt ! On vous tiendra informé."
+                : "Bientôt : partagez vos analyses anonymement pour la science."}
             </Text>
-            {!isOptedIn && (
-              <TouchableOpacity 
-                onPress={() => setShowModal(true)}
-                style={styles.learnMoreButton}
-              >
-                <Text style={styles.learnMoreText}>
-                  En savoir plus →
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
-
-          <Switch
-            value={isOptedIn}
-            onValueChange={handleToggle}
-            trackColor={{ false: '#333', true: '#4F8DFF80' }}
-            thumbColor={isOptedIn ? '#4F8DFF' : '#666'}
-          />
         </View>
-        
-        {isOptedIn && (
-          <View style={styles.contributorBadge}>
-            <View style={styles.badgeContent}>
-              <MaterialCommunityIcons name="brain" size={16} color="#6B5CFF" />
-              <Text style={styles.badgeText}>
-                Le résultats de vos analyses rêves aident la DreamTeam (ICM Paris) - à titre d'exemple seulement.
-              </Text>
-            </View>
-            <View style={styles.betaWarning}>
-              <MaterialCommunityIcons name="flask-outline" size={14} color="#F59E0B" />
-              <Text style={styles.betaWarningText}>
-                Non fonctionnel pour l'instant
-              </Text>
-            </View>
+
+        {/* Info card */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="brain" size={16} color="#4F8DFF" />
+            <Text style={styles.infoText}>
+              Vos analyses pourront être partagées anonymement avec des labos vérifiés (DreamTeam ICM Paris, Walker Lab UC Berkeley...).
+            </Text>
           </View>
-        )}
+          <View style={styles.betaWarning}>
+            <MaterialCommunityIcons name="flask-outline" size={14} color="#F59E0B" />
+            <Text style={styles.betaWarningText}>
+              Bientôt disponible — aucun envoi actif
+            </Text>
+          </View>
+        </View>
+
+        {/* CTA Buttons */}
+        <View style={styles.ctaContainer}>
+          {!hasVoted ? (
+            <TouchableOpacity 
+              style={styles.voteButton}
+              onPress={() => setShowModal(true)}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="thumb-up" size={18} color="#0c0e27" />
+              <Text style={styles.voteButtonText}>Ça m'intéresse !</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.votedBadge}>
+              <MaterialIcons name="check-circle" size={18} color="#00FFB0" />
+              <Text style={styles.votedText}>Vote enregistré</Text>
+            </View>
+          )}
+
+          <TouchableOpacity 
+            style={styles.kofiButton}
+            onPress={openKofi}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.kofiEmoji}>☕</Text>
+            <Text style={styles.kofiButtonText}>Soutenir</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ContributeResearchModal
         visible={showModal}
         onClose={() => setShowModal(false)}
-        onActivate={handleAccept}
+        onActivate={handleVote}
       />
     </>
   );
@@ -144,21 +117,6 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     borderWidth: 1,
     borderColor: THEME.colors.cardBorder,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  containerActive: {
-    borderColor: 'rgba(79, 141, 255, 0.5)',
-    backgroundColor: 'rgba(79, 141, 255, 0.05)',
-  },
-  glowEffect: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(79, 141, 255, 0.1)',
-    borderRadius: THEME.borderRadius.lg,
   },
   row: {
     flexDirection: 'row',
@@ -173,12 +131,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  iconCircleActive: {
-    backgroundColor: 'rgba(79, 141, 255, 0.2)',
-  },
   textContainer: {
     flex: 1,
-    marginRight: 12,
   },
   title: {
     fontSize: 17,
@@ -186,44 +140,28 @@ const styles = StyleSheet.create({
     color: THEME.colors.textPrimary,
     marginBottom: 4,
   },
-  titleActive: {
-    color: '#DDE2EA',
-  },
   subtitle: {
     fontSize: 13,
     color: THEME.colors.textSecondary,
     lineHeight: 18,
   },
-  subtitleActive: {
-    color: '#00FFB0',
-    fontWeight: '600',
-  },
-  learnMoreButton: {
-    marginTop: 6,
-  },
-  learnMoreText: {
-    fontSize: 13,
-    color: '#4F8DFF',
-    fontWeight: '600',
-  },
-  contributorBadge: {
+  infoCard: {
     marginTop: 12,
     padding: 12,
-    backgroundColor: 'rgba(79, 141, 255, 0.1)',
+    backgroundColor: 'rgba(79, 141, 255, 0.08)',
     borderRadius: 12,
     borderLeftWidth: 3,
     borderLeftColor: '#4F8DFF',
   },
-  badgeContent: {
+  infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
-  badgeText: {
+  infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#DDE2EA',
-    fontWeight: '600',
+    color: THEME.colors.textSecondary,
     lineHeight: 18,
   },
   betaWarning: {
@@ -239,5 +177,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#F59E0B',
     fontWeight: '600',
+  },
+  ctaContainer: {
+    flexDirection: 'row',
+    marginTop: 14,
+    gap: 10,
+  },
+  voteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4F8DFF',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  voteButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0c0e27',
+  },
+  votedBadge: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 255, 176, 0.1)',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 176, 0.3)',
+  },
+  votedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#00FFB0',
+  },
+  kofiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(57, 255, 136, 0.1)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(57, 255, 136, 0.3)',
+  },
+  kofiEmoji: {
+    fontSize: 16,
+  },
+  kofiButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#39FF88',
   },
 });

@@ -1,0 +1,42 @@
+# Ignorer pour EAS Build
+
+# Version control & IDE
+.git
+.expo
+.claude
+.github
+.vscode
+
+# Builds & binaires (356 MB!)
+builds/
+
+# PSD sources (247 MB!)
+assets/_EDITABLES/
+assets/*.psd
+
+# Documentation & notes (inutile pour le build)
+docs/
+deployment/
+scripts/
+skills/
+BACKUPS/
+_BACKEND_VERSIONS/
+_DREAM_ATLAS_CONTENT/
+_PERSONAL_NOTES/
+
+# Fichiers projet (pas nécessaires au build)
+*.md
+admin.html
+App - Copy.js
+*.txt
+*.bat
+*.ps1
+LICENSE
+.env.example
+
+# Cache & tests
+node_modules/.cache
+*.bak.*
+*.log
+__tests__
+coverage

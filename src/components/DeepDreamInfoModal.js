@@ -61,32 +61,32 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
             {/* Section Claude Sonnet */}
 <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
 
-  <Text style={{ fontWeight: "bold" }}>DeepDream Engine</Text> est un moteur d’analyse des rêves que 
-  j’ai développé en m’appuyant sur <Text style={{ fontStyle: "italic" }}>Claude Sonnet 4.5</Text>, après avoir 
+  <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>DeepDream Engine</Text> est un moteur d'analyse des rêves que 
+  j'ai développé en m'appuyant sur un modèle d'IA de pointe, après avoir 
   réuni et organisé dans <Text style={{ fontStyle: "italic" }}>NotebookLM</Text> un large ensemble de sources issues 
   des grands modèles neuroscientifiques et des recherches récentes. Cette base de connaissances 
-  m’a permis d’adapter l’outil pour explorer avec précision les nuances émotionnelles et narratives 
+  m'a permis d'adapter l'outil pour explorer avec précision les nuances émotionnelles et narratives 
   des rêves.{"\n\n"}
 
-  Son approche s’inscrit dans la continuité des grands modèles neurobiologiques du rêve : 
-  la <Text style={{ fontStyle: "italic" }}>théorie de l’activation-synthèse</Text> proposée par J. Allan Hobson et Robert McCarley, 
+  Son approche s'inscrit dans la continuité des grands modèles neurobiologiques du rêve : 
+  la <Text style={{ fontStyle: "italic" }}>théorie de l'activation-synthèse</Text> proposée par J. Allan Hobson et Robert McCarley, 
   la <Text style={{ fontStyle: "italic" }}>perspective de la continuité</Text> développée par G. William Domhoff, 
-  ou encore l’approche <Text style={{ fontStyle: "italic" }}>neurocognitive</Text> défendue par Mark Solms.{"\n\n"}
+  ou encore l'approche <Text style={{ fontStyle: "italic" }}>neurocognitive</Text> défendue par Mark Solms.{"\n\n"}
 
-  Les travaux d’Antti Revonsuo sur les rêves comme simulations de menaces, 
-  ceux de Matthew Walker sur la mémoire et l’émotion, 
+  Les travaux d'Antti Revonsuo sur les rêves comme simulations de menaces, 
+  ceux de Matthew Walker sur la mémoire et l'émotion, 
   ainsi que les recherches de Perrine Ruby et de son équipe à Lyon enrichissent ce champ.{"\n\n"}
 
-  Enfin, le modèle de rapport d’analyse neurocognitive du rêve proposé par Isabelle Arnulf 
+  Enfin, le modèle de rapport d'analyse neurocognitive du rêve proposé par Isabelle Arnulf 
   et ses collaborateurs illustre la manière dont la recherche contemporaine articule 
   consensus et controverses.{"\n\n"}
 
-  👉 <Text style={{ fontWeight: "bold" }}>DeepDream Engine</Text> n’est pas seulement un outil technique : 
-  il s’ancre dans un corpus scientifique solide, en dialogue avec les débats actuels des 
+  👉 <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>DeepDream Engine</Text> n'est pas seulement un outil technique : 
+  il s'ancre dans un corpus scientifique solide, en dialogue avec les débats actuels des 
   neurosciences du rêve, et évolue continuellement grâce au travail de sélection, 
-  d’organisation et d’adaptation des connaissances que j’y apporte.{"\n\n"}
+  d'organisation et d'adaptation des connaissances que j'y apporte.{"\n\n"}
 
-  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary, fontWeight: "bold" }]}>
+  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary, fontFamily: 'AtkinsonHyperlegibleNext-Bold' }]}>
     🌙 Toutes les sources, prompts et grilles et rapports d'analyses seront bientôt mis à disposition dans Noctaliæ, patience!
   </Text>
 
@@ -97,7 +97,7 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
             </Text>
 
             <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              Les IA sont des outils fascinants dont nous commençons à peine à explorer le potentiel. À bien des égards, elles rappellent les rêves. Mais une différence essentielle demeure : rêver ne requiert que quelques calories pour activer pensée et imagination, tandis que les IA s’appuient sur des infrastructures massivement énergivores pour accomplir des tâches pourtant simples.
+              Les IA sont des outils fascinants dont nous commençons à peine à explorer le potentiel. À bien des égards, elles rappellent les rêves. Mais une différence essentielle demeure : rêver ne requiert que quelques calories pour activer pensée et imagination, tandis que les IA s'appuient sur des infrastructures massivement énergivores pour accomplir des tâches pourtant simples.
             </Text>
 
             <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
@@ -111,13 +111,13 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
             <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
               En imaginant que la plupart des gens font ~5 rêves/nuit, et 0-1 mémorable. 10/jour est largement raisonnable... sauf si vous êtes{' '}
               <Text 
-                style={{ fontWeight: '700', color: '#39FF88', textDecorationLine: 'underline' }}
+                style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#39FF88', textDecorationLine: 'underline' }}
                 onPress={handleNarcolepsyLearnMore}
               >
                 narcoleptique
               </Text>,{' '}
-              <Text style={{ fontWeight: '700', color: '#4F8DFF' }}>rêveur lucide</Text>, ou{' '}
-              <Text style={{ fontWeight: '700', color: '#4F8DFF' }}>passionné par les rêves !</Text>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#4F8DFF' }}>rêveur lucide</Text>, ou{' '}
+              <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#4F8DFF' }}>passionné par les rêves !</Text>
             </Text>
 
             {/* Section Contact */}
@@ -189,7 +189,7 @@ export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
     color="white"
     style={{ marginRight: 12 }}
   />
-  <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+  <Text style={{ color: 'white', fontSize: 16, fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>
     Contacter sur WhatsApp
   </Text>
 </TouchableOpacity>
@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
   },
   closeButton: {
     padding: 5,
@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     lineHeight: 26,
     textAlign: 'center',
     marginBottom: 8,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     marginTop: 20,
     marginBottom: 10,
     lineHeight: 24,
@@ -292,6 +292,6 @@ const styles = StyleSheet.create({
   },
   footerButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
 });

@@ -13,11 +13,15 @@ import {
   Dimensions,
   Image,
   Modal,
-  Pressable
+  Pressable,
+  Share,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import DreamShareCard, { CARD_WIDTH, CARD_HEIGHT } from '../components/DreamShareCard';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
@@ -25,7 +29,7 @@ import { chatWithDream, chatWithDreamAndImage, transcribeAudio } from '../servic
 import { MarkdownText } from '../components/MarkdownText';
 import { THEME } from '../config/theme';
 import { saveConversation, loadConversation, clearConversation } from '../services/conversationService';
-import { deleteDream, setDreamSecret, getDream } from '../services/storageService';
+import { deleteDream, archiveDream, setDreamSecret, getDream } from '../services/storageService';
 import { premiumService } from '../services/premiumService';
 import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
@@ -122,7 +126,13 @@ function cleanAIResponse(text) {
 
 export default function DeepChatScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const { dreamId, dreamAnalysis: initialAnalysis, dreamTranscription, dreamTitle, suggestedQuestions: initialSuggestions } = route.params;
+  const { dreamId, dreamAnalysis: initialAnalysis, dreamTranscription, dreamTitle, suggestedQuestions: initialSuggestions, dreamImagePalette, initialMessage, dreamImageUrl, dreamDate, dreamTags } = route.params;
+  
+  // 🎨 AMBIENT PALETTE — le rêve éclaire la conversation
+  const palette = dreamImagePalette || [];
+  const ambientColor = palette[0] || null; // Couleur dominante du rêve
+  const ambientSecondary = palette[1] || ambientColor; // Couleur secondaire
+  const hasAmbient = ambientColor !== null;
   const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
   const [messages, setMessages] = useState([
@@ -157,6 +167,11 @@ export default function DeepChatScreen({ route, navigation }) {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+
+  // 📤 Share
+  const [isSharing, setIsSharing] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const shareCardRef = useRef(null);
 
   // 🔄 Charger statut Premium et présélectionner modèle
   useEffect(() => {
@@ -206,6 +221,15 @@ export default function DeepChatScreen({ route, navigation }) {
     setShowActivateModal(false);
     navigation.navigate('Settings');
   };
+
+  // 💡 PRÉ-REMPLIR inputText avec initialMessage (tap-to-send depuis ConversationScreen)
+  const initialMessageSentRef = useRef(false);
+  useEffect(() => {
+    if (initialMessage && !initialMessageSentRef.current && !isLoadingConversation) {
+      initialMessageSentRef.current = true;
+      setInputText(initialMessage);
+    }
+  }, [initialMessage, isLoadingConversation]);
 
   // 🏆 SUGGESTIONS (backend ou fallback local)
   useEffect(() => {
@@ -440,11 +464,18 @@ export default function DeepChatScreen({ route, navigation }) {
           imageToSend
         );
       } else {
+        // 🐛 FIX: Si c'est le 1er message et vient d'un initialMessage (tap-to-send depuis ConversationScreen),
+        // contextualiser pour que l'IA comprenne que c'est le RÊVEUR qui explore sa propre question
+        const isFirstUserMessage = conversationHistory.filter(m => m.role === 'user').length === 0;
+        const messageForApi = (initialMessage && isFirstUserMessage)
+          ? `Je suis le rêveur. Je souhaite explorer cette question sur mon propre rêve : ${textToSend}`
+          : textToSend;
+
         response = await chatWithDream(
           dreamTranscription,
           dreamAnalysis,
           conversationHistory,
-          textToSend,
+          messageForApi,
           isPremium
         );
       }
@@ -733,6 +764,53 @@ export default function DeepChatScreen({ route, navigation }) {
   };
 
   // ============================================
+  // 📤 PARTAGE CARTE VISUELLE
+  // ============================================
+  const handleShareFriendlyText = async () => {
+    try {
+      const tagsLine = dreamTags?.length
+        ? dreamTags.slice(0, 3).map(t => `#${t.toLowerCase().replace(/\s+/g, '')}`).join(' ')
+        : '';
+      const lines = [
+        `\ud83c\udf19 ${dreamTitle}`,
+        tagsLine ? `\n${tagsLine}` : '',
+        `\nExplor\u00e9 avec Noctali\u00e6 \u2014 nocty.thomasmaury.fr`,
+      ].filter(Boolean).join('\n');
+      await Share.share({ message: lines, title: dreamTitle });
+    } catch (error) {
+      console.error('\u274c Erreur partage texte DeepChat:', error);
+    }
+  };
+
+  const handleShareFriendly = async () => {
+    if (!shareCardRef.current) {
+      await handleShareFriendlyText();
+      return;
+    }
+    try {
+      setIsSharing(true);
+      await new Promise(r => setTimeout(r, 600));
+      const capturedUri = await shareCardRef.current.capture();
+      const filename = `noctaliae_dream_${Date.now()}.jpg`;
+      const destUri = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.copyAsync({ from: capturedUri, to: destUri });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(destUri, {
+          mimeType: 'image/jpeg',
+          dialogTitle: dreamTitle,
+          UTI: 'public.jpeg',
+        });
+      }
+    } catch (err) {
+      console.error('\u274c Share card error DeepChat, fallback texte:', err);
+      await handleShareFriendlyText();
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // ============================================
   // 🗑️ SUPPRIMER LE RÊVE
   // ============================================
   const handleDelete = () => {
@@ -763,8 +841,37 @@ export default function DeepChatScreen({ route, navigation }) {
     });
   };
 
+  const handleArchive = () => {
+    showAlert({
+      type: 'confirm',
+      title: 'Archiver ce rêve ?',
+      message: 'Le rêve sera masqué de la liste principale. Vous pourrez le retrouver dans Archives.',
+      confirmText: 'Archiver',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        try {
+          await archiveDream(dreamId);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
+        } catch (error) {
+          console.error('❌ Erreur archivage:', error);
+          showAlert({
+            type: 'error',
+            title: 'Erreur',
+            message: 'Impossible d\'archiver le rêve',
+            confirmText: 'OK'
+          });
+        }
+      }
+    });
+  };
+
   function renderMessage(message, index) {
     const isUser = message.role === 'user';
+    // 💡 Chips initiales : seulement sous le 1er message IA, tant qu'aucun échange réel
+    const showInitialChips = index === 0 && !isUser && messages.length === 1 && suggestedQuestions.length > 0;
     
     return (
       <View 
@@ -774,7 +881,11 @@ export default function DeepChatScreen({ route, navigation }) {
           isUser ? styles.userMessageContainer : styles.assistantMessageContainer
         ]}
       >
-        <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.assistantBubble]}>
+        <View style={[
+          styles.messageBubble, 
+          isUser ? styles.userBubble : styles.assistantBubble,
+          !isUser && hasAmbient && { borderColor: ambientColor + '25' }
+        ]}>
           {/* 📷 Image dans le message (si présente) */}
           {message.imageUri && (
             <Image 
@@ -807,6 +918,23 @@ export default function DeepChatScreen({ route, navigation }) {
             </View>
           )}
         </View>
+
+        {/* 💡 Chips tap-to-send sous le 1er message IA */}
+        {showInitialChips && (
+          <View style={styles.initialChipsWrapper}>
+            {suggestedQuestions.map((q, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.initialChip}
+                activeOpacity={0.7}
+                onPress={() => handleSendMessage(q)}
+              >
+                <Text style={styles.initialChipText}>{q}</Text>
+                <MaterialIcons name="arrow-forward" size={13} color={THEME.colors.primary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
     );
   }
@@ -823,7 +951,11 @@ export default function DeepChatScreen({ route, navigation }) {
       <DebugScreenLabel screenName="🔍 Approfondir" />
       
       {/* 🏆 HEADER */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 15) + 15 }]}>
+      <View style={[
+        styles.header, 
+        { paddingTop: Math.max(insets.top, 15) + 15 },
+        hasAmbient && { borderBottomColor: ambientColor + '40' }
+      ]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={24} color={THEME.colors.text} />
         </TouchableOpacity>
@@ -834,14 +966,14 @@ export default function DeepChatScreen({ route, navigation }) {
         </View>
 
         <TouchableOpacity 
-          onPress={handleExportPdf} 
+          onPress={() => setShowShareMenu(true)}
           style={styles.iconButton}
-          disabled={isExportingPdf}
+          disabled={isSharing || isExportingPdf}
         >
-          {isExportingPdf ? (
-            <ActivityIndicator size="small" color={THEME.colors.warmGold} />
+          {isSharing || isExportingPdf ? (
+            <ActivityIndicator size="small" color={THEME.colors.primary} />
           ) : (
-            <MaterialIcons name="picture-as-pdf" size={24} color={THEME.colors.warmGold} />
+            <MaterialIcons name="ios-share" size={24} color={THEME.colors.primary} />
           )}
         </TouchableOpacity>
 
@@ -858,10 +990,10 @@ export default function DeepChatScreen({ route, navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          onPress={handleDelete}
+          onPress={handleArchive}
           style={styles.iconButton}
         >
-          <MaterialIcons name="delete-outline" size={24} color={'#EF4444'} />
+          <MaterialIcons name="archive" size={24} color={THEME.colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleRestart} style={styles.iconButton}>
@@ -870,31 +1002,47 @@ export default function DeepChatScreen({ route, navigation }) {
       </View>
 
 
-      {/* 🏆 MESSAGES */}
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
-        keyboardShouldPersistTaps="handled"
-        onContentSizeChange={(width, height) => setContentHeight(height)}
-        onLayout={(event) => setScrollViewHeight(event.nativeEvent.layout.height)}
-      >
-        {messages.map((msg, index) => renderMessage(msg, index))}
-        
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator color={THEME.colors.primary} size="small" />
-            <Text style={styles.loadingText}>Réflexion...</Text>
-          </View>
-        )}
+      {/* 🏆 MESSAGES + AMBIENT GLOW */}
+      <View style={styles.messagesWrapper}>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.messagesContainer}
+          contentContainerStyle={styles.messagesContent}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={(width, height) => setContentHeight(height)}
+          onLayout={(event) => setScrollViewHeight(event.nativeEvent.layout.height)}
+        >
+          {messages.map((msg, index) => renderMessage(msg, index))}
+          
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color={THEME.colors.primary} size="small" />
+              <Text style={styles.loadingText}>Réflexion...</Text>
+            </View>
+          )}
 
-        {isTranscribing && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator color={THEME.colors.warmGold} size="small" />
-            <Text style={styles.loadingText}>Transcription...</Text>
-          </View>
+          {isTranscribing && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color={THEME.colors.warmGold} size="small" />
+              <Text style={styles.loadingText}>Transcription...</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* 🎨 AMBIENT GLOW — halo lumineux du rêve */}
+        {hasAmbient && (
+          <LinearGradient
+            colors={[
+              ambientColor + '30',       // 19% opacité — lueur douce
+              ambientSecondary + '15',   // 8% opacité — transition
+              'transparent',              // disparition
+            ]}
+            locations={[0, 0.35, 0.7]}
+            style={styles.ambientGlow}
+            pointerEvents="none"
+          />
         )}
-      </ScrollView>
+      </View>
 
       {/* 🏆 SUGGESTIONS */}
       {!isLoading && suggestedQuestions.length > 0 && (
@@ -907,7 +1055,13 @@ export default function DeepChatScreen({ route, navigation }) {
           {suggestedQuestions.map((suggestion, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.suggestionCard}
+              style={[
+                styles.suggestionCard,
+                hasAmbient && { 
+                  borderColor: ambientColor + '60',
+                  backgroundColor: ambientColor + '08',
+                }
+              ]}
               onPress={() => setInputText(suggestion)}
               activeOpacity={0.7}
             >
@@ -1102,6 +1256,78 @@ export default function DeepChatScreen({ route, navigation }) {
       />
 
       {/* 🌙 Alert custom Noctaliaæ */}
+      {/* 📤 Share Action Sheet */}
+      {showShareMenu && (
+        <TouchableOpacity
+          style={styles.shareMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowShareMenu(false)}
+        >
+          <TouchableOpacity
+            style={styles.shareActionSheet}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <View style={styles.shareSheetHandle} />
+            <Text style={styles.shareSheetTitle}>Partager ce rêve</Text>
+
+            <TouchableOpacity
+              style={styles.shareSheetOption}
+              activeOpacity={0.7}
+              onPress={() => {
+                setShowShareMenu(false);
+                setTimeout(handleShareFriendly, 200);
+              }}
+            >
+              <View style={[styles.shareSheetIconWrap, { backgroundColor: 'rgba(0,255,176,0.1)', borderColor: 'rgba(0,255,176,0.3)' }]}>
+                <MaterialIcons name="ios-share" size={22} color={THEME.colors.primary} />
+              </View>
+              <View style={styles.shareSheetOptionText}>
+                <Text style={styles.shareSheetOptionTitle}>Carte visuelle</Text>
+                <Text style={styles.shareSheetOptionDesc}>Image partageable pour les réseaux</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={18} color={THEME.colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.shareSheetOption}
+              activeOpacity={0.7}
+              onPress={() => {
+                setShowShareMenu(false);
+                setTimeout(handleExportPdf, 200);
+              }}
+            >
+              <View style={[styles.shareSheetIconWrap, { backgroundColor: 'rgba(210,177,76,0.1)', borderColor: 'rgba(210,177,76,0.3)' }]}>
+                <MaterialIcons name="picture-as-pdf" size={22} color={THEME.colors.warmGold} />
+              </View>
+              <View style={styles.shareSheetOptionText}>
+                <Text style={styles.shareSheetOptionTitle}>Rapport PDF</Text>
+                <Text style={styles.shareSheetOptionDesc}>Analyse + conversation complète</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={18} color={THEME.colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.shareSheetCancel} onPress={() => setShowShareMenu(false)}>
+              <Text style={styles.shareSheetCancelText}>Annuler</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
+
+      {/* DreamShareCard off-screen pour capture ViewShot */}
+      <View style={styles.offscreenCard} pointerEvents="none">
+        <DreamShareCard
+          cardRef={shareCardRef}
+          dream={{
+            imageUrl: dreamImageUrl,
+            imagePalette: dreamImagePalette,
+            dreamTitle: dreamTitle,
+            date: dreamDate,
+            tags: dreamTags,
+          }}
+        />
+      </View>
+
       <AlertComponent />
     </ContainerComponent>
   );
@@ -1133,8 +1359,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
   },
   headerSubtitle: {
@@ -1150,8 +1376,21 @@ const styles = StyleSheet.create({
   },
 
   // 🏆 MESSAGES (WhatsApp style)
+  messagesWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   messagesContainer: {
     flex: 1,
+  },
+  // 🎨 AMBIENT GLOW — halo du rêve
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 180,
+    pointerEvents: 'none',
   },
   messagesContent: {
     padding: 15,
@@ -1218,7 +1457,7 @@ const styles = StyleSheet.create({
   },
   modelBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textSecondary,
   },
   loadingContainer: {
@@ -1231,6 +1470,33 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     fontSize: 14,
   },
+  // 💡 CHIPS INITIALES — sous le 1er message IA
+  initialChipsWrapper: {
+    marginTop: 10,
+    gap: 8,
+    alignSelf: 'stretch',
+    paddingLeft: 4,
+  },
+  initialChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0, 255, 176, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 176, 0.22)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 8,
+  },
+  initialChipText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: THEME.colors.text,
+    lineHeight: 19,
+  },
+
   // 🏆 SUGGESTIONS
   suggestionsContainer: {
     maxHeight: 80,
@@ -1260,7 +1526,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: THEME.colors.text,
-    fontWeight: '500',
+    fontFamily: 'AtkinsonHyperlegibleNext-Medium',
     lineHeight: 16,
   },
   // 🏆 INPUT BAR (WhatsApp style)
@@ -1327,7 +1593,7 @@ const styles = StyleSheet.create({
   },
   modelOptionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textPrimary,
   },
   modelOptionDesc: {
@@ -1432,7 +1698,7 @@ const styles = StyleSheet.create({
   },
   imagePreviewBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
   },
   // 🖼️ IMAGE DANS MESSAGE
@@ -1465,8 +1731,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   imagePickerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
     textAlign: 'center',
     marginBottom: 4,
@@ -1497,7 +1763,7 @@ const styles = StyleSheet.create({
   imagePickerOptionText: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'AtkinsonHyperlegibleNext-Medium',
     color: THEME.colors.text,
   },
   imagePickerCancel: {
@@ -1507,7 +1773,77 @@ const styles = StyleSheet.create({
   },
   imagePickerCancelText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: THEME.colors.textSecondary,
+  },
+
+  // 📤 Share Action Sheet
+  offscreenCard: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    overflow: 'hidden',
+    opacity: 0.01,
+  },
+  shareMenuOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+    zIndex: 2000,
+  },
+  shareActionSheet: {
+    backgroundColor: THEME.colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    borderTopWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  shareSheetHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: THEME.colors.textTertiary,
+    alignSelf: 'center', marginBottom: 16,
+  },
+  shareSheetTitle: {
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-SemiBold',
+    color: THEME.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    letterSpacing: 0.3,
+  },
+  shareSheetOption: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 14, gap: 14,
+    borderBottomWidth: 1, borderBottomColor: THEME.colors.cardBorder,
+  },
+  shareSheetIconWrap: {
+    width: 44, height: 44, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
+  },
+  shareSheetOptionText: { flex: 1 },
+  shareSheetOptionTitle: {
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: THEME.colors.text,
+  },
+  shareSheetOptionDesc: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
+  },
+  shareSheetCancel: {
+    alignItems: 'center', paddingVertical: 16, marginTop: 4,
+  },
+  shareSheetCancelText: {
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textSecondary,
   },
 });

@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   counter: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -378,13 +378,13 @@ const styles = StyleSheet.create({
   },
   completeButtonText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: COLORS.background,
   },
   // Intro
   introTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontFamily: 'CormorantUpright-Bold',
     color: COLORS.background,
     textAlign: 'center',
     marginTop: 24,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   // Question
   questionText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: COLORS.background,
     textAlign: 'center',
     marginTop: 24,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: COLORS.background,
     textAlign: 'center',
   },
@@ -437,8 +437,8 @@ const styles = StyleSheet.create({
   },
   // Learn
   learnTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     color: COLORS.background,
     textAlign: 'center',
     marginTop: 20,
@@ -459,14 +459,14 @@ const styles = StyleSheet.create({
   highlightText: {
     fontSize: 15,
     color: COLORS.background,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     textAlign: 'center',
     lineHeight: 22,
   },
   // Examples
   examplesTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     color: COLORS.background,
     marginBottom: 24,
   },
@@ -485,12 +485,12 @@ const styles = StyleSheet.create({
   exampleText: {
     fontSize: 15,
     color: COLORS.background,
-    fontWeight: '500',
+    fontFamily: 'AtkinsonHyperlegibleNext-Medium',
   },
   // Fact
   factTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     color: COLORS.background,
     marginTop: 20,
     marginBottom: 16,
@@ -510,13 +510,13 @@ const styles = StyleSheet.create({
   factExplanationText: {
     fontSize: 15,
     color: COLORS.background,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     textAlign: 'center',
   },
   // Takeaway
   takeawayTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontFamily: 'CormorantUpright-Bold',
     color: COLORS.background,
     marginTop: 24,
     marginBottom: 16,

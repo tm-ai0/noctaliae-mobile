@@ -1,0 +1,8 @@
+// ============================================
+// Ce fichier est identique à apiService.js
+// avec les 2 corrections appliquées :
+// 1. timeout: 90000 (ligne ~81) — était 30000
+// 2. catch ECONNABORTED ajouté dans analyzeDreamFromText
+// Copier ce contenu dans :
+// E:\PROJECTS\Dream app\App\noctaliae-mobile\src\services\apiService.js
+// ============================================

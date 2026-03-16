@@ -13,4 +13,6 @@ export const API_ENDPOINTS = {
   noctaliaeAssistant: '/noctaliae-assistant',  // 🌙 NoctaliaeAI+ (Gemini)
   noctaliaeWebSocket: '/noctaliae-live',  // ⚡ WebSocket Live API
   noctaliaeChat: '/noctaliae-chat',  // 🎙️ Chat vocal Claude (mains libres)
+  generateDreamImage: '/generate-dream-image',  // 🎨 Génération visuelle du rêve
+  verifyCode: '/verify-code',                    // 🎟️ Activation code Ko-fi
 };

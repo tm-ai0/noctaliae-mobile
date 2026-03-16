@@ -43,19 +43,23 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
     Chaque partage contribue à enrichir la recherche sur le sommeil et les rêves.
   </Text>
 
-  {/* Section Chercheurs */}
+  {/* Section Destination */}
   <Text style={[styles.sectionTitle, { color: THEME.colors.primary }]}>
-    🧬 Collaborations possibles :
+    🧬 À qui profitent vos données ?
+  </Text>
+
+  <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
+    Vos analyses anonymisées pourront être transmises à des laboratoires de recherche reconnus en neurosciences du sommeil, comme par exemple :
   </Text>
 
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • <Text style={{ fontWeight: '600' }}>Dr. Isabelle Arnulf</Text> (Institut du Cerveau, Paris)
+    • <Text style={{ fontWeight: '600' }}>DreamTeam</Text> – Institut du Cerveau (ICM), Paris
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • <Text style={{ fontWeight: '600' }}>Dr. Erik Hoel</Text> (Tufts University)
+    • <Text style={{ fontWeight: '600' }}>Walker Lab</Text> – UC Berkeley
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Autres chercheurs en neurosciences du sommeil
+    • D'autres équipes universitaires vérifiées pourront s'ajouter au fil du temps
   </Text>
 
   {/* Section Sécurité */}
@@ -76,32 +80,13 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
     • Possibilité de désactiver à tout moment
   </Text>
 
-  {/* Section Recherche */}
-  <Text style={[styles.sectionTitle, { color: THEME.colors.primary }]}>
-    🧬 Impact scientifique
-  </Text>
-
-  <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-    Vos contributions anonymes nourrissent les travaux de chercheurs comme :
-  </Text>
-
-  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Isabelle Arnulf (DreamTeam – Institut du Cerveau, Paris)
-  </Text>
-  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Erik Hoel (Tufts University)
-  </Text>
-  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Matthew Walker (UC Berkeley)
-  </Text>
-
-  {/* Section Contribution */}
+  {/* Note importante */}
   <Text style={[styles.sectionTitle, { color: THEME.colors.primary }]}>
     ✨ Note importante
   </Text>
 
   <Text style={[styles.paragraph, { color: THEME.colors.textPrimary, fontStyle: 'italic' }]}>
-    Fonctionnalité bientôt disponible, toujours activée uniquement avec votre consentement explicite.
+    Cette fonctionnalité n'est pas encore active. Seuls des laboratoires vérifiés et reconnus par la communauté scientifique seront éligibles. Votre consentement explicite sera toujours requis avant tout partage.
   </Text>
 </ScrollView>
 
@@ -112,16 +97,16 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
     onPress={onClose}
   >
     <Text style={[styles.footerButtonText, { color: THEME.colors.textPrimary }]}>
-      Non merci
+      Fermer
     </Text>
   </TouchableOpacity>
 
   <TouchableOpacity
-    style={[styles.footerButtonPrimary, { backgroundColor: THEME.colors.primary }]}
+    style={[styles.footerButtonPrimary, { backgroundColor: '#4F8DFF' }]}
     onPress={onActivate}
   >
-    <Text style={[styles.footerButtonTextPrimary, { color: THEME.colors.background }]}>
-      Activer la contribution
+    <Text style={[styles.footerButtonTextPrimary, { color: '#0c0e27' }]}>
+      👍 Ça m'intéresse !
     </Text>
   </TouchableOpacity>
 </View>

@@ -540,8 +540,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
   },
   headerSubtitle: {
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.textSecondary,
     marginBottom: 5,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   messageText: {
     fontSize: 16,
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   replayButtonText: {
     color: THEME.colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   
   // ZONE ENREGISTREMENT
@@ -672,6 +672,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.textSecondary,
     marginTop: 10,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
 });

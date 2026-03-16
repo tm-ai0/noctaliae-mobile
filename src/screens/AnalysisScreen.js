@@ -8,12 +8,11 @@ import {
   FlatList,
   Alert,
   Dimensions,
-  Linking
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getAllDreams, archiveDream, setDreamSecret, deleteDream } from '../services/storageService';
+import { getAllDreams, archiveDream, setDreamSecret, deleteDream, toggleFavoriteDream, setPinnedDream } from '../services/storageService';
 import { useTheme } from '../config/ThemeContext';
 import DreamCard from '../components/DreamCard';
 import DebugScreenLabel from '../components/DebugScreenLabel';
@@ -37,6 +36,9 @@ export default function AnalysisScreen({ navigation, route }) {
   
   // 🔐 Filtre "Rêves secrets uniquement"
   const [showOnlySecrets, setShowOnlySecrets] = useState(route.params?.showOnlySecrets || false);
+
+  // ⭐ Filtre favoris
+  const [filterFavorites, setFilterFavorites] = useState(false);
   
   // 💡 Hint pour le bouton menu (première utilisation)
   const [showMenuHint, setShowMenuHint] = useState(false);
@@ -98,7 +100,11 @@ export default function AnalysisScreen({ navigation, route }) {
     const filtered = dreams.filter(dream => {
       // 🔐 Filtre secrets : si actif, ne montrer que les secrets
       if (showOnlySecrets && !dream.isSecret) return false;
-      
+      // ⭐ Filtre favoris
+      if (filterFavorites && !dream.isFavorite) return false;
+      // 📌 Exclure le rêve épinglé de la liste (affiché en haut séparément)
+      if (dream.isPinned) return false;
+
       if (!searchQuery.trim()) return true;
       
       const query = searchQuery.toLowerCase();
@@ -128,6 +134,17 @@ export default function AnalysisScreen({ navigation, route }) {
       date: dateKey,
       data: groups[dateKey]
     }));
+  }
+
+  // ⭐ Handlers favoris + épinglage
+  async function handleFavoriteToggle(dreamId) {
+    await toggleFavoriteDream(dreamId);
+    loadAnalyzedDreams();
+  }
+
+  async function handlePinToggle(dreamId) {
+    await setPinnedDream(dreamId);
+    loadAnalyzedDreams();
   }
 
   // Handler d'archivage avec haptic feedback
@@ -231,6 +248,8 @@ export default function AnalysisScreen({ navigation, route }) {
         onArchive={handleArchiveDream}
         onFirstArchive={checkFirstArchive}
         onSecretToggle={handleSecretToggle}
+        onFavoriteToggle={handleFavoriteToggle}
+        onPinToggle={handlePinToggle}
         isSelectionMode={isSelectionMode}
         isSelected={selectedDreams.has(dream.id)}
         onSelectionToggle={() => toggleDreamSelection(dream.id)}
@@ -247,7 +266,9 @@ export default function AnalysisScreen({ navigation, route }) {
               dreamTitle: dream.title,
               dreamDate: dream.date,
               modelUsed: dream.modelUsed,
-              dreamTags: dream.tags || []
+              dreamTags: dream.tags || [],
+              dreamImageUrl: dream.imageUrl || null,
+              dreamImagePalette: dream.imagePalette || null,
             });
           }
         }}
@@ -262,7 +283,7 @@ export default function AnalysisScreen({ navigation, route }) {
         <View style={styles.dateSeparator}>
           <View style={[styles.separatorLine, { backgroundColor: theme.colors.cardBorder }]} />
           <Text style={[styles.dateHeader, { color: theme.colors.textSecondary }]}>
-            {section.date.toUpperCase()}
+            {section.date.toUpperCase()}{section.data.length > 1 ? ` · ${section.data.length}` : ''}
           </Text>
           <View style={[styles.separatorLine, { backgroundColor: theme.colors.cardBorder }]} />
         </View>
@@ -281,6 +302,7 @@ export default function AnalysisScreen({ navigation, route }) {
   }
 
   const groupedDreams = groupDreamsByDate();
+  const pinnedDream = dreams.find(d => d.isPinned);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
@@ -296,7 +318,13 @@ export default function AnalysisScreen({ navigation, route }) {
                 styles.dnaButton,
                 { backgroundColor: theme.colors.cardBackground, borderWidth: 1, borderColor: theme.colors.cardBorder }
               ]}
-              onPress={toggleSelectionMode}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  toggleSelectionMode();
+                }
+              }}
             >
               <MaterialIcons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
@@ -326,7 +354,13 @@ export default function AnalysisScreen({ navigation, route }) {
                 styles.dnaButton,
                 { backgroundColor: theme.colors.cardBackground, borderWidth: 1, borderColor: theme.colors.cardBorder }
               ]}
-              onPress={() => setShowOnlySecrets(false)}
+              onPress={() => {
+                if (navigation.canGoBack()) {
+                  navigation.goBack();
+                } else {
+                  setShowOnlySecrets(false);
+                }
+              }}
             >
               <MaterialIcons name="arrow-back" size={24} color={theme.colors.text} />
             </TouchableOpacity>
@@ -343,37 +377,61 @@ export default function AnalysisScreen({ navigation, route }) {
         ) : (
           // Mode normal
           <>
-            <TouchableOpacity 
-              style={[
-                styles.dnaButton,
-                { backgroundColor: theme.colors.primary },
-                theme.shadow.neon
-              ]}
-              onPress={() => navigation.navigate('Persona')}
-            >
-              <MaterialCommunityIcons name="dna" size={24} color={theme.colors.background} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.askButton, { backgroundColor: theme.colors.primary }, theme.shadow.neon]}
-              onPress={async () => {
-                const allDreams = await getAllDreams();
-                const analyzedDreams = allDreams.filter(d => d.analysis && !d.archived);
-                
-                navigation.navigate('MetaAnalysis', {
-                  dreams: analyzedDreams,
-                  totalCount: analyzedDreams.length
-                });
-              }}
-            >
-              <MaterialCommunityIcons 
-                name="chat" 
-                size={20} 
-                color={theme.colors.background} 
-                style={{ marginRight: 8 }} 
-              />
-              <Text style={[styles.askButtonText, { color: theme.colors.background }]}>Mes rêves</Text>
-            </TouchableOpacity>
+            <View style={styles.headerTitleGroup}>
+              <Text style={[styles.screenTitle, { color: theme.colors.textPrimary }]}>
+                Mes rêves
+              </Text>
+              {dreams.length > 0 && (
+                <Text style={[styles.dreamCount, { color: theme.colors.textSecondary }]}>
+                  {dreams.length} {dreams.length > 1 ? 'rêves' : 'rêve'}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.headerActions}>
+              {/* ⭐ Filtre favoris */}
+              <TouchableOpacity
+                style={[
+                  styles.headerIconButton,
+                  { 
+                    backgroundColor: filterFavorites ? '#D2B14C20' : theme.colors.cardBackground,
+                    borderWidth: 1,
+                    borderColor: filterFavorites ? '#D2B14C' : theme.colors.cardBorder
+                  }
+                ]}
+                onPress={() => setFilterFavorites(v => !v)}
+              >
+                <MaterialIcons name={filterFavorites ? 'star' : 'star-outline'} size={22} color={filterFavorites ? '#D2B14C' : theme.colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.headerIconButton,
+                  { backgroundColor: theme.colors.cardBackground, borderWidth: 1, borderColor: theme.colors.cardBorder }
+                ]}
+                onPress={async () => {
+                  const allDreams = await getAllDreams();
+                  const analyzedDreams = allDreams.filter(d => d.analysis && !d.archived);
+                  navigation.navigate('MetaAnalysis', {
+                    dreams: analyzedDreams,
+                    totalCount: analyzedDreams.length
+                  });
+                }}
+              >
+                <MaterialCommunityIcons name="chat-outline" size={22} color={theme.colors.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.headerIconButton,
+                  { backgroundColor: theme.colors.primary },
+                  theme.shadow.neon
+                ]}
+                onPress={() => navigation.navigate('Persona')}
+              >
+                <MaterialCommunityIcons name="dna" size={22} color={theme.colors.background} />
+              </TouchableOpacity>
+            </View>
           </>
         )}
       </View>
@@ -387,23 +445,21 @@ export default function AnalysisScreen({ navigation, route }) {
           <MaterialIcons name="search" size={22} color={theme.colors.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.textPrimary }]}
-            placeholder="Rechercher..."
+            placeholder="Rechercher un rêve..."
             placeholderTextColor={theme.colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MaterialIcons name="close" size={18} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
-        
-        <TouchableOpacity 
-          style={[
-            styles.iconButton,
-            { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.cardBorder }
-          ]}
-          onPress={() => Linking.openURL('https://nocty.thomasmaury.fr')}
-        >
-          <MaterialIcons name="help-outline" size={22} color={theme.colors.text} />
-        </TouchableOpacity>
-        
+
         <TouchableOpacity 
           style={[
             styles.iconButton,
@@ -414,6 +470,17 @@ export default function AnalysisScreen({ navigation, route }) {
           <MaterialIcons name="archive" size={22} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
+
+      {/* 📌 Rêve épinglé */}
+      {pinnedDream && !isSelectionMode && !showOnlySecrets && !filterFavorites && (
+        <View style={[styles.pinnedSection, { paddingHorizontal: 20 }]}>
+          <View style={styles.pinnedHeader}>
+            <MaterialCommunityIcons name="pin" size={14} color="#4F8DFF" />
+            <Text style={[styles.pinnedLabel, { color: '#4F8DFF' }]}>ÉPINGLÉ</Text>
+          </View>
+          {renderDreamCard({ item: pinnedDream, index: 0, isFirstOverall: false })}
+        </View>
+      )}
 
       {/* Liste */}
       {groupedDreams.length === 0 ? (
@@ -510,16 +577,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  askButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 999,
+  // Header mode normal
+  headerTitleGroup: {
+    flex: 1,
+  },
+  screenTitle: {
+    fontSize: 34,
+    fontFamily: 'CormorantUpright-Bold',
+    lineHeight: 38,
+  },
+  dreamCount: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    marginTop: 1,
+    letterSpacing: 0.3,
+  },
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
-  askButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+  headerIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -532,7 +615,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 999,
     paddingHorizontal: 15,
     height: 48,
     gap: 10,
@@ -559,7 +642,7 @@ const styles = StyleSheet.create({
   },
   dateHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     letterSpacing: 1,
     paddingHorizontal: 8,
   },
@@ -571,8 +654,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -580,6 +663,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
   
   // Mode sélection
@@ -589,7 +673,7 @@ const styles = StyleSheet.create({
   },
   selectionText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   selectAllButton: {
     flexDirection: 'row',
@@ -601,7 +685,7 @@ const styles = StyleSheet.create({
   },
   selectAllText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   selectionBar: {
     position: 'absolute',
@@ -630,10 +714,27 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   
+  // 📌 Épinglé
+  pinnedSection: {
+    marginBottom: 4,
+  },
+  pinnedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+    paddingLeft: 2,
+  },
+  pinnedLabel: {
+    fontSize: 11,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    letterSpacing: 1.2,
+  },
+
   // 🔐 Mode secrets
   secretsHeaderCenter: {
     flex: 1,
@@ -643,7 +744,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   secretsHeaderTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
   },
 });

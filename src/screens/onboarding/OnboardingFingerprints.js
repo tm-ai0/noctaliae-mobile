@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,416 +9,458 @@ import {
   Platform,
   Alert,
   Modal,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../../config/ThemeContext';
 import { useGlow } from '../../contexts/GlowContext';
+import * as Haptics from 'expo-haptics';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
 
-// ============================================
-// 🧠 HELPER FUNCTION - TOP 0.1% APPROACH
-// ============================================
-/**
- * Vérifie si l'utilisateur a fourni des données valides
- * sur l'écran précédent (markers) OU l'écran actuel (tags/texte)
- * 
- * @param {Object|null|undefined} markers - Données de OnboardingMarkers
- * @param {Array} selectedTags - Tags sélectionnés sur cet écran
- * @param {string} customText - Texte libre sur cet écran
- * @returns {Object} { hasData: boolean, source: string, count: number }
- * 
- * EDGE CASES GÉRÉS :
- * - markers = null | undefined | {}
- * - markers.interests = null | undefined | []
- * - selectedTags = []
- * - customText = '' | '   ' (espaces)
- * 
- * SCALABILITÉ :
- * Pour ajouter un nouveau champ marker, ajouter dans markerFields array
- */
-function hasValidUserData(markers, selectedTags, customText) {
-  let dataCount = 0;
-  let sources = [];
-  
-  // 🔍 1. Vérifier les markers de l'écran précédent
-  if (markers && typeof markers === 'object') {
-    // Champs simples (string)
-    // 🧠 TOP 0.1% : "not_sure" compte aussi ! L'utilisateur a fait un choix conscient
-    const markerFields = ['ageRange', 'rhythm', 'mood'];
-    markerFields.forEach(field => {
-      if (markers[field] && String(markers[field]).trim()) {
-        dataCount++;
-        // Note : on log si c'est "not_sure" pour tracer, mais ça compte quand même
-        const value = markers[field];
-        sources.push(value === 'not_sure' ? `${field}(« pas sûr »)` : field);
-      }
-    });
-    
-    // Champs array (interests)
-    if (Array.isArray(markers.interests) && markers.interests.length > 0) {
-      dataCount += markers.interests.length;
-      sources.push('interests');
-    }
-  }
-  
-  // 🔍 2. Vérifier les tags de cet écran
-  if (Array.isArray(selectedTags) && selectedTags.length > 0) {
-    dataCount += selectedTags.length;
-    sources.push('tags');
-  }
-  
-  // 🔍 3. Vérifier le texte libre
-  if (customText && String(customText).trim().length > 0) {
-    dataCount++;
-    sources.push('customText');
-  }
-  
-  const result = {
-    hasData: dataCount > 0,
-    source: sources.join(', ') || 'none',
-    count: dataCount
-  };
-  
-  // 📊 Log pour debug (utile en dev)
-  console.log('🔍 hasValidUserData:', result);
-  
-  return result;
+const OB = {
+  bg: '#060A14',
+  bgSheet: '#0D1220',
+  accent: '#D2B14C',
+  accentGlow: 'rgba(210, 177, 76, 0.12)',
+  text: '#F0EBE0',
+  textSub: 'rgba(240, 235, 224, 0.55)',
+  textMuted: 'rgba(240, 235, 224, 0.28)',
+  card: 'rgba(255,255,255,0.04)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+  cardSelected: 'rgba(210, 177, 76, 0.13)',
+  cardBorderSelected: '#D2B14C',
+  violet: 'rgba(100, 60, 180, 0.18)',
+  indigo: 'rgba(60, 80, 200, 0.12)',
+  divider: 'rgba(255,255,255,0.06)',
+};
+
+const PHOSPHENE_DATA = [
+  { x: 0.82, y: 0.04, size: 2,   dur: 7500, delay: 500 },
+  { x: 0.10, y: 0.22, size: 1.5, dur: 8000, delay: 1400 },
+  { x: 0.60, y: 0.45, size: 2.5, dur: 6200, delay: 0 },
+  { x: 0.93, y: 0.62, size: 1.5, dur: 9000, delay: 2000 },
+  { x: 0.28, y: 0.78, size: 2,   dur: 7000, delay: 800 },
+];
+
+function Phosphene({ x, y, size, dur, delay }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(opacity, { toValue: 0.4, duration: dur / 2, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.05, duration: dur / 2, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+  return (
+    <Animated.View style={{
+      position: 'absolute',
+      left: x * SCREEN_W, top: y * SCREEN_H,
+      width: size, height: size, borderRadius: size,
+      backgroundColor: OB.accent, opacity,
+    }} />
+  );
 }
 
+function ProgressDots({ current, total }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 6 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <View key={i} style={{
+          width: i === current ? 20 : 7, height: 7, borderRadius: 4,
+          backgroundColor: i <= current ? OB.accent : OB.textMuted,
+        }} />
+      ))}
+    </View>
+  );
+}
+
+// ============================================
+// 🏷️ CATÉGORIES DE TAGS
+// ============================================
+const TAG_CATEGORIES = [
+  {
+    id: 'personality',
+    label: 'Personnalité',
+    icon: '🧠',
+    tags: ['Introverti', 'Extraverti', 'Analytique', 'Empathique', 'Créatif', 'Intuitif', 'Rationnel', 'Sensible'],
+  },
+  {
+    id: 'life',
+    label: 'Contexte de vie',
+    icon: '🌱',
+    tags: ['Parent', 'Étudiant', 'Artiste', 'Entrepreneur', 'Soignant', 'En transition', 'Voyageur', 'Télétravaill.'],
+  },
+  {
+    id: 'inner',
+    label: 'États intérieurs',
+    icon: '🌊',
+    tags: ['Anxiété', 'Nostalgie', 'Ambition', 'Deuil', 'Transformation', 'Sérénité', 'Doute', 'Curiosité'],
+  },
+  {
+    id: 'habits',
+    label: 'Habitudes',
+    icon: '⚡',
+    tags: ['Méditation', 'Sport intense', 'Travail de nuit', 'Voyage fréquent', 'Lecture', 'Musique', 'Nature', 'Tech'],
+  },
+];
+
+// ============================================
+// Tag chip
+// ============================================
+function TagChip({ label, selected, onPress }) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.tag,
+        selected
+          ? { backgroundColor: OB.cardSelected, borderColor: OB.cardBorderSelected }
+          : { backgroundColor: OB.card, borderColor: OB.cardBorder },
+      ]}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      activeOpacity={0.75}
+    >
+      <Text style={[styles.tagText, { color: selected ? OB.accent : OB.textSub }]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ============================================
+// Section avec accordion
+// ============================================
+function TagSection({ category, selectedTags, onToggle }) {
+  const [expanded, setExpanded] = useState(false);
+  const rotate = useRef(new Animated.Value(1)).current;
+
+  const toggle = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.timing(rotate, {
+      toValue: expanded ? 0 : 1, duration: 200, useNativeDriver: true,
+    }).start();
+    setExpanded(!expanded);
+  };
+
+  const spin = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const selectedCount = category.tags.filter(t => selectedTags.includes(t)).length;
+
+  return (
+    <View style={styles.section}>
+      <TouchableOpacity style={styles.sectionHeader} onPress={toggle} activeOpacity={0.7}>
+        <Text style={styles.sectionIcon}>{category.icon}</Text>
+        <Text style={styles.sectionTitle}>{category.label}</Text>
+        {selectedCount > 0 && (
+          <View style={styles.sectionBadge}>
+            <Text style={styles.sectionBadgeText}>{selectedCount}</Text>
+          </View>
+        )}
+        <Animated.View style={{ transform: [{ rotate: spin }], marginLeft: 'auto' }}>
+          <MaterialIcons name="keyboard-arrow-down" size={20} color={OB.textMuted} />
+        </Animated.View>
+      </TouchableOpacity>
+
+      {expanded && (
+        <View style={styles.tagsWrap}>
+          {category.tags.map(tag => (
+            <TagChip
+              key={tag}
+              label={tag}
+              selected={selectedTags.includes(tag)}
+              onPress={() => onToggle(tag)}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ============================================
+// Helper validation
+// ============================================
+function hasValidUserData(markers, selectedTags, customTags) {
+  let count = 0;
+  if (markers) {
+    ['ageRange', 'rhythm', 'mood'].forEach(f => { if (markers[f] && markers[f] !== 'not_sure') count++; });
+  }
+  count += selectedTags.length + customTags.length;
+  return { hasData: count > 0, count };
+}
+
+// ============================================
+// 🌙 ONBOARDING FINGERPRINTS
+// ============================================
 export default function OnboardingFingerprints({ route, navigation }) {
-  const { theme } = useTheme();
-  const { triggerCelebration } = useGlow(); // 🎉 Glow post-onboarding
+  const { triggerCelebration } = useGlow();
   const insets = useSafeAreaInsets();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const { markers } = route.params || {};
 
   const [selectedTags, setSelectedTags] = useState([]);
-  const [customText, setCustomText] = useState('');
+  const [customTags, setCustomTags] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTagText, setNewTagText] = useState('');
 
-  const suggestedTags = [
-    '🎨 Créativité',
-    '🎭 Culture',
-    '😐 Stress',
-    '😊 Joie',
-    '🏃 Sport',
-    '🎵 Musique',
-    '📚 Lecture',
-    '✈️ Voyage',
-    '🐕 Animaux',
-    '🧘 Méditation',
-    '💻 Tech',
-    '🌿 Nature'
-  ];
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, []);
 
   const handleToggleTag = (tag) => {
-    setSelectedTags(prev => 
+    setSelectedTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
   };
 
-  const handleSkip = async () => {
-    await completeOnboarding([]);
+  const handleAddCustomTag = () => {
+    const trimmed = newTagText.trim();
+    if (!trimmed || customTags.includes(trimmed)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCustomTags(prev => [...prev, trimmed]);
+    setNewTagText('');
+    setShowAddModal(false);
+  };
+
+  const handleRemoveCustomTag = (tag) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCustomTags(prev => prev.filter(t => t !== tag));
   };
 
   const handleFinish = async () => {
-    // 🧠 TOP 0.1% : Vérifier TOUTES les sources de données (markers + tags + texte)
-    const userData = hasValidUserData(markers, selectedTags, customText);
-    
+    const userData = hasValidUserData(markers, selectedTags, customTags);
     if (!userData.hasData) {
-      // ⚠️ Vraiment AUCUNE donnée nulle part → Afficher modal bienveillant
-      console.log('⚠️ Aucune donnée utilisateur détectée, affichage modal');
       setShowConfirmModal(true);
       return;
     }
-    
-    // ✅ L'utilisateur a fourni des données → Sauvegarder directement
-    console.log(`✅ Données trouvées (${userData.count} items de: ${userData.source})`);
     await saveFingerprints();
   };
 
   const saveFingerprints = async () => {
     setIsSaving(true);
-
     try {
       const fingerprints = [];
-
-      // Ajouter les repères de l'écran précédent
-      // 🧠 TOP 0.1% : On ignore les "not_sure" car ils n'apportent rien à l'analyse
       if (markers) {
-        if (markers.ageRange && markers.ageRange !== 'not_sure') {
-          fingerprints.push({
-            id: `marker_age_${Date.now()}`,
-            text: `Tranche d'âge : ${markers.ageRange}`,
-            createdAt: new Date().toISOString(),
-            source: 'onboarding'
-          });
-        }
-        if (markers.rhythm && markers.rhythm !== 'not_sure') {
-          fingerprints.push({
-            id: `marker_rhythm_${Date.now()}`,
-            text: `Rythme de vie : ${markers.rhythm}`,
-            createdAt: new Date().toISOString(),
-            source: 'onboarding'
-          });
-        }
-        if (markers.mood && markers.mood !== 'not_sure') {
-          fingerprints.push({
-            id: `marker_mood_${Date.now()}`,
-            text: `État d'esprit : ${markers.mood}`,
-            createdAt: new Date().toISOString(),
-            source: 'onboarding'
-          });
-        }
-        if (markers.interests && markers.interests.length > 0) {
-          fingerprints.push({
-            id: `marker_interests_${Date.now()}`,
-            text: `Centres d'intérêt : ${markers.interests.join(', ')}`,
-            createdAt: new Date().toISOString(),
-            source: 'onboarding'
-          });
-        }
+        const markerMap = {
+          ageRange: "Tranche d'âge",
+          rhythm: 'Rythme de vie',
+          mood: "État d'esprit",
+        };
+        Object.entries(markerMap).forEach(([key, label]) => {
+          if (markers[key] && markers[key] !== 'not_sure') {
+            fingerprints.push({
+              id: `marker_${key}_${Date.now()}`,
+              text: `${label} : ${markers[key]}`,
+              createdAt: new Date().toISOString(),
+              source: 'onboarding',
+            });
+          }
+        });
       }
-
-      // Ajouter les tags sélectionnés
-      selectedTags.forEach((tag, index) => {
+      [...selectedTags, ...customTags].forEach((tag, i) => {
         fingerprints.push({
-          id: `tag_${Date.now()}_${index}`,
+          id: `tag_${Date.now()}_${i}`,
           text: tag,
           createdAt: new Date().toISOString(),
-          source: 'onboarding'
+          source: 'onboarding',
         });
       });
-
-      // Ajouter le texte libre
-      if (customText.trim()) {
-        fingerprints.push({
-          id: `custom_${Date.now()}`,
-          text: customText.trim(),
-          createdAt: new Date().toISOString(),
-          source: 'onboarding'
-        });
-      }
-
       await completeOnboarding(fingerprints);
     } catch (error) {
-      console.error('❌ Erreur sauvegarde empreintes:', error);
+      console.error('❌ Erreur sauvegarde:', error);
       Alert.alert('Erreur', 'Impossible de sauvegarder', [{ text: 'OK' }], { userInterfaceStyle: 'dark' });
       setIsSaving(false);
     }
   };
 
   const completeOnboarding = async (fingerprints) => {
-    try {
-      // Sauvegarder les empreintes
-      await AsyncStorage.setItem(FINGERPRINTS_KEY, JSON.stringify(fingerprints));
-      
-      // Marquer l'onboarding comme complété
-      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
-      
-      console.log(`✅ Onboarding terminé avec ${fingerprints.length} empreintes`);
-      
-      // 🎉 Déclencher le glow de célébration (vert néon pendant 5s)
-      triggerCelebration(5000);
-      
-      // Naviguer vers l'app principale
-      navigation.replace('MainTabs');
-    } catch (error) {
-      console.error('❌ Erreur finalisation onboarding:', error);
-      setIsSaving(false);
-    }
+    await AsyncStorage.setItem(FINGERPRINTS_KEY, JSON.stringify(fingerprints));
+    await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+    triggerCelebration(5000);
+    navigation.replace('OnboardingDeepDream');
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
+  const totalSelected = selectedTags.length + customTags.length;
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <View style={styles.glowViolet} />
+      <View style={styles.glowIndigo} />
+      {PHOSPHENE_DATA.map((p, i) => <Phosphene key={i} {...p} />)}
+
       {/* Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 20 }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={theme.colors.text} />
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 16 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <MaterialIcons name="arrow-back" size={22} color={OB.textSub} />
         </TouchableOpacity>
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressDot, { backgroundColor: theme.colors.primary }]} />
-          <View style={[styles.progressDot, { backgroundColor: theme.colors.primary }]} />
-          <View style={[styles.progressDot, { backgroundColor: theme.colors.primary }]} />
-        </View>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-          <Text style={[styles.skipButtonText, { color: theme.colors.textSecondary }]}>
-            Passer
-          </Text>
+        <ProgressDots current={2} total={3} />
+        <TouchableOpacity onPress={() => completeOnboarding([])} style={styles.skipBtn}>
+          <Text style={styles.skipBtnText}>Passer</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView}
+      <Animated.ScrollView
+        style={[styles.scrollView, { opacity: fadeAnim }]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          Vos empreintes
-        </Text>
-        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-          Ajoutez ce qui vous définit (optionnel)
+        <Text style={styles.title}>Vos empreintes</Text>
+        <Text style={styles.subtitle}>
+          Plus vous partagez, plus les analyses vous ressemblent.{'\n'}
+          <Text style={{ color: OB.textMuted }}>Tout reste sur votre téléphone.</Text>
         </Text>
 
-        {/* Tags suggérés */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            🏷️ Tags rapides
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
-            Sélectionnez ce qui vous correspond
-          </Text>
-          <View style={styles.tagsContainer}>
-            {suggestedTags.map((tag) => (
-              <TouchableOpacity
-                key={tag}
-                style={[
-                  styles.tag,
-                  { 
-                    backgroundColor: selectedTags.includes(tag)
-                      ? theme.colors.primary
-                      : theme.colors.cardBackground,
-                    borderColor: selectedTags.includes(tag)
-                      ? theme.colors.primary
-                      : theme.colors.cardBorder
-                  }
-                ]}
-                onPress={() => handleToggleTag(tag)}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.tagText, 
-                  { 
-                    color: selectedTags.includes(tag)
-                      ? theme.colors.background
-                      : theme.colors.text 
-                  }
-                ]}>
-                  {tag}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Texte libre */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            ✍️ Texte libre
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
-            Écrivez ce que vous voulez partager
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              { 
-                backgroundColor: theme.colors.cardBackground,
-                borderColor: theme.colors.cardBorder,
-                color: theme.colors.text
-              }
-            ]}
-            placeholder="Ex: Je suis graphiste freelance, j'adore la montagne et j'ai un chien..."
-            placeholderTextColor={theme.colors.textSecondary}
-            value={customText}
-            onChangeText={setCustomText}
-            multiline
-            maxLength={300}
-            textAlignVertical="top"
+        {/* Catégories de tags */}
+        {TAG_CATEGORIES.map(cat => (
+          <TagSection
+            key={cat.id}
+            category={cat}
+            selectedTags={selectedTags}
+            onToggle={handleToggleTag}
           />
-          <Text style={[styles.charCount, { color: theme.colors.textSecondary }]}>
-            {customText.length}/300
-          </Text>
+        ))}
+
+        {/* Tags custom */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionIcon}>✏️</Text>
+            <Text style={styles.sectionTitle}>Mes propres mots</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => setShowAddModal(true)}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="add" size={16} color={OB.bg} />
+              <Text style={styles.addBtnText}>Ajouter</Text>
+            </TouchableOpacity>
+          </View>
+
+          {customTags.length > 0 ? (
+            <View style={styles.tagsWrap}>
+              {customTags.map(tag => (
+                <TouchableOpacity
+                  key={tag}
+                  style={[styles.tag, { backgroundColor: OB.cardSelected, borderColor: OB.cardBorderSelected }]}
+                  onPress={() => handleRemoveCustomTag(tag)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.tagText, { color: OB.accent }]}>{tag}</Text>
+                  <MaterialIcons name="close" size={13} color={OB.accent} style={{ marginLeft: 2 }} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.emptyCustom}>Ajoutez vos propres mots-clés</Text>
+          )}
         </View>
 
         {/* Note */}
-        <View style={[styles.noteContainer, { backgroundColor: theme.colors.primaryGlow }]}>
-          <MaterialCommunityIcons name="lightbulb-on" size={20} color={theme.colors.primary} />
-          <Text style={[styles.noteText, { color: theme.colors.text }]}>
-            Plus vous ajoutez d'infos, plus les analyses seront personnalisées. Vous pourrez modifier tout ça plus tard dans Paramètres → Persona.
-          </Text>
-        </View>
+        {totalSelected > 0 && (
+          <View style={styles.noteRow}>
+            <MaterialCommunityIcons name="check-circle-outline" size={16} color={OB.accent} />
+            <Text style={styles.noteText}>
+              {totalSelected} empreinte{totalSelected > 1 ? 's' : ''} sélectionnée{totalSelected > 1 ? 's' : ''} — vos analyses seront personnalisées dès le premier rêve.
+            </Text>
+          </View>
+        )}
 
-        <View style={{ height: 120 }} />
-      </ScrollView>
+        <View style={{ height: 140 }} />
+      </Animated.ScrollView>
 
       {/* Footer */}
-      <View style={[styles.footer, { 
-        backgroundColor: theme.colors.background,
-        paddingBottom: Math.max(insets.bottom, 20) + 20 
-      }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
         <TouchableOpacity
-          style={[styles.finishButton, { backgroundColor: theme.colors.primary }]}
+          style={styles.primaryButton}
           onPress={handleFinish}
           disabled={isSaving}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           {isSaving ? (
-            <Text style={[styles.finishButtonText, { color: theme.colors.background }]}>
-              Enregistrement...
-            </Text>
+            <Text style={styles.primaryButtonText}>Enregistrement...</Text>
           ) : (
             <>
-              <MaterialCommunityIcons 
-                name="check" 
-                size={24} 
-                color={theme.colors.background} 
-              />
-              <Text style={[styles.finishButtonText, { color: theme.colors.background }]}>
-                Terminer
-              </Text>
+              <MaterialCommunityIcons name="check" size={22} color={OB.bg} />
+              <Text style={styles.primaryButtonText}>Terminer</Text>
             </>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Modal de confirmation personnalisé (thème sombre) */}
-      <Modal
-        visible={showConfirmModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowConfirmModal(false)}
-      >
+      {/* Modal: ajouter tag custom */}
+      <Modal visible={showAddModal} transparent animationType="fade" onRequestClose={() => setShowAddModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.cardBackground }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
-              Continuer sans empreintes ?
-            </Text>
-            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Ajouter un mot-clé</Text>
+              <Text style={styles.modalSub}>Un trait, une passion, une situation de vie…</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Ex: Musicien amateur, Noctambule..."
+                placeholderTextColor={OB.textMuted}
+                value={newTagText}
+                onChangeText={setNewTagText}
+                maxLength={40}
+                autoFocus
+                onSubmitEditing={handleAddCustomTag}
+                returnKeyType="done"
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, { borderColor: OB.cardBorder }]}
+                  onPress={() => { setShowAddModal(false); setNewTagText(''); }}
+                >
+                  <Text style={[styles.modalBtnText, { color: OB.textSub }]}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, { backgroundColor: newTagText.trim() ? OB.accent : OB.card, borderColor: 'transparent' }]}
+                  onPress={handleAddCustomTag}
+                  disabled={!newTagText.trim()}
+                >
+                  <Text style={[styles.modalBtnText, { color: newTagText.trim() ? OB.bg : OB.textMuted }]}>Ajouter</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Modal: confirmer sans données */}
+      <Modal visible={showConfirmModal} transparent animationType="fade" onRequestClose={() => setShowConfirmModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Continuer sans empreintes ?</Text>
+            <Text style={styles.modalSub}>
               Pas de souci ! Vous pourrez toujours les ajouter plus tard dans Paramètres → Persona pour des analyses plus personnalisées.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, { borderColor: theme.colors.cardBorder }]}
+                style={[styles.modalBtn, { borderColor: OB.cardBorder }]}
                 onPress={() => setShowConfirmModal(false)}
               >
-                <Text style={[styles.modalButtonText, { color: theme.colors.textSecondary }]}>
-                  Annuler
-                </Text>
+                <Text style={[styles.modalBtnText, { color: OB.textSub }]}>Retour</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary, { backgroundColor: theme.colors.primary }]}
-                onPress={() => {
-                  setShowConfirmModal(false);
-                  completeOnboarding([]);
-                }}
+                style={[styles.modalBtn, { backgroundColor: OB.accent, borderColor: 'transparent' }]}
+                onPress={() => { setShowConfirmModal(false); completeOnboarding([]); }}
               >
-                <Text style={[styles.modalButtonText, { color: theme.colors.background }]}>
-                  Terminer
-                </Text>
+                <Text style={[styles.modalBtnText, { color: OB.bg }]}>Terminer</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -429,180 +471,150 @@ export default function OnboardingFingerprints({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: OB.bg },
+  glowViolet: {
+    position: 'absolute', top: -60, right: -40,
+    width: 240, height: 240, borderRadius: 120,
+    backgroundColor: OB.violet,
+  },
+  glowIndigo: {
+    position: 'absolute', bottom: 40, left: -60,
+    width: 220, height: 220, borderRadius: 110,
+    backgroundColor: OB.indigo,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    justifyContent: 'space-between',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 16,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  skipButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 30,
-  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  skipBtn: { paddingHorizontal: 4, paddingVertical: 8 },
+  skipBtnText: { fontSize: 15, color: OB.textMuted, fontFamily: 'AtkinsonHyperlegibleNext-Regular' },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 24 },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: 34, color: OB.text, fontFamily: 'CormorantUpright-Bold',
+    marginBottom: 8, lineHeight: 40,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 32,
-    lineHeight: 22,
+    fontSize: 15, color: OB.textSub, lineHeight: 22,
+    marginBottom: 28, fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
+
+  // Section
   section: {
-    marginBottom: 32,
+    marginBottom: 20,
+    backgroundColor: OB.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: OB.cardBorder,
+    overflow: 'hidden',
+    padding: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12,
+  },
+  sectionIcon: { fontSize: 18 },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 6,
+    fontSize: 14, color: OB.text,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    marginBottom: 16,
+  sectionBadge: {
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: OB.accent,
+    alignItems: 'center', justifyContent: 'center',
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+  sectionBadgeText: {
+    fontSize: 11, color: OB.bg,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
+
+  // Tags
+  tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 2,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, borderWidth: 1,
   },
   tagText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 13, fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
-  textInput: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 16,
-    fontSize: 16,
-    minHeight: 120,
-    maxHeight: 200,
-    lineHeight: 24,
+
+  // Bouton + ajouter
+  addBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: OB.accent,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 20, marginLeft: 'auto',
   },
-  charCount: {
-    fontSize: 12,
-    textAlign: 'right',
-    marginTop: 8,
+  addBtnText: {
+    fontSize: 12, color: OB.bg,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
-  noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    marginBottom: 20,
+  emptyCustom: {
+    fontSize: 13, color: OB.textMuted,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    fontStyle: 'italic',
   },
-  noteText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  footer: {
-    paddingHorizontal: 30,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  finishButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    gap: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#9B59B6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  finishButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  
-  // Modal de confirmation
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 30,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 320,
-    borderRadius: 16,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+
+  // Note
+  noteRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: OB.accentGlow, borderRadius: 10,
+    paddingVertical: 12, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: 'rgba(210, 177, 76, 0.15)',
     marginBottom: 8,
   },
-  modalSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
+  noteText: {
+    flex: 1, fontSize: 13, color: OB.textSub, lineHeight: 19,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
+
+  // Footer
+  footer: {
+    paddingHorizontal: 28, paddingTop: 20,
+    borderTopWidth: 1, borderTopColor: OB.divider,
+    backgroundColor: OB.bg,
   },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
+  primaryButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: OB.accent, paddingVertical: 18, borderRadius: 14, gap: 8,
+    ...Platform.select({
+      ios: { shadowColor: OB.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12 },
+      android: { elevation: 8 },
+    }),
   },
-  modalButtonPrimary: {
-    borderWidth: 0,
+  primaryButtonText: {
+    fontSize: 17, color: OB.bg, fontFamily: 'AtkinsonHyperlegibleNext-Bold', letterSpacing: 0.3,
   },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+
+  // Modals
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center', alignItems: 'center', padding: 28,
   },
+  modalContent: {
+    width: '100%', maxWidth: 340,
+    backgroundColor: '#0E1525',
+    borderRadius: 16, padding: 24,
+    borderWidth: 1, borderColor: OB.cardBorder,
+  },
+  modalTitle: {
+    fontSize: 22, color: OB.text,
+    fontFamily: 'CormorantUpright-Bold', marginBottom: 8,
+  },
+  modalSub: {
+    fontSize: 14, color: OB.textSub, lineHeight: 20,
+    marginBottom: 20, fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
+  modalInput: {
+    backgroundColor: OB.card, borderColor: OB.cardBorder, borderWidth: 1,
+    borderRadius: 10, padding: 14, fontSize: 15, color: OB.text,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular', marginBottom: 20,
+  },
+  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 12,
+    alignItems: 'center', borderWidth: 1,
+  },
+  modalBtnText: { fontSize: 15, fontFamily: 'AtkinsonHyperlegibleNext-Bold' },
 });

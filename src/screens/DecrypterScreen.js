@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   scrollView: {
     flex: 1,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   heroNumber: {
     fontSize: 72,
-    fontWeight: '800',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     letterSpacing: -2,
   },
   heroText: {
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   sectionContent: {},
   paragraph: {
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bold: {
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   italic: {
     fontStyle: 'italic',
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   takeawayTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     marginBottom: 5,
   },
   takeawayText: {

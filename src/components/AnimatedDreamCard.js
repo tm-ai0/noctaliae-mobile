@@ -223,14 +223,14 @@ const styles = StyleSheet.create({
   },
   typeBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-SemiBold',
   },
   cardTime: {
     fontSize: 11,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     marginBottom: 8,
   },
   cardResume: {
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   analyzeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
 });

@@ -248,7 +248,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
             Bienvenue dans Mes rêves !
           </Text>
           <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
-            Je vais analyser <Text style={{ fontWeight: '700', color: theme.colors.text }}>{totalCount} de vos rêves</Text> pour détecter des patterns, symboles récurrents et évolutions émotionnelles.
+            Je vais analyser <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: theme.colors.text }}>{totalCount} de vos rêves</Text> pour détecter des patterns, symboles récurrents et évolutions émotionnelles.
           </Text>
           <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
             Pose-moi une question ou choisis une suggestion ci-dessous.
@@ -370,8 +370,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
   },
   iconButton: {
     width: 40,
@@ -401,8 +401,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   welcomeTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     marginBottom: 16,
   },
   welcomeText: {
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     letterSpacing: 1,
     marginBottom: 12,
   },

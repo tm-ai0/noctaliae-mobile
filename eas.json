@@ -35,6 +35,16 @@
         "APP_VARIANT": "production",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
+    },
+    "open-testing": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "APP_VARIANT": "production",
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      }
     }
   },
   "submit": {
@@ -42,6 +52,12 @@
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
         "track": "internal"
+      }
+    },
+    "open-testing": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "beta"
       }
     }
   }

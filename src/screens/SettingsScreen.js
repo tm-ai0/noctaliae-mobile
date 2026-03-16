@@ -1,725 +1,1643 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Switch, 
-  ScrollView, 
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  ScrollView,
   TouchableOpacity,
   Platform,
-  Linking
-} from 'react-native';
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { premiumService } from '../services/premiumService';
-import { useTheme } from '../config/ThemeContext';
-import DebugScreenLabel from '../components/DebugScreenLabel';
-import { DeepDreamInfoModal } from '../components/DeepDreamInfoModal';
-import { ContributeResearchModal } from '../components/ContributeResearchModal';
-import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
-const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
-const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
-const PLAYGROUND_KOFI_KEY = '@noctaliae_playground_kofi';
-const MENU_HINT_KEY = '@noctaliae_menu_hint_shown';
-import { ResearchOptInVIP } from '../components/ResearchOptInVIP';
-import { useGlow } from '../contexts/GlowContext';
-import { getAllDreams, deleteDream } from '../services/storageService';
-import BiometricService from '../services/biometricService';
+  Linking,
+  LayoutAnimation,
+  UIManager,
+} from 'react-native'
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { premiumService } from '../services/premiumService'
+import { useTheme } from '../config/ThemeContext'
+import DebugScreenLabel from '../components/DebugScreenLabel'
+import { DeepDreamInfoModal } from '../components/DeepDreamInfoModal'
+import { ContributeResearchModal } from '../components/ContributeResearchModal'
+import { useNoctaliaeAlert } from '../components/NoctaliaeAlert'
+import { ResearchOptInVIP } from '../components/ResearchOptInVIP'
+import { useGlow } from '../contexts/GlowContext'
+import { getAllDreams, deleteDream } from '../services/storageService'
+import BiometricService from '../services/biometricService'
+import {
+  forceUpdateCheck,
+  getCurrentAppVersion,
+} from '../services/updateService'
+import { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
+import {
+  notificationService,
+  DEFAULT_NOTIF_SETTINGS,
+} from '../services/notificationService'
+import { streakService } from '../services/streakService'
+
+const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints'
+const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed'
+const PLAYGROUND_KOFI_KEY = '@noctaliae_playground_kofi'
+const MENU_HINT_KEY = '@noctaliae_menu_hint_shown'
+const APP_VERSION = getCurrentAppVersion()
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, currentThemeId, changeTheme, availableThemes } = useTheme();
-  const { refreshGlowStates } = useGlow();
-  const insets = useSafeAreaInsets();
-  const { showAlert, AlertComponent } = useNoctaliaeAlert();
-  
-  const [isPremium, setIsPremium] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [appearanceExpanded, setAppearanceExpanded] = useState(false);
-  const [kofiExpanded, setKofiExpanded] = useState(false);
-  const [fingerprintCount, setFingerprintCount] = useState(0);
-  const [showDeepDreamModal, setShowDeepDreamModal] = useState(false);
-  const [kofiStyles, setKofiStyles] = useState(null); // 🎨 Styles du Playground
+  const { theme, currentThemeId, changeTheme, availableThemes } = useTheme()
+  const { refreshGlowStates } = useGlow()
+  const insets = useSafeAreaInsets()
+  const { showAlert, AlertComponent } = useNoctaliaeAlert()
+
+  const [isPremium, setIsPremium] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [appearanceExpanded, setAppearanceExpanded] = useState(false)
+  const [kofiExpanded, setKofiExpanded] = useState(false)
+  const [fingerprintCount, setFingerprintCount] = useState(0)
+  const [showDeepDreamModal, setShowDeepDreamModal] = useState(false)
+  const [kofiStyles, setKofiStyles] = useState(null)
+  const [devTapCount, setDevTapCount] = useState(0)
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+
+  // 🔔 Notifications & Streak
+  const [notifSettings, setNotifSettings] = useState(DEFAULT_NOTIF_SETTINGS)
+  const [streak, setStreak] = useState({ current: 0, max: 0, totalDreams: 0 })
+  const [hasNotifPerm, setHasNotifPerm] = useState(false)
+
+  // 🪗 Accordéon sections
+  const [secApparence, setSecApparence] = useState(false)
+  const [secAnalyse, setSecAnalyse] = useState(true)
+  const [secRappels, setSecRappels] = useState(true)
+  const [secConfidentialite, setSecConfidentialite] = useState(false)
+  const [secRecherche, setSecRecherche] = useState(false)
+  const [secSoutenir, setSecSoutenir] = useState(false)
+  const [secAide, setSecAide] = useState(false)
+
+  if (
+    Platform.OS === 'android' &&
+    UIManager.setLayoutAnimationEnabledExperimental
+  ) {
+    UIManager.setLayoutAnimationEnabledExperimental(true)
+  }
+
+  const toggleSection = (setter) => {
+    LayoutAnimation.configureNext({
+      duration: 200,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: { type: LayoutAnimation.Types.easeInEaseOut },
+      delete: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+    })
+    setter((v) => !v)
+  }
 
   useEffect(() => {
-    loadPremiumStatus();
-    loadFingerprintCount();
-  }, []);
+    loadPremiumStatus()
+    loadFingerprintCount()
+    loadNotifData()
+  }, [])
 
-  // Focus listener pour rafraîchir le compteur
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      loadFingerprintCount();
-      loadKofiStyles(); // 🎨 Recharger les styles Ko-fi
-    });
-    return unsubscribe;
-  }, [navigation]);
+      loadFingerprintCount()
+      loadKofiStyles()
+      loadNotifData()
+    })
+    return unsubscribe
+  }, [navigation])
 
-  // 🎨 Charger les styles Ko-fi du Playground
+  // ─── LOADERS ──────────────────────────────────────────────────────────────
+
+  const loadNotifData = async () => {
+    try {
+      const [settings, streakData, perm] = await Promise.all([
+        notificationService.getSettings(),
+        streakService.getStreak(),
+        notificationService.hasPermission(),
+      ])
+      setNotifSettings(settings)
+      setStreak(streakData)
+      setHasNotifPerm(perm)
+    } catch (error) {
+      console.error('❌ [Settings] Chargement notif/streak:', error)
+    }
+  }
+
   const loadKofiStyles = async () => {
     try {
-      const stored = await AsyncStorage.getItem(PLAYGROUND_KOFI_KEY);
-      if (stored) {
-        setKofiStyles(JSON.parse(stored));
-      }
+      const stored = await AsyncStorage.getItem(PLAYGROUND_KOFI_KEY)
+      if (stored) setKofiStyles(JSON.parse(stored))
     } catch (error) {
-      console.error('❌ Erreur chargement styles Ko-fi:', error);
+      console.error('❌ Erreur chargement styles Ko-fi:', error)
     }
-  };
+  }
 
   const loadPremiumStatus = async () => {
     try {
-      const status = await premiumService.isPremium();
-      setIsPremium(status);
+      const status = await premiumService.isPremium()
+      setIsPremium(status)
     } catch (error) {
-      console.error('Erreur chargement statut Premium:', error);
+      console.error('Erreur chargement statut Premium:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
-
-  const handleTogglePremium = async (value) => {
-    setIsPremium(value);
-    
-    if (value) {
-      await premiumService.enablePremium();
-      console.log('🌕 Mode Patron activé');
-    } else {
-      await premiumService.disablePremium();
-      console.log('🌙 Mode Gratuit activé');
-    }
-    
-    refreshGlowStates(); // 🔄 Actualiser le glow global
-  };
-
-  const handleThemeChange = async (themeId) => {
-    await changeTheme(themeId);
-    console.log('🎨 Thème appliqué:', themeId);
-  };
+  }
 
   const loadFingerprintCount = async () => {
     try {
-      const stored = await AsyncStorage.getItem(FINGERPRINTS_KEY);
+      const stored = await AsyncStorage.getItem(FINGERPRINTS_KEY)
       if (stored) {
-        // Support multiple formats : array, object map ou valeur simple
-        let count = 0;
+        let count = 0
         try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            count = parsed.length;
-          } else if (parsed && typeof parsed === 'object') {
-            count = Object.keys(parsed).length;
-          } else {
-            // parsed is primitive (string/number), count as 1
-            count = 1;
-          }
-        } catch (e) {
-          // stored wasn't JSON (fallback)
-          count = 1;
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed)) count = parsed.length
+          else if (parsed && typeof parsed === 'object')
+            count = Object.keys(parsed).length
+          else count = 1
+        } catch {
+          count = 1
         }
-        setFingerprintCount(count);
+        setFingerprintCount(count)
       } else {
-        setFingerprintCount(0);
+        setFingerprintCount(0)
       }
     } catch (error) {
-      console.error('❌ Erreur chargement empreintes:', error);
-      setFingerprintCount(0);
+      console.error('❌ Erreur chargement empreintes:', error)
+      setFingerprintCount(0)
     }
-  };
+  }
+
+  // ─── HANDLERS NOTIFS ──────────────────────────────────────────────────────
+
+  const handleNotifToggle = async (key, value) => {
+    if (!hasNotifPerm && value) {
+      const granted = await notificationService.requestPermissions()
+      if (!granted) {
+        showAlert({
+          type: 'info',
+          title: 'Notifications bloquées',
+          message:
+            'Autorisez les notifications dans les réglages de votre téléphone pour activer les rappels.',
+          confirmText: 'Ouvrir les réglages',
+          cancelText: 'Plus tard',
+          onConfirm: () => Linking.openSettings(),
+        })
+        return
+      }
+      setHasNotifPerm(true)
+    }
+    const updated = await notificationService.updateSettings({ [key]: value })
+    setNotifSettings(updated)
+  }
+
+  const handleOpenTimePicker = (key) => {
+    const hourField = key === 'morning' ? 'morningHour' : 'eveningHour'
+    const minField = key === 'morning' ? 'morningMinute' : 'eveningMinute'
+
+    const currentTime = new Date()
+    currentTime.setHours(
+      notifSettings[hourField],
+      notifSettings[minField],
+      0,
+      0
+    )
+
+    DateTimePickerAndroid.open({
+      value: currentTime,
+      mode: 'time',
+      is24Hour: true,
+      onChange: async (event, selectedDate) => {
+        if (event.type === 'set' && selectedDate) {
+          const updated = await notificationService.updateSettings({
+            [hourField]: selectedDate.getHours(),
+            [minField]: selectedDate.getMinutes(),
+          })
+          setNotifSettings(updated)
+        }
+      },
+    })
+  }
+
+  const formatTime = (hour, minute) =>
+    `${String(hour).padStart(2, '0')}h${String(minute).padStart(2, '0')}`
+
+  // ─── AUTRES HANDLERS ──────────────────────────────────────────────────────
+
+  const handleTogglePremium = async (value) => {
+    setIsPremium(value)
+    if (value) await premiumService.enablePremium()
+    else await premiumService.disablePremium()
+    refreshGlowStates()
+  }
+
+  const handleThemeChange = async (themeId) => {
+    await changeTheme(themeId)
+  }
 
   const handleRestartOnboarding = async () => {
     try {
-      await AsyncStorage.removeItem(ONBOARDING_COMPLETED_KEY);
-      console.log('✅ Flag onboarding supprimé');
-      navigation.navigate('OnboardingWelcome');
+      await AsyncStorage.removeItem(ONBOARDING_COMPLETED_KEY)
+      navigation.navigate('OnboardingWelcome')
     } catch (error) {
-      console.error('❌ Erreur redémarrage onboarding:', error);
+      console.error('❌ Erreur redémarrage onboarding:', error)
     }
-  };
+  }
 
-  // 🧪 RESET NEW USER (pour tester le parcours)
   const handleResetNewUser = async () => {
     try {
       await AsyncStorage.multiRemove([
         ONBOARDING_COMPLETED_KEY,
         MENU_HINT_KEY,
         FINGERPRINTS_KEY,
-      ]);
+      ])
       showAlert({
         type: 'success',
         title: 'Reset effectué !',
-        message: 'Vous pouvez maintenant tester comme un nouveau utilisateur. Relancez l\'app.',
-        confirmText: 'OK'
-      });
-      console.log('🧪 Reset new user effectué');
+        message:
+          "Vous pouvez maintenant tester comme un nouveau utilisateur. Relancez l'app.",
+        confirmText: 'OK',
+      })
     } catch (error) {
-      console.error('❌ Erreur reset:', error);
+      console.error('❌ Erreur reset:', error)
     }
-  };
+  }
 
-  // 🧪 CLEAR CONVERSATIONS CACHE (pour tester badges)
   const handleClearConversationsCache = async () => {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const conversationKeys = keys.filter(key => key.startsWith('@noctaliae_conversation_'));
+      const keys = await AsyncStorage.getAllKeys()
+      const conversationKeys = keys.filter((key) =>
+        key.startsWith('@noctaliae_conversation_')
+      )
       if (conversationKeys.length > 0) {
-        await AsyncStorage.multiRemove(conversationKeys);
-        console.log(`✅ ${conversationKeys.length} conversations supprimées`);
-        alert(`Cache nettoyé : ${conversationKeys.length} conversations supprimées`);
+        await AsyncStorage.multiRemove(conversationKeys)
+        alert(
+          `Cache nettoyé : ${conversationKeys.length} conversations supprimées`
+        )
       } else {
-        console.log('ℹ️ Aucune conversation en cache');
-        alert('Aucune conversation en cache');
+        alert('Aucune conversation en cache')
       }
     } catch (error) {
-      console.error('❌ Erreur clear cache conversations:', error);
-      alert('Erreur lors du nettoyage');
+      console.error('❌ Erreur clear cache conversations:', error)
     }
-  };
+  }
 
   const handleKofi = (amount) => {
-    const url = amount === 1.99
-      ? 'https://ko-fi.com/tm_ai0?amount=1.99'
-      : 'https://ko-fi.com/tm_ai0?amount=3.39';
-    
-    Linking.openURL(url).catch(err => 
+    const url =
+      amount === 1.99
+        ? 'https://ko-fi.com/tm_ai0?amount=1.99'
+        : 'https://ko-fi.com/tm_ai0?amount=3.39'
+    Linking.openURL(url).catch((err) =>
       console.error('❌ Erreur ouverture Ko-fi:', err)
-    );
-  };
+    )
+  }
 
   const handleSupport = () => {
-    setShowDeepDreamModal(false);
-    handleKofi(1.99); // Ouvre Ko-fi
-  };
+    setShowDeepDreamModal(false)
+    handleKofi(1.99)
+  }
 
-  // 🗑️ Supprimer TOUS les rêves
   const handleDeleteAllDreams = async () => {
     try {
-      const allDreams = await getAllDreams();
-      for (const dream of allDreams) {
-        await deleteDream(dream.id);
-      }
+      const allDreams = await getAllDreams()
+      for (const dream of allDreams) await deleteDream(dream.id)
       showAlert({
         type: 'success',
         title: 'Terminé',
         message: 'Tous vos rêves ont été supprimés.',
-        confirmText: 'OK'
-      });
-      console.log(`🗑️ ${allDreams.length} rêves supprimés`);
+        confirmText: 'OK',
+      })
     } catch (error) {
-      console.error('❌ Erreur suppression totale:', error);
       showAlert({
         type: 'error',
         title: 'Erreur',
         message: 'Impossible de supprimer les rêves',
-        confirmText: 'OK'
-      });
+        confirmText: 'OK',
+      })
     }
-  };
+  }
+
+  const handleCheckUpdate = async () => {
+    setIsCheckingUpdate(true)
+    try {
+      const info = await forceUpdateCheck()
+      if (info && info.available) {
+        showAlert({
+          type: 'info',
+          title: `Noctaliae v${info.latestVersion} disponible`,
+          message: info.releaseNotes || 'Une nouvelle version est disponible.',
+          confirmText: 'Mettre à jour',
+          cancelText: 'Plus tard',
+          onConfirm: () => {
+            if (info.downloadUrl) Linking.openURL(info.downloadUrl)
+          },
+        })
+      } else {
+        showAlert({
+          type: 'success',
+          title: 'À jour !',
+          message: `Vous utilisez la dernière version (v${getCurrentAppVersion()}).`,
+          confirmText: 'OK',
+        })
+      }
+    } catch {
+      showAlert({
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de vérifier les mises à jour.',
+        confirmText: 'OK',
+      })
+    } finally {
+      setIsCheckingUpdate(false)
+    }
+  }
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <DebugScreenLabel screenName="⚙️ Paramètres" fileName="SettingsScreen.js" />
-      
-      <ScrollView 
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <DebugScreenLabel
+        screenName="⚙️ Paramètres"
+        fileName="SettingsScreen.js"
+      />
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: Math.max(insets.top, 15) + 15 }
+          { paddingTop: Math.max(insets.top, 15) + 15 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header avec icône */}
+        {/* Header */}
         <View style={styles.header}>
-          <MaterialIcons name="settings" size={32} color={theme.colors.primary} />
+          <MaterialIcons
+            name="settings"
+            size={32}
+            color={theme.colors.primary}
+          />
           <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
             Paramètres
           </Text>
         </View>
-        {/* ❌ BADGE VIOLET SUPPRIMÉ - Design plus épuré */}
-        {/* === SECTION 1 : PERSONA === */}
-        <View style={[styles.section, { 
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.cardBorder,
-          ...theme.shadow.md 
-        }]}>
+
+        {/* === SECTION PERSONA === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleRow}>
-              <MaterialCommunityIcons name="dna" size={24} color={theme.colors.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              <MaterialCommunityIcons
+                name="dna"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
                 Persona
               </Text>
             </View>
             {fingerprintCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: theme.colors.primary }]}>
-                <Text style={[styles.badgeText, { color: theme.colors.background }]}>
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: theme.colors.primary },
+                ]}
+              >
+                <Text
+                  style={[styles.badgeText, { color: theme.colors.background }]}
+                >
                   {fingerprintCount}
                 </Text>
               </View>
             )}
           </View>
-
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
+          <Text
+            style={[
+              styles.sectionSubtitle,
+              { color: theme.colors.textSecondary },
+            ]}
+          >
             Pour des analyses sur-mesure et rien qu'a vous.
           </Text>
-
-          <TouchableOpacity 
-            style={[styles.personaButton, { 
-              backgroundColor: theme.colors.primaryGlow,
-              borderColor: theme.colors.primary
-            }]}
+          <TouchableOpacity
+            style={[
+              styles.personaButton,
+              {
+                backgroundColor: theme.colors.primaryGlow,
+                borderColor: theme.colors.primary,
+              },
+            ]}
             onPress={() => navigation.navigate('Persona')}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons 
-              name="fingerprint" 
-              size={24} 
-              color={theme.colors.primary} 
+            <MaterialCommunityIcons
+              name="fingerprint"
+              size={24}
+              color={theme.colors.primary}
             />
             <View style={styles.personaButtonContent}>
-              <Text style={[styles.personaButtonTitle, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.personaButtonTitle,
+                  { color: theme.colors.text },
+                ]}
+              >
                 Gérer mes empreintes
               </Text>
-              <Text style={[styles.personaButtonSubtitle, { color: theme.colors.textSecondary }]}>
-                {fingerprintCount === 0 
-                  ? 'Aucune empreinte' 
-                  : `${fingerprintCount} empreinte${fingerprintCount > 1 ? 's' : ''}`
-                }
+              <Text
+                style={[
+                  styles.personaButtonSubtitle,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                {fingerprintCount === 0
+                  ? 'Aucune empreinte'
+                  : `${fingerprintCount} empreinte${fingerprintCount > 1 ? 's' : ''}`}
               </Text>
             </View>
-            <MaterialIcons 
-              name="chevron-right" 
-              size={24} 
-              color={theme.colors.textSecondary} 
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color={theme.colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
 
-        {/* === SECTION 2 : MODÈLE D'ANALYSE === */}
-        <View style={[styles.section, { 
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.cardBorder,
-          ...theme.shadow.md 
-        }]}>
-         <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
-            <MaterialCommunityIcons name="brain" size={24} color={theme.colors.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-              Modèle d'Analyse 
-            </Text>
-          </View>
-          
-          {/* 💎 BOUTON MOTEUR ACTIF (Toggle) */}
-          <View style={[styles.engineToggleContainer, {
-            backgroundColor: isPremium ? 'rgba(79, 141, 255, 0.08)' : 'rgba(57, 255, 136, 0.08)',
-            borderColor: isPremium ? 'rgba(79, 141, 255, 0.3)' : 'rgba(57, 255, 136, 0.3)'
-          }]}>
-            <View style={styles.optionInfo}>
-              <View style={styles.optionTitleRow}>
-                <MaterialIcons 
-                  name={isPremium ? "auto-awesome" : "flash-on"} 
-                  size={22} 
-                  color={isPremium ? '#4F8DFF' : '#39FF88'} 
-                />
-                <Text style={[styles.optionTitle, { color: theme.colors.textPrimary }]}>
-                  {isPremium ? 'DeepDream Engine' : 'QuickDream'}
-                </Text>
-              </View>
-              <Text style={[styles.optionDescription, { color: theme.colors.textSecondary }]}>
-                {isPremium 
-                  ? "Claude Sonnet 4.5 - Qualité d'analyses optimales et approfondies."
-                  : 'Llama 3.3 70B - Gratuit et illimité pour des analyses rapides et efficaces.'
-                }
-              </Text>
-            </View>
-            
-            <Switch
-              value={isPremium}
-              onValueChange={handleTogglePremium}
-              disabled={isLoading}
-              trackColor={{ false: '#39FF88', true: '#4F8DFF' }}
-              thumbColor={'#FFFFFF'}
-              ios_backgroundColor={theme.colors.backgroundElevated}
-            />
-          </View>
-
-          {/* 🔓 INFO DEEPDREAM */}
+        {/* === SECTION RAPPELS & HABITUDES === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.engineInfoButton, { borderColor: theme.colors.cardBorder }]}
-            onPress={() => setShowDeepDreamModal(true)}
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecRappels)}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="info-outline" size={20} color={theme.colors.primary} />
-            <Text style={[styles.engineInfoText, { color: theme.colors.primary }]}>
-              En savoir plus sur DeepDream Engine
-            </Text>
-            <MaterialIcons name="chevron-right" size={20} color={theme.colors.textSecondary} />
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons
+                name="bell-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
+                Rappels & Habitudes
+              </Text>
+            </View>
+            <MaterialIcons
+              name={secRappels ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={22}
+              color={theme.colors.textSecondary}
+            />
           </TouchableOpacity>
+          {secRappels && (
+            <View>
+              <Text
+                style={[
+                  styles.sectionSubtitle,
+                  { color: theme.colors.textSecondary, marginBottom: 16 },
+                ]}
+              >
+                Le rêve s'efface en moins de 10 minutes. Un rappel au réveil
+                change tout.
+              </Text>
+
+              {/* 🔥 Streak card */}
+              <View
+                style={[
+                  notifStyles.streakCard,
+                  {
+                    backgroundColor:
+                      streak.current > 0
+                        ? 'rgba(255, 153, 102, 0.08)'
+                        : 'rgba(255,255,255,0.03)',
+                    borderColor:
+                      streak.current > 0
+                        ? 'rgba(255, 153, 102, 0.3)'
+                        : theme.colors.cardBorder,
+                  },
+                ]}
+              >
+                <Text style={notifStyles.streakEmoji}>
+                  {streak.current > 0 ? '🔥' : '💤'}
+                </Text>
+                <View style={notifStyles.streakInfo}>
+                  <Text
+                    style={[
+                      notifStyles.streakValue,
+                      { color: theme.colors.textPrimary },
+                    ]}
+                  >
+                    {streak.current > 0
+                      ? `${streak.current} jour${streak.current > 1 ? 's' : ''} de suite`
+                      : 'Aucune série en cours'}
+                  </Text>
+                  <Text
+                    style={[
+                      notifStyles.streakSub,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    {streak.max > 0
+                      ? `Record : ${streak.max} j. · ${streak.totalDreams} rêve${streak.totalDreams > 1 ? 's' : ''} au total`
+                      : 'Enregistrez votre premier rêve pour commencer'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Toggle matin */}
+              <View style={notifStyles.toggleRow}>
+                <View style={notifStyles.toggleLeft}>
+                  <MaterialCommunityIcons
+                    name="weather-sunset-up"
+                    size={20}
+                    color="#FFD580"
+                  />
+                  <View>
+                    <Text
+                      style={[
+                        notifStyles.toggleLabel,
+                        { color: theme.colors.textPrimary },
+                      ]}
+                    >
+                      Rappel matinal
+                    </Text>
+                    <Text
+                      style={[
+                        notifStyles.toggleSub,
+                        { color: theme.colors.textSecondary },
+                      ]}
+                    >
+                      Avant que le rêve s'efface
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={notifSettings.morningEnabled}
+                  onValueChange={(v) => handleNotifToggle('morningEnabled', v)}
+                  trackColor={{
+                    false: theme.colors.cardBorder,
+                    true: theme.colors.primary,
+                  }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+
+              {notifSettings.morningEnabled && (
+                <TouchableOpacity
+                  style={notifStyles.timePicker}
+                  onPress={() => handleOpenTimePicker('morning')}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    style={[
+                      notifStyles.timeDisplay,
+                      { color: theme.colors.primary },
+                    ]}
+                  >
+                    {formatTime(
+                      notifSettings.morningHour,
+                      notifSettings.morningMinute
+                    )}
+                  </Text>
+                  <MaterialIcons
+                    name="edit"
+                    size={15}
+                    color={theme.colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+
+              {/* Toggle soir */}
+              <View style={[notifStyles.toggleRow, { marginTop: 8 }]}>
+                <View style={notifStyles.toggleLeft}>
+                  <MaterialCommunityIcons
+                    name="weather-night"
+                    size={20}
+                    color="#A0B4D4"
+                  />
+                  <View>
+                    <Text
+                      style={[
+                        notifStyles.toggleLabel,
+                        { color: theme.colors.textPrimary },
+                      ]}
+                    >
+                      Rappel du soir
+                    </Text>
+                    <Text
+                      style={[
+                        notifStyles.toggleSub,
+                        { color: theme.colors.textSecondary },
+                      ]}
+                    >
+                      Pour ne pas briser votre série
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={notifSettings.eveningEnabled}
+                  onValueChange={(v) => handleNotifToggle('eveningEnabled', v)}
+                  trackColor={{
+                    false: theme.colors.cardBorder,
+                    true: '#FF9966',
+                  }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+
+              {notifSettings.eveningEnabled && (
+                <TouchableOpacity
+                  style={notifStyles.timePicker}
+                  onPress={() => handleOpenTimePicker('evening')}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={18}
+                    color="#FF9966"
+                  />
+                  <Text style={[notifStyles.timeDisplay, { color: '#FF9966' }]}>
+                    {formatTime(
+                      notifSettings.eveningHour,
+                      notifSettings.eveningMinute
+                    )}
+                  </Text>
+                  <MaterialIcons
+                    name="edit"
+                    size={15}
+                    color={theme.colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+
+              {/* Banner permission refusée */}
+              {!hasNotifPerm &&
+                (notifSettings.morningEnabled ||
+                  notifSettings.eveningEnabled) && (
+                  <TouchableOpacity
+                    style={notifStyles.permBanner}
+                    onPress={() =>
+                      notificationService
+                        .requestPermissions()
+                        .then(loadNotifData)
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons
+                      name="notifications-off"
+                      size={18}
+                      color="#FF9966"
+                    />
+                    <Text style={notifStyles.permBannerText}>
+                      Autoriser les notifications pour activer les rappels
+                    </Text>
+                  </TouchableOpacity>
+                )}
+            </View>
+          )}
         </View>
 
-        {/* Badge Premium */}
+        {/* === SECTION MODÈLE D'ANALYSE === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecAnalyse)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons
+                name="brain"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
+                Modèle d'Analyse
+              </Text>
+            </View>
+            <MaterialIcons
+              name={secAnalyse ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={22}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {secAnalyse && (
+            <View>
+              <View
+                style={[
+                  styles.engineToggleContainer,
+                  {
+                    backgroundColor: isPremium
+                      ? 'rgba(79, 141, 255, 0.08)'
+                      : 'rgba(57, 255, 136, 0.08)',
+                    borderColor: isPremium
+                      ? 'rgba(79, 141, 255, 0.3)'
+                      : 'rgba(57, 255, 136, 0.3)',
+                  },
+                ]}
+              >
+                <View style={styles.optionInfo}>
+                  <View style={styles.optionTitleRow}>
+                    <MaterialIcons
+                      name={isPremium ? 'auto-awesome' : 'flash-on'}
+                      size={22}
+                      color={isPremium ? '#4F8DFF' : '#39FF88'}
+                    />
+                    <Text
+                      style={[
+                        styles.optionTitle,
+                        { color: theme.colors.textPrimary },
+                      ]}
+                    >
+                      {isPremium ? 'DeepDream Engine' : 'QuickDream'}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.optionDescription,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    {isPremium
+                      ? 'Analyses approfondies et sur-mesure pour explorer vos rêves en profondeur.'
+                      : 'Gratuit et illimité pour des analyses rapides et efficaces.'}
+                  </Text>
+                </View>
+                <Switch
+                  value={isPremium}
+                  onValueChange={handleTogglePremium}
+                  disabled={isLoading}
+                  trackColor={{ false: '#39FF88', true: '#4F8DFF' }}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor={theme.colors.backgroundElevated}
+                />
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.engineInfoButton,
+                  { borderColor: theme.colors.cardBorder },
+                ]}
+                onPress={() => setShowDeepDreamModal(true)}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="info-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  style={[
+                    styles.engineInfoText,
+                    { color: theme.colors.primary },
+                  ]}
+                >
+                  En savoir plus sur DeepDream Engine
+                </Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         {isPremium && (
-          <View style={[styles.premiumBadge, { 
-            backgroundColor: theme.colors.deepAnalysisSubtle,
-            borderColor: theme.colors.deepAnalysis
-          }]}>
-            <Text style={[styles.premiumBadgeText, { color: theme.colors.textPrimary }]}>
-            Vous testez actuellement DeepDream Engine
+          <View
+            style={[
+              styles.premiumBadge,
+              {
+                backgroundColor: theme.colors.deepAnalysisSubtle,
+                borderColor: theme.colors.deepAnalysis,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.premiumBadgeText,
+                { color: theme.colors.textPrimary },
+              ]}
+            >
+              Vous testez actuellement DeepDream Engine
             </Text>
-            <Text style={[styles.premiumBadgeSubtext, { color: theme.colors.textSecondary }]}>
-              Accessible aujourdh'ui grace à votre soutien
+            <Text
+              style={[
+                styles.premiumBadgeSubtext,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              Accessible aujourd'hui grâce à votre soutien
             </Text>
           </View>
         )}
 
-        {/* === SECTION 3 : CONFIDENTIALITÉ === */}
-        <View style={[styles.section, { 
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.cardBorder,
-          ...theme.shadow.md 
-        }]}>
-          <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
-            <MaterialCommunityIcons name="key-variant" size={24} color={theme.colors.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-              Confidentialité
-            </Text>
-          </View>
-          
-          <Text style={[styles.journalIntimeText, { color: theme.colors.textSecondary }]}>
-            Noctaliæ fonctionne comme un journal intime. Vos données restent sur votre appareil.
-          </Text>
-
-          {/* 🔐 Bouton Rêves secrets */}
-          <TouchableOpacity 
-            style={[styles.privacyActionButton, { 
-              backgroundColor: 'rgba(139, 92, 246, 0.1)',
-              borderColor: 'rgba(139, 92, 246, 0.3)'
-            }]}
-            onPress={async () => {
-              const authenticated = await BiometricService.authenticateForSecrets();
-              if (authenticated) {
-                navigation.navigate('Analyses', { showOnlySecrets: true });
+        {/* === SECTION CONFIDENTIALITÉ === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecConfidentialite)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons
+                name="key-variant"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
+                Confidentialité
+              </Text>
+            </View>
+            <MaterialIcons
+              name={
+                secConfidentialite ? 'keyboard-arrow-up' : 'keyboard-arrow-down'
               }
-            }}
-            activeOpacity={0.7}
-          >
-            <MaterialCommunityIcons name="lock" size={24} color="#8B5CF6" />
-            <View style={styles.privacyActionContent}>
-              <Text style={[styles.privacyActionTitle, { color: theme.colors.textPrimary }]}>
-                Rêves protégés
-              </Text>
-              <Text style={[styles.privacyActionSubtitle, { color: theme.colors.textSecondary }]}>
-                Vos rêves les plus personnels
-              </Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
+              size={22}
+              color={theme.colors.textSecondary}
+            />
           </TouchableOpacity>
-
-          {/* 📋 Bouton Gérer mes rêves */}
-          <TouchableOpacity 
-            style={[styles.privacyActionButton, { 
-              backgroundColor: 'rgba(57, 255, 136, 0.1)',
-              borderColor: 'rgba(57, 255, 136, 0.3)'
-            }]}
-            onPress={() => navigation.navigate('Analyses', { startInSelectionMode: true })}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="checklist" size={24} color="#39FF88" />
-            <View style={styles.privacyActionContent}>
-              <Text style={[styles.privacyActionTitle, { color: theme.colors.textPrimary }]}>
-                Gérer mes rêves
+          {secConfidentialite && (
+            <View>
+              <Text
+                style={[
+                  styles.journalIntimeText,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                Noctaliæ fonctionne comme un journal intime. Vos données restent
+                sur votre appareil.
               </Text>
-              <Text style={[styles.privacyActionSubtitle, { color: theme.colors.textSecondary }]}>
-                Sélectionner, supprimer ou archiver
-              </Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
-
-          {/* 📱 Mention stockage */}
-          <View style={styles.storageNote}>
-            <MaterialIcons name="smartphone" size={16} color={theme.colors.textSecondary} />
-            <Text style={[styles.storageNoteText, { color: theme.colors.textSecondary }]}>
-              Stocké seulement sur votre appareil.
-            </Text>
-          </View>
-        </View>
-
-        {/* === SECTION 4 : RECHERCHE === */}
-        <View style={[styles.section, { 
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.cardBorder,
-          ...theme.shadow.md 
-        }]}>
-          <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
-            <MaterialIcons name="science" size={24} color={theme.colors.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-              Recherche
-            </Text>
-          </View>
-          
-          {/* Composant Recherche VIP */}
-          <ResearchOptInVIP />
-        </View>
-
-        {/* === SECTION SOUTENIR (KO-FI) 💚 === */}
-        <View style={[styles.section, { 
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.cardBorder,
-          ...theme.shadow.md 
-        }]}>
-          <View style={[styles.sectionTitleRow, { marginBottom: 12 }]}>
-            <MaterialIcons name="favorite" size={20} color="#ff004cff" />
-            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
-              Soutenir Noctaliæ
-            </Text>
-          </View>
-
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>  
-            Noctaliæ est gratuit et le restera. Votre soutien permet d'en financer le développement et de participer à son évolution.
-          </Text>
-
-          {/* Bouton En savoir plus */}
-          <TouchableOpacity
-            style={[styles.learnMoreButton, { 
-              backgroundColor: theme.colors.primaryGlow,
-              borderColor: theme.colors.primary
-            }]}
-            onPress={() => Linking.openURL('https://noctaliae-app.notion.site/Soutient-et-mon-tisation-Noctali-29b976346b3681b596a3e0fdc0584cdf')}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="info-outline" size={20} color={theme.colors.primary} />
-            <Text style={[styles.learnMoreText, { color: theme.colors.primary }]}>
-              En savoir plus sur la philosophie Noctaliæ
-            </Text>
-            <MaterialIcons name="open-in-new" size={18} color={theme.colors.primary} />
-          </TouchableOpacity>
-
-          {/* 💚 Bouton Café - Neon (🔧 FIX: Styles fixes pour cohérence) */}
-          <TouchableOpacity
-            style={styles.kofiButton}
-            onPress={() => handleKofi(1.99)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.kofiContent}>
-              <View style={styles.kofiLeft}>
-                <MaterialIcons name="local-cafe" size={28} color="#39FF88" />
-                <View style={styles.kofiTextContainer}>
-                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary }]}>Un café</Text>
-                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~13 analyses DeepDream</Text>
+              <TouchableOpacity
+                style={[
+                  styles.privacyActionButton,
+                  {
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                  },
+                ]}
+                onPress={async () => {
+                  const authenticated =
+                    await BiometricService.authenticateForSecrets()
+                  if (authenticated)
+                    navigation.navigate('AnalysesStack', {
+                      showOnlySecrets: true,
+                    })
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons name="lock" size={24} color="#8B5CF6" />
+                <View style={styles.privacyActionContent}>
+                  <Text
+                    style={[
+                      styles.privacyActionTitle,
+                      { color: theme.colors.textPrimary },
+                    ]}
+                  >
+                    Rêves protégés
+                  </Text>
+                  <Text
+                    style={[
+                      styles.privacyActionSubtitle,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Vos rêves les plus personnels
+                  </Text>
                 </View>
-              </View>
-              <Text style={styles.kofiPrice}>1,99€</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* 💚 Bouton P'tit Déj - Neon (🔧 FIX: Styles fixes pour cohérence) */}
-          <TouchableOpacity
-            style={[styles.kofiButton, { marginBottom: 0 }]}
-            onPress={() => handleKofi(3.39)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.kofiContent}>
-              <View style={styles.kofiLeft}>
-                <MaterialIcons name="restaurant" size={28} color="#39FF88" />
-                <View style={styles.kofiTextContainer}>
-                  <Text style={[styles.kofiTitle, { color: theme.colors.textPrimary }]}>Un p'tit déj</Text>
-                  <Text style={[styles.kofiSubtitle, { color: theme.colors.textSecondary }]}>~23 analyses DeepDream</Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.privacyActionButton,
+                  {
+                    backgroundColor: 'rgba(57, 255, 136, 0.1)',
+                    borderColor: 'rgba(57, 255, 136, 0.3)',
+                  },
+                ]}
+                onPress={() =>
+                  navigation.navigate('AnalysesStack', {
+                    startInSelectionMode: true,
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="checklist" size={24} color="#39FF88" />
+                <View style={styles.privacyActionContent}>
+                  <Text
+                    style={[
+                      styles.privacyActionTitle,
+                      { color: theme.colors.textPrimary },
+                    ]}
+                  >
+                    Gérer mes rêves
+                  </Text>
+                  <Text
+                    style={[
+                      styles.privacyActionSubtitle,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Sélectionner, supprimer ou archiver
+                  </Text>
                 </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <View style={styles.storageNote}>
+                <MaterialIcons
+                  name="smartphone"
+                  size={16}
+                  color={theme.colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.storageNoteText,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
+                  Stocké seulement sur votre appareil.
+                </Text>
               </View>
-              <Text style={styles.kofiPrice}>3,39€</Text>
             </View>
-          </TouchableOpacity>
+          )}
         </View>
 
+        {/* === SECTION RECHERCHE === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecRecherche)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionTitleRow}>
+              <MaterialIcons
+                name="science"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
+                Recherche
+              </Text>
+            </View>
+            <MaterialIcons
+              name={secRecherche ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={22}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {secRecherche && <ResearchOptInVIP />}
+        </View>
+
+        {/* === SECTION SOUTENIR === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecSoutenir)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionTitleRow}>
+              <MaterialIcons name="favorite" size={20} color="#ff004cff" />
+              <Text style={[styles.sectionTitle, { color: '#D2B14C' }]}>
+                Soutenir Noctaliæ
+              </Text>
+            </View>
+            <MaterialIcons
+              name={secSoutenir ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={22}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {secSoutenir && (
+            <View>
+              <Text
+                style={[
+                  styles.sectionSubtitle,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                Noctaliæ est gratuit et le restera. Soutiens le projet à partir
+                de 0,99€ — tu choisis le montant — et obtiens l'accès DeepDream
+                à vie en retour.
+              </Text>
+              <TouchableOpacity
+                style={styles.learnMoreLink}
+                onPress={() =>
+                  Linking.openURL(
+                    'https://noctaliae-app.notion.site/Soutient-et-mon-tisation-Noctali-29b976346b3681b596a3e0fdc0584cdf'
+                  )
+                }
+                activeOpacity={0.6}
+              >
+                <Text
+                  style={[
+                    styles.learnMoreText,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
+                  En savoir plus sur la philosophie Noctaliæ
+                </Text>
+                <MaterialIcons
+                  name="open-in-new"
+                  size={13}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.kofiButton}
+                onPress={() => handleKofi(1.99)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.kofiContent}>
+                  <View style={styles.kofiLeft}>
+                    <MaterialIcons
+                      name="local-cafe"
+                      size={28}
+                      color="#39FF88"
+                    />
+                    <View style={styles.kofiTextContainer}>
+                      <Text
+                        style={[
+                          styles.kofiTitle,
+                          { color: theme.colors.textPrimary },
+                        ]}
+                      >
+                        Un café
+                      </Text>
+                      <Text
+                        style={[
+                          styles.kofiSubtitle,
+                          { color: theme.colors.textSecondary },
+                        ]}
+                      >
+                        Accès DeepDream à vie en retour
+                      </Text>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    name="heart-outline"
+                    size={22}
+                    color="#39FF8860"
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* === SECTION APPARENCE / THÈMES === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecApparence)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons
+                name="palette-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
+                Apparence
+              </Text>
+            </View>
+            <MaterialIcons
+              name={secApparence ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={22}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+          {secApparence && (
+            <View>
+              <Text
+                style={[
+                  styles.sectionSubtitle,
+                  { color: theme.colors.textSecondary, marginBottom: 12 },
+                ]}
+              >
+                Choisissez l'ambiance visuelle de votre journal.
+              </Text>
+
+              {availableThemes.map((t) => {
+                const isActive = currentThemeId === t.id
+                const isComingSoon = t.isAvailable === false
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[
+                      styles.themeRow,
+                      {
+                        backgroundColor: isActive
+                          ? theme.colors.primaryGlow
+                          : 'transparent',
+                        borderColor: isActive
+                          ? theme.colors.primary
+                          : theme.colors.cardBorder,
+                        opacity: isComingSoon ? 0.35 : 1,
+                      },
+                    ]}
+                    onPress={() => !isComingSoon && handleThemeChange(t.id)}
+                    activeOpacity={isComingSoon ? 1 : 0.7}
+                    disabled={isComingSoon}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                      <MaterialIcons name={t.icon} size={20} color={isActive ? theme.colors.primary : theme.colors.textSecondary} />
+                      <View>
+                        <Text style={[styles.themeRowTitle, { color: isActive ? theme.colors.primary : theme.colors.textPrimary }]}>
+                          {t.name}
+                        </Text>
+                        <Text style={[styles.themeRowDesc, { color: theme.colors.textSecondary }]}>
+                          {t.description}
+                        </Text>
+                      </View>
+                    </View>
+                    {isComingSoon && (
+                      <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontFamily: 'AtkinsonHyperlegibleNext-Regular' }}>Bientôt</Text>
+                    )}
+                    {isActive && !isComingSoon && (
+                      <MaterialIcons name="check-circle" size={20} color={theme.colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+
+              {/* Disclaimer soutien */}
+              <View style={[
+                styles.themeDisclaimer,
+                { backgroundColor: 'rgba(210, 177, 76, 0.08)', borderColor: 'rgba(210, 177, 76, 0.15)' },
+              ]}>
+                <MaterialCommunityIcons name="heart-outline" size={14} color="#D2B14C" />
+                <Text style={[styles.themeDisclaimerText, { color: theme.colors.textSecondary }]}>
+                  Les thèmes premium seront réservés aux soutiens à l'avenir.
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* === SECTION AIDE === */}
-        <View style={[styles.section, { 
-          backgroundColor: theme.colors.cardBackground,
-          borderColor: theme.colors.cardBorder,
-          ...theme.shadow.md 
-        }]}>
-          <View style={styles.sectionTitleRow}>
-            <MaterialIcons name="help-outline" size={24} color={theme.colors.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
-              Aide
-            </Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.helpButton, { borderBottomColor: theme.colors.cardBorder }]}
-            onPress={handleRestartOnboarding}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecAide)}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons 
-              name="restart" 
-              size={24} 
-              color={theme.colors.primary} 
-            />
-            <View style={styles.helpButtonContent}>
-              <Text style={[styles.helpButtonTitle, { color: theme.colors.text }]}>
-                Refaire l'onboarding
-              </Text>
-              <Text style={[styles.helpButtonSubtitle, { color: theme.colors.textSecondary }]}>
-                Recommencer la configuration initiale
-              </Text>
-            </View>
-            <MaterialIcons 
-              name="chevron-right" 
-              size={24} 
-              color={theme.colors.textSecondary} 
-            />
-          </TouchableOpacity>
-
-          {/* 🧪 Bouton Reset New User */}
-          <TouchableOpacity 
-            style={[styles.helpButton, { borderBottomColor: theme.colors.cardBorder, borderBottomWidth: 0 }]}
-            onPress={handleResetNewUser}
-            activeOpacity={0.7}
-          >
-            <MaterialCommunityIcons 
-              name="test-tube" 
-              size={24} 
-              color="#F59E0B" 
-            />
-            <View style={styles.helpButtonContent}>
-              <Text style={[styles.helpButtonTitle, { color: theme.colors.text }]}>
-                🧪 Reset New User
-              </Text>
-              <Text style={[styles.helpButtonSubtitle, { color: theme.colors.textSecondary }]}>
-                Tester le parcours nouveau utilisateur
+            <View style={styles.sectionTitleRow}>
+              <MaterialIcons
+                name="help-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.primary }]}
+              >
+                Aide
               </Text>
             </View>
-            <MaterialIcons 
-              name="chevron-right" 
-              size={24} 
-              color={theme.colors.textSecondary} 
+            <MaterialIcons
+              name={secAide ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={22}
+              color={theme.colors.textSecondary}
             />
           </TouchableOpacity>
+          {secAide && (
+            <View>
+              <TouchableOpacity
+                style={[
+                  styles.helpButton,
+                  { borderBottomColor: theme.colors.cardBorder },
+                ]}
+                onPress={handleRestartOnboarding}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name="restart"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+                <View style={styles.helpButtonContent}>
+                  <Text
+                    style={[
+                      styles.helpButtonTitle,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    Refaire l'onboarding
+                  </Text>
+                  <Text
+                    style={[
+                      styles.helpButtonSubtitle,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Recommencer la configuration initiale
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.helpButton,
+                  { borderBottomColor: theme.colors.cardBorder },
+                ]}
+                onPress={handleCheckUpdate}
+                disabled={isCheckingUpdate}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="system-update"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+                <View style={styles.helpButtonContent}>
+                  <Text
+                    style={[
+                      styles.helpButtonTitle,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    {isCheckingUpdate
+                      ? 'Vérification...'
+                      : 'Vérifier les mises à jour'}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.helpButtonSubtitle,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    S'assurer d'avoir la dernière version
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.helpButton,
+                  { borderBottomColor: 'transparent' },
+                ]}
+                onPress={() => {
+                  const marketUrl = 'market://details?id=com.noctaliae.mobile'
+                  const fallbackUrl = 'https://play.google.com/store/apps/details?id=com.noctaliae.mobile'
+                  Linking.canOpenURL(marketUrl)
+                    .then((supported) =>
+                      Linking.openURL(supported ? marketUrl : fallbackUrl)
+                    )
+                    .catch(() => Linking.openURL(fallbackUrl))
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="star-outline"
+                  size={24}
+                  color="#D2B14C"
+                />
+                <View style={styles.helpButtonContent}>
+                  <Text
+                    style={[
+                      styles.helpButtonTitle,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    Noter Noctaliæ ⭐
+                  </Text>
+                  <Text
+                    style={[
+                      styles.helpButtonSubtitle,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Un avis, ça change tout pour un projet solo
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* === INFOS === */}
-        <View style={[styles.infoSection, { borderTopColor: theme.colors.dividerStrong }]}>
+        <View
+          style={[
+            styles.infoSection,
+            { borderTopColor: theme.colors.dividerStrong },
+          ]}
+        >
           <View style={styles.sectionTitleRow}>
-            <MaterialIcons name="info-outline" size={24} color={theme.colors.textSecondary} />
-            <Text style={[styles.infoTitle, { color: theme.colors.textPrimary }]}>
+            <MaterialIcons
+              name="info-outline"
+              size={24}
+              color={theme.colors.textSecondary}
+            />
+            <Text
+              style={[styles.infoTitle, { color: theme.colors.textPrimary }]}
+            >
               À propos
             </Text>
           </View>
-          <Text style={[styles.infoTextBottom, { color: theme.colors.textSecondary }]}>
-            Noctaliæ - Analyse scientifique des rêves{'\n'}
-            Version: Beta 0.9.17
-          </Text>
-          
-          {/* 📜 Lien Privacy Policy */}
-          <TouchableOpacity 
-            onPress={() => Linking.openURL('https://nocty.thomasmaury.fr/privacy.html')}
-            activeOpacity={0.7}
-            style={[styles.privacyLink, { borderBottomColor: theme.colors.cardBorder }]}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+              const newCount = devTapCount + 1
+              setDevTapCount(newCount)
+              if (newCount >= 5) {
+                setDevTapCount(0)
+                handleResetNewUser()
+              }
+              setTimeout(() => setDevTapCount(0), 3000)
+            }}
           >
-            <MaterialIcons name="privacy-tip" size={18} color={theme.colors.primary} />
-            <Text style={[styles.privacyLinkText, { color: theme.colors.primary }]}>
+            <Text
+              style={[
+                styles.infoTextBottom,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
+              Noctaliæ - Analyse scientifique des rêves{'\n'}Version{' '}
+              {APP_VERSION}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              Linking.openURL('https://nocty.thomasmaury.fr/privacy.html')
+            }
+            activeOpacity={0.7}
+            style={[
+              styles.privacyLink,
+              { borderBottomColor: theme.colors.cardBorder },
+            ]}
+          >
+            <MaterialIcons
+              name="privacy-tip"
+              size={18}
+              color={theme.colors.primary}
+            />
+            <Text
+              style={[styles.privacyLinkText, { color: theme.colors.primary }]}
+            >
               Politique de confidentialité
             </Text>
-            <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} />
+            <MaterialIcons
+              name="open-in-new"
+              size={14}
+              color={theme.colors.primary}
+            />
           </TouchableOpacity>
-
-          {/* 👤 Lien créateur */}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => Linking.openURL('https://linktr.ee/thomasmaury')}
             activeOpacity={0.7}
             style={styles.creatorLink}
           >
-            <Text style={[styles.creatorText, { color: theme.colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.creatorText,
+                { color: theme.colors.textSecondary },
+              ]}
+            >
               Conçu par{' '}
             </Text>
             <Text style={[styles.creatorName, { color: theme.colors.primary }]}>
               Thomas Maury
             </Text>
-            <MaterialIcons name="open-in-new" size={14} color={theme.colors.primary} style={{ marginLeft: 4 }} />
+            <MaterialIcons
+              name="open-in-new"
+              size={14}
+              color={theme.colors.primary}
+              style={{ marginLeft: 4 }}
+            />
           </TouchableOpacity>
         </View>
-        
-        {/* Padding en bas pour voir "À propos" correctement */}
+
         <View style={{ height: 200 }} />
       </ScrollView>
 
-      {/* 🎯 MODAL DEEPDREAM INFO */}
-      <DeepDreamInfoModal 
+      <DeepDreamInfoModal
         visible={showDeepDreamModal}
         onClose={() => setShowDeepDreamModal(false)}
         onSupport={handleSupport}
       />
-      
-      {/* 🌙 Alert custom Noctaliaæ */}
       <AlertComponent />
     </View>
-  );
+  )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+// ─── STYLES NOTIFS (séparés pour lisibilité) ─────────────────────────────────
+
+const notifStyles = StyleSheet.create({
+  streakCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
   },
-  scrollView: {
-    flex: 1,
+  streakEmoji: { fontSize: 32 },
+  streakInfo: { flex: 1 },
+  streakValue: {
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    marginBottom: 2,
   },
-  scrollContent: {
+  streakSub: { fontSize: 13, fontFamily: 'AtkinsonHyperlegibleNext-Regular' },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  toggleLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  toggleLabel: { fontSize: 16, fontFamily: 'AtkinsonHyperlegibleNext-Bold' },
+  toggleSub: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    marginTop: 1,
+  },
+  timePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 10,
+    marginBottom: 8,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
+  timeDisplay: {
+    fontSize: 22,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    minWidth: 70,
+    textAlign: 'center',
+    flex: 1,
+  },
+  permBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 153, 102, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 153, 102, 0.25)',
+  },
+  permBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: '#FF9966',
+    lineHeight: 18,
+  },
+})
+
+// ─── STYLES PRINCIPAUX ────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     marginBottom: 30,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  
-  // === SECTIONS ===
-  section: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-  },
+  title: { fontSize: 38, fontFamily: 'CormorantUpright-Bold' },
+  section: { borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1 },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     marginBottom: 4,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  kofiIntroText: {
-    fontSize: 50,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  badge: {
-    paddingHorizontal: 10,
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 4,
-    borderRadius: 12,
+    marginBottom: 4,
   },
-  badgeText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  // 💎 ENGINE TOGGLE CONTAINER (nouveau)
+  sectionSubtitle: { fontSize: 14, marginBottom: 12 },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  badgeText: { fontSize: 14, fontFamily: 'AtkinsonHyperlegibleNext-Bold' },
   engineToggleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -739,12 +1657,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   engineInfoText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     flex: 1,
   },
-
-  // === PERSONA BUTTON ===
   personaButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -753,19 +1669,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
   },
-  personaButtonContent: {
-    flex: 1,
-  },
+  personaButtonContent: { flex: 1 },
   personaButtonTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     marginBottom: 4,
   },
   personaButtonSubtitle: {
     fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
-
-  // === HELP BUTTON ===
   helpButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -773,173 +1686,51 @@ const styles = StyleSheet.create({
     gap: 12,
     borderBottomWidth: 1,
   },
-  helpButtonContent: {
-    flex: 1,
-  },
+  helpButtonContent: { flex: 1 },
   helpButtonTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     marginBottom: 4,
   },
   helpButtonSubtitle: {
     fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
-  
-  // === PREMIUM ===
-  optionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  optionInfo: {
-    flex: 1,
-    marginRight: 15,
-  },
-  optionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 5,
-  },
-  optionDescription: {
-    fontSize: 14,
-  },
-  premiumBadge: {
-  borderRadius: 16,
-  padding: 16,
-  marginBottom: 16,
-  alignItems: 'center',
-  borderWidth: 1.5,
-  overflow: 'hidden',  // 🔧 FIX GLOW CORNERS
-},
-  premiumBadgeText: {
-    fontSize: 14, // 🔧 FIX: Réduit de 16 à 14 pour éviter retour ligne
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  premiumBadgeSubtext: {
-    fontSize: 11, // 🔧 FIX: Réduit de 12 à 11
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  
-  // === THÈMES (AVEC TOGGLE) ===
-  themeGroupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  themeGroupTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  themeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  themeInfo: {
-    flex: 1,
-    marginRight: 15,
-  },
-  themeOptionName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  themeOptionDescription: {
-    fontSize: 13,
-  },
-  
-  // === INFOS ===
-  infoSection: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  infoTextBottom: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  
-  // Styles manquants
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  optionInfo: { flex: 1, marginRight: 15 },
   optionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 5,
   },
-  
-  // === KO-FI BUTTONS (🔧 FIX: Styles fixes pour cohérence entre devices) ===
-  kofiButton: {
-    backgroundColor: '#39ff8826',
-    borderWidth: 1.5,
-    borderColor: '#39FF88',
+  optionTitle: {
+    fontSize: 18,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    marginBottom: 5,
+  },
+  optionDescription: {
+    fontSize: 14,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
+  premiumBadge: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-  },
-  kofiContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1.5,
+    overflow: 'hidden',
   },
-  kofiLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1, // 🔧 FIX: Prend l'espace restant
-  },
-  kofiTextContainer: {
-    flex: 1, // 🔧 FIX: Évite débordement texte
-    marginRight: 8,
-  },
-  kofiTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  kofiSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  kofiPrice: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#39FF88',
-    minWidth: 60, // 🔧 FIX: Largeur min pour alignement
-    textAlign: 'right',
-  },
-  
-  // === LEARN MORE BUTTON ===
-  learnMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-    gap: 8,
-  },
-  learnMoreText: {
+  premiumBadgeText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    textAlign: 'center',
   },
-  
-  // === PRIVACY SECTION STYLES ===
+  premiumBadgeSubtext: {
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'center',
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
   journalIntimeText: {
     fontSize: 15,
     lineHeight: 22,
@@ -955,16 +1746,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 12,
   },
-  privacyActionContent: {
-    flex: 1,
-  },
+  privacyActionContent: { flex: 1 },
   privacyActionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     marginBottom: 2,
   },
   privacyActionSubtitle: {
     fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
   storageNote: {
     flexDirection: 'row',
@@ -976,11 +1766,47 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.05)',
   },
-  storageNoteText: {
-    fontSize: 13,
+  storageNoteText: { fontSize: 13 },
+  kofiButton: {
+    backgroundColor: '#39ff8826',
+    borderWidth: 1.5,
+    borderColor: '#39FF88',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
-  
-  // === PRIVACY LINK ===
+  kofiContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kofiLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  kofiTextContainer: { flex: 1, marginRight: 8 },
+  kofiTitle: { fontSize: 18, fontFamily: 'AtkinsonHyperlegibleNext-Bold' },
+  kofiSubtitle: { fontSize: 12, marginTop: 2 },
+  learnMoreLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 14,
+    paddingVertical: 2,
+  },
+  learnMoreText: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    textDecorationLine: 'underline',
+  },
+  infoSection: { marginTop: 20, paddingTop: 20, borderTopWidth: 1 },
+  infoTitle: {
+    fontSize: 16,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    marginBottom: 10,
+  },
+  infoTextBottom: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
   privacyLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -991,21 +1817,48 @@ const styles = StyleSheet.create({
   },
   privacyLinkText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-SemiBold',
     flex: 1,
   },
-  
-  // === CREATOR LINK ===
-  creatorLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  creatorText: {
-    fontSize: 14,
-  },
+  creatorLink: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  creatorText: { fontSize: 14, fontFamily: 'AtkinsonHyperlegibleNext-Regular' },
   creatorName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-SemiBold',
   },
-});
+  // 🎨 Thèmes
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  themeRowTitle: {
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+  },
+  themeRowDesc: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    marginTop: 1,
+  },
+  themeDisclaimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  themeDisclaimerText: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    flex: 1,
+  },
+})

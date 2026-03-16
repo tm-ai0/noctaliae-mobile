@@ -16,22 +16,21 @@ import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { analyzeDreamFromText } from '../services/apiService';
-import { saveAnalysis } from '../services/storageService';
+import { analyzeDreamFromText, generateDreamImage } from '../services/apiService';
+import { saveAnalysis, saveDreamImage, saveDreamMetadata } from '../services/storageService';
 import { securityService } from '../services/securityService';
 import { premiumService } from '../services/premiumService'; // 🆕 Import Premium
+import { freeTierService } from '../services/freeTierService'; // 🎯 Free Tier
 import * as FileSystem from 'expo-file-system/legacy';
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
-import RateLimitBanner from '../components/RateLimitBanner';
-import RateLimitModal from '../modals/RateLimitModal';
+// SupportModal supprimé — fichier absent (feature Ko-fi abandonnée)
 
 // 💾 Clé pour le tooltip de guidance (première utilisation)
 const GUIDANCE_TOOLTIP_KEY = '@noctaliae_post_recording_guidance_shown';
 
 // 🏷️ Fonction pour extraire un titre intelligent depuis l'analyse
 function extractDreamTitle(analysis, transcription) {
-  // 1️⃣ Chercher "## 🌙 Titre" ou "# 🌙 Titre" ou juste "🌙 Titre" en début
   const moonPatterns = [
     /^##\s*🌙\s*(.+?)(?:\n|$)/m,
     /^#\s*🌙\s*(.+?)(?:\n|$)/m,
@@ -46,15 +45,13 @@ function extractDreamTitle(analysis, transcription) {
     }
   }
   
-  // 2️⃣ Chercher "Analyse de votre rêve" suivi d'un titre
-  const analyseMatch = analysis.match(/Analyse de votre rêve[:\s]*["\u201c]?([^"\u201d\n]+)["\u201d]?/i);
+  const analyseMatch = analysis.match(/Analyse de votre rêve[:\s]*["«]?([^"»\n]+)["»]?/i);
   if (analyseMatch && analyseMatch[1].trim().length > 5) {
     return analyseMatch[1].trim();
   }
   
-  // 3️⃣ Première phrase pertinente de l'analyse (sans emojis/markdown)
   const cleanAnalysis = analysis
-    .replace(/^[#*\s]+/gm, '') // Retire # et * en début de ligne
+    .replace(/^[#*\s]+/gm, '')
     .replace(/[🌙📌📊🔗😊🧠💡✨🌟💫🌌😴🌃⚡💤🌈]/g, '')
     .trim();
   
@@ -66,18 +63,16 @@ function extractDreamTitle(analysis, transcription) {
     }
   }
   
-  // 4️⃣ Première phrase de la transcription
   const firstTranscript = transcription.split(/[.!?]/)[0].trim();
   if (firstTranscript.length > 10 && firstTranscript.length < 60) {
     return firstTranscript;
   }
   
-  // 5️⃣ Fallback : date du jour
   return `Rêve du ${new Date().toLocaleDateString('fr-FR')}`;
 }
 
 // ============================================
-// 🎨 COMPOSANT CARD RÉUTILISABLE - Top 0.1% approach
+// 🎨 COMPOSANT CARD RÉUTILISABLE
 // ============================================
 function EngineCard({ 
   icon, 
@@ -86,16 +81,15 @@ function EngineCard({
   subtitle, 
   description, 
   badge,
-  badgeIcon, // 🆕 Icône Material optionnelle
+  badgeIcon,
   badgeColor,
-  accentColor, // 🎨 Couleur d'accent (barre + glow)
+  accentColor,
   selected, 
   disabled, 
   onPress 
 }) {
   const Wrapper = disabled ? View : TouchableOpacity;
   
-  // ✨ Glow effect selon plateforme
   const glowStyle = selected && accentColor ? Platform.select({
     ios: {
       shadowColor: accentColor,
@@ -121,17 +115,15 @@ function EngineCard({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* 🎨 BARRE COLORÉE GAUCHE - Top 0.1% indicator */}
       {accentColor && (
         <View 
           style={[
             styles.engineAccentBar,
             { backgroundColor: accentColor },
-            selected && { width: 6 } // Plus épaisse si sélectionné
+            selected && { width: 6 }
           ]} 
         />
       )}
-      {/* === HEADER ROW : Icon + Title + Check === */}
       <View style={styles.engineHeader}>
         <View style={styles.engineHeaderLeft}>
           <MaterialCommunityIcons name={icon} size={24} color={iconColor} />
@@ -144,15 +136,12 @@ function EngineCard({
         )}
       </View>
       
-      {/* === SUBTITLE === */}
       <Text style={styles.engineSubtitle}>{subtitle}</Text>
       
-      {/* === DESCRIPTION === */}
       <Text style={[styles.engineDescription, disabled && styles.engineDescriptionDisabled]}>
         {description}
       </Text>
       
-      {/* === FOOTER : Badge (si présent) === */}
       {badge && (
         <View style={[styles.engineBadge, { backgroundColor: `${badgeColor}20` }]}>
           {badgeIcon && (
@@ -178,15 +167,13 @@ function ActivateDeepDreamModal({ visible, onClose, onActivate }) {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          {/* Header */}
           <View style={styles.modalHeader}>
             <MaterialCommunityIcons name="electron-framework" size={40} color="#4F8DFF" />
             <Text style={styles.modalTitle}>Activer DeepDream ?</Text>
           </View>
           
-          {/* Body */}
           <Text style={styles.modalDescription}>
-            DeepDream Engine utilise Claude Sonnet 4.5 pour des analyses plus profondes et personnalisées.
+            DeepDream Engine offre des analyses plus profondes et personnalisées grâce à un modèle premium.
           </Text>
           
           <View style={styles.modalFeatures}>
@@ -204,7 +191,6 @@ function ActivateDeepDreamModal({ visible, onClose, onActivate }) {
             </View>
           </View>
           
-          {/* Buttons */}
           <View style={styles.modalButtons}>
             <TouchableOpacity 
               style={styles.modalButtonSecondary}
@@ -236,49 +222,89 @@ export default function PostRecordingScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { dreamId, audioUri, transcription, duration, source } = route.params;
   
-  // 🎨 Hook NoctaliaeAlert (remplace Alert.alert)
   const { showAlert, AlertComponent } = useNoctaliaeAlert();
   
-  // ✏️ Transcript éditable
   const [editableTranscript, setEditableTranscript] = useState(transcription || '');
   
-  // 🆕 État premium chargé depuis le service
   const [isPremium, setIsPremium] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('llama'); // Default, sera mis à jour
+  const [selectedModel, setSelectedModel] = useState('llama');
   const [activeTab, setActiveTab] = useState('choice');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [limitInfo, setLimitInfo] = useState(null);
-  const [showRateLimitModal, setShowRateLimitModal] = useState(false);
-  const [showActivateModal, setShowActivateModal] = useState(false); // 🆕 Modal activation
+  const [showActivateModal, setShowActivateModal] = useState(false);
+  const [showEngineInfoModal, setShowEngineInfoModal] = useState(false);
+  const [supportModalMode, setSupportModalMode] = useState('deepdream_limit');
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [deepDreamRemaining, setDeepDreamRemaining] = useState(null);
+
+  // 🌙 Métadonnées optionnelles (section dépliable)
+  const [showMetadata, setShowMetadata] = useState(false);
+  const [dreamMetadata, setDreamMetadata] = useState({ lucidity: null, sleepQuality: null, emotions: [], themes: [] });
+  const EMOTIONS_LIST = ['Joie','Peur','Tristesse','Colère','Anxiété','Sérénité','Confusion','Excitation','Nostalgie','Amour'];
+  const THEMES_LIST   = ['Vol','Chute','Eau','Poursuite','Animal','Famille','Travail','Nature','Ville','Lumière'];
+  function toggleMeta(field, value) {
+    setDreamMetadata(prev => ({
+      ...prev,
+      [field]: prev[field].includes(value) ? prev[field].filter(v => v !== value) : [...prev[field], value]
+    }));
+  }
+  const hasMetadata = dreamMetadata.lucidity || dreamMetadata.sleepQuality || dreamMetadata.emotions.length || dreamMetadata.themes.length;
   
-  // 💡 Tooltip de guidance (première utilisation)
   const [showGuidanceTooltip, setShowGuidanceTooltip] = useState(false);
   const [tooltipAnim] = useState(new Animated.Value(0));
   
-  // 🆕 Charger le statut Premium au mount et présélectionner le modèle
+  const LOADING_MESSAGES = [
+    'Exploration de votre inconscient...',
+    'Décodage des symboles oniriques...',
+    'Cartographie des émotions nocturnes...',
+    'Analyse des patterns neuronaux...',
+    'Connexion aux réseaux de mémoire...',
+    'Identification des résidus diurnes...',
+    'Lecture des couches de sommeil...',
+    'Synchronisation des ondes cérébrales...',
+    'Décryptage du langage onirique...',
+    'Exploration des métaphores visuelles...',
+    'Activation du cortex préfrontal...',
+    'Compilation des thèmes récurrents...',
+    'Tissage des connexions émotionnelles...',
+    'Calibration de l\'analyse scientifique...',
+    'Votre rêve prend forme...',
+  ];
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    setLoadingMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+    const interval = setInterval(() => {
+      setLoadingMessageIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [isAnalyzing]);
+  
   useEffect(() => {
     async function loadPremiumAndSetModel() {
       try {
         const premium = await premiumService.isPremium();
         setIsPremium(premium);
-        // Présélectionner le modèle selon le statut Premium
         setSelectedModel(premium ? 'claude' : 'llama');
-        console.log(`💎 Premium: ${premium} → Modèle présélectionné: ${premium ? 'Claude' : 'Llama'}`);
+        
+        if (!premium) {
+          const remaining = await freeTierService.getDeepDreamRemaining();
+          setDeepDreamRemaining(remaining);
+        }
       } catch (error) {
         console.error('❌ Erreur chargement Premium:', error);
-        setSelectedModel('llama'); // Fallback sécurisé
+        setSelectedModel('llama');
       }
     }
     loadPremiumAndSetModel();
   }, []);
   
-  // 💡 Vérifier si c'est la première utilisation au mount
   useEffect(() => {
     async function checkFirstUse() {
       try {
         const hasSeenGuidance = await AsyncStorage.getItem(GUIDANCE_TOOLTIP_KEY);
         if (!hasSeenGuidance) {
-          // Première fois → afficher le tooltip avec animation
           setShowGuidanceTooltip(true);
           Animated.spring(tooltipAnim, {
             toValue: 1,
@@ -294,10 +320,8 @@ export default function PostRecordingScreen({ route, navigation }) {
     checkFirstUse();
   }, []);
   
-  // 💡 Handler pour fermer le tooltip
   async function dismissGuidanceTooltip() {
     try {
-      // Animation de sortie
       Animated.timing(tooltipAnim, {
         toValue: 0,
         duration: 200,
@@ -305,31 +329,30 @@ export default function PostRecordingScreen({ route, navigation }) {
       }).start(() => {
         setShowGuidanceTooltip(false);
       });
-      // Sauvegarder pour ne plus afficher
       await AsyncStorage.setItem(GUIDANCE_TOOLTIP_KEY, 'true');
     } catch (error) {
       console.error('❌ Erreur dismiss guidance:', error);
     }
   }
 
-  // 🆕 Handler pour sélection du modèle avec vérification Premium
   function handleSelectModel(model) {
     if (model === 'claude' && !isPremium) {
-      // User veut Claude mais n'a pas DeepDream activé → afficher modal
+      if (deepDreamRemaining !== null && deepDreamRemaining <= 0) {
+        setShowSupportModal(true);
+        return;
+      }
       setShowActivateModal(true);
     } else {
       setSelectedModel(model);
     }
   }
 
-  // 🆕 Handler pour activer DeepDream depuis le modal
   async function handleActivateDeepDream() {
     try {
       await premiumService.enablePremium();
       setIsPremium(true);
       setSelectedModel('claude');
       setShowActivateModal(false);
-      console.log('🌕 DeepDream activé depuis PostRecordingScreen');
     } catch (error) {
       console.error('❌ Erreur activation DeepDream:', error);
       showAlert({
@@ -341,16 +364,13 @@ export default function PostRecordingScreen({ route, navigation }) {
     }
   }
 
-  // 🔒 DURÉE MINIMUM pour éviter erreurs backend (transcription trop courte)
   const MIN_DURATION_SECONDS = 3;
-  const MIN_TEXT_LENGTH = 10; // 🆕 Minimum pour rêves écrits
+  const MIN_TEXT_LENGTH = 10;
 
   async function handleAnalyze() {
-    // ✅ Validation selon le type de source
     const isPhotoSource = source?.startsWith('photo-');
     
     if (source === 'write' || isPhotoSource) {
-      // Rêve écrit ou photo : vérifier la longueur du texte
       if (!editableTranscript || editableTranscript.trim().length < MIN_TEXT_LENGTH) {
         showAlert({
           type: 'warning',
@@ -361,19 +381,17 @@ export default function PostRecordingScreen({ route, navigation }) {
         return;
       }
     } else {
-      // Enregistrement audio : vérifier la durée
       if (duration < MIN_DURATION_SECONDS) {
         showAlert({
           type: 'warning',
           title: '⏱️ Enregistrement trop court',
-          message: `Votre enregistrement fait ${duration} seconde${duration > 1 ? 's' : ''}. Minimum requis : ${MIN_DURATION_SECONDS} secondes pour une analyse fiable.`,
+          message: `Votre enregistrement fait ${duration} seconde${duration > 1 ? 's' : ''}. Minimum requis : ${MIN_DURATION_SECONDS} secondes.\n\nAppuyez sur ← pour revenir et réenregistrer votre rêve, ou utilisez le mode écriture ✏️ depuis l'écran principal.`,
           confirmText: 'Compris'
         });
         return;
       }
     }
 
-    // Vérifier qu'il y a du contenu à analyser
     if (!editableTranscript || editableTranscript.trim().length === 0) {
       showAlert({
         type: 'error',
@@ -387,44 +405,123 @@ export default function PostRecordingScreen({ route, navigation }) {
     setIsAnalyzing(true);
 
     try {
-      console.log(`🧠 Analyse avec ${selectedModel === 'claude' ? 'DeepDream (Claude)' : 'QuickDream (Llama)'}...`);
-      
-      // 🔧 Utiliser le transcript édité, pas l'original
-      const result = await analyzeDreamFromText(editableTranscript, selectedModel === 'claude');
-      
-      if (result.limitInfo) {
-        setLimitInfo(result.limitInfo);
-        if (result.limitInfo.limited && selectedModel === 'claude') {
-          setShowRateLimitModal(true);
-          setSelectedModel('llama');
+      if (selectedModel === 'claude' && !isPremium) {
+        const allowance = await freeTierService.checkDeepDreamAllowance();
+        if (!allowance.allowed) {
+          setIsAnalyzing(false);
+          setSupportModalMode('deepdream_limit');
+          setShowSupportModal(true);
           return;
         }
       }
+
+      if (selectedModel === 'llama' && !isPremium) {
+        const qAllowance = await freeTierService.checkQuickDreamAllowance();
+        if (!qAllowance.allowed) {
+          setIsAnalyzing(false);
+          setSupportModalMode('quickdream_limit');
+          setShowSupportModal(true);
+          return;
+        }
+      }
+
+      const metaPayload = hasMetadata ? dreamMetadata : null;
+      const result = await analyzeDreamFromText(editableTranscript, selectedModel === 'claude', metaPayload);
+      
+      if (metaPayload) saveDreamMetadata(dreamId, metaPayload);
       
       await saveAnalysis(dreamId, result, result.model || selectedModel);
       
-      // 🏷️ Titre dynamique : priorité au backend, sinon extraction intelligente
+      if (!isPremium) {
+        if (selectedModel === 'claude') {
+          await freeTierService.incrementDeepDreamCount();
+          const remaining = await freeTierService.getDeepDreamRemaining();
+          setDeepDreamRemaining(remaining);
+        } else {
+          await freeTierService.incrementQuickDreamCount();
+        }
+      }
+      
       const extractedTitle = (result.title && result.title !== 'Rêve sans titre') 
         ? result.title 
         : extractDreamTitle(result.analysis, transcription);
       
-      navigation.navigate('Conversation', {
-        dreamId: dreamId,
-        dreamAnalysis: result.analysis,
-        dreamTranscription: editableTranscript,
-        dreamTitle: extractedTitle,
-        dreamDate: new Date().toISOString()
-      });
+      const dreamPalette = result.palette || ['#00FFB0', '#4F8DFF', '#D2B14C'];
+      
+      // 🔊 Cleanup audio en fire-and-forget (ne doit pas bloquer la navigation)
+      securityService.deleteAudioIfNeeded(audioUri, FileSystem)
+        .catch(err => console.warn('⚠️ Audio cleanup failed:', err));
 
-      await securityService.deleteAudioIfNeeded(audioUri, FileSystem);
+      if (result.imagePrompt) {
+        freeTierService.checkImageAllowance().then(allowance => {
+          if (!allowance.allowed) {
+            console.log('🎨 Quota images épuisé, génération sautée');
+            return;
+          }
+          generateDreamImage(result.imagePrompt, dreamId, extractedTitle)
+            .then(imageResult => {
+              if (imageResult) {
+                saveDreamImage(dreamId, {
+                  imageUrl: imageResult.imageUrl,
+                  imagePrompt: imageResult.imagePrompt,
+                  palette: dreamPalette,
+                });
+                freeTierService.incrementImageCount();
+                console.log('🎨 Image de rêve générée en background !');
+              }
+            })
+            .catch(err => console.warn('⚠️ Image non générée:', err.message));
+        }).catch(err => console.warn('⚠️ Check quota image échoué:', err.message));
+      }
+
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'MainTabs' },
+          { name: 'Conversation', params: {
+            dreamId: dreamId,
+            dreamAnalysis: result.analysis,
+            dreamTranscription: editableTranscript,
+            dreamTitle: extractedTitle,
+            dreamDate: new Date().toISOString(),
+            dreamImagePalette: dreamPalette,
+          }},
+        ],
+      });
     } catch (error) {
       console.error('❌ Erreur analyse:', error);
-      showAlert({
-        type: 'error',
-        title: '❌ Erreur',
-        message: 'Une erreur est survenue lors de l\'analyse.',
-        confirmText: 'OK'
-      });
+      if (error.code === 'DAILY_LIMIT' || error.status === 429) {
+        setSelectedModel('llama');
+        setSupportModalMode('quickdream_limit');
+        setShowSupportModal(true);
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network') || error.message?.includes('fetch')) {
+        showAlert({
+          type: 'error',
+          title: 'Connexion impossible',
+          message: 'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.',
+          confirmText: 'Réessayer',
+          cancelText: 'Annuler',
+          onConfirm: () => handleAnalyze(),
+        });
+      } else if (error.code === 'TIMEOUT' || error.message?.includes('timeout')) {
+        showAlert({
+          type: 'warning',
+          title: 'Délai dépassé',
+          message: 'L\'analyse a pris trop de temps. Votre connexion est peut-être lente — réessayez.',
+          confirmText: 'Réessayer',
+          cancelText: 'Annuler',
+          onConfirm: () => handleAnalyze(),
+        });
+      } else {
+        showAlert({
+          type: 'error',
+          title: 'Analyse échouée',
+          message: 'Le serveur n\'a pas pu traiter votre rêve. Réessayez dans quelques instants.',
+          confirmText: 'Réessayer',
+          cancelText: 'Annuler',
+          onConfirm: () => handleAnalyze(),
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -434,14 +531,10 @@ export default function PostRecordingScreen({ route, navigation }) {
     Linking.openURL('https://ko-fi.com/tm_ai0');
   }
 
-  // ============================================
-  // RENDER
-  // ============================================
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <DebugScreenLabel screenName="📝 Post-Enregistrement" />
       
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           onPress={() => navigation.goBack()}
@@ -476,7 +569,7 @@ export default function PostRecordingScreen({ route, navigation }) {
             <View style={styles.guidanceTextContainer}>
               <Text style={styles.guidanceTitle}>✨ Enregistrement terminé !</Text>
               <Text style={styles.guidanceText}>
-                Choisissez maintenant un moteur d'analyse pour explorer votre rêve.
+                Commencez par enrichir votre rêve avec un contexte (émotions, lucidité…), puis choisissez votre moteur d'analyse.
               </Text>
             </View>
           </View>
@@ -513,36 +606,8 @@ export default function PostRecordingScreen({ route, navigation }) {
         </View>
       </View>
 
-      {/* Banner Rate Limiting */}
-      {limitInfo && limitInfo.limited && (
-        <RateLimitBanner 
-          limitInfo={limitInfo} 
-          onDismiss={() => setLimitInfo(null)}
-        />
-      )}
+      {/* SupportModal supprimé — feature Ko-fi abandonnée */}
 
-      {/* 🔝 BOUTON ANALYSER STICKY EN HAUT */}
-      {activeTab === 'choice' && (
-        <View style={styles.stickyAnalyzeContainer}>
-          <TouchableOpacity 
-            style={[styles.stickyAnalyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
-            onPress={handleAnalyze}
-            disabled={isAnalyzing}
-            activeOpacity={0.8}
-          >
-            {isAnalyzing ? (
-              <ActivityIndicator color="#0c0e27" size="small" />
-            ) : (
-              <>
-                <MaterialCommunityIcons name="brain" size={22} color="#0c0e27" />
-                <Text style={styles.stickyAnalyzeButtonText}>Analyser le rêve</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Content */}
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {activeTab === 'choice' ? (
           <>
@@ -560,52 +625,136 @@ export default function PostRecordingScreen({ route, navigation }) {
                 onPress={() => setActiveTab('transcript')}
               >
                 <Text style={styles.infoTextHint} numberOfLines={1} ellipsizeMode="tail">
-                  Vérifier le transcript →
+                  Vérifier · modifier →
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.sectionTitle}>Choisissez le moteur d'analyse</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={[styles.sectionTitle, { marginBottom: 0, flex: 1 }]}>Préparez votre analyse</Text>
+              <TouchableOpacity onPress={() => setShowEngineInfoModal(true)} activeOpacity={0.7} style={{ padding: 4 }}>
+                <MaterialIcons name="info-outline" size={18} color={THEME.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-            {/* ============================================ */}
-            {/* QUICKDREAM - Gratuit - VERT */}
-            {/* ============================================ */}
+            {/* 🌙 SECTION MÉTADONNÉES - DÉPLIABLE */}
+            <TouchableOpacity
+              style={styles.metaToggle}
+              onPress={() => setShowMetadata(v => !v)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.metaToggleLeft}>
+                <MaterialCommunityIcons name="tune-variant" size={18} color={hasMetadata ? THEME.colors.primary : THEME.colors.textSecondary} />
+                <Text style={[styles.metaToggleText, hasMetadata && { color: THEME.colors.primary }]}>
+                  {hasMetadata
+                    ? `🎯 Enrichir l'analyse · ${[dreamMetadata.lucidity && 'lucidité', dreamMetadata.sleepQuality && 'sommeil', dreamMetadata.emotions.length && `${dreamMetadata.emotions.length} émotion${dreamMetadata.emotions.length > 1 ? 's' : ''}`, dreamMetadata.themes.length && `${dreamMetadata.themes.length} thème${dreamMetadata.themes.length > 1 ? 's' : ''}`].filter(Boolean).join(', ')}`
+                    : "🎯 Enrichir l'analyse · optionnel"}
+                </Text>
+              </View>
+              <MaterialIcons name={showMetadata ? 'expand-less' : 'expand-more'} size={20} color={THEME.colors.textSecondary} />
+            </TouchableOpacity>
+
+            {showMetadata && (
+              <View style={styles.metaPanel}>
+                {/* LUCIDITÉ */}
+                <Text style={styles.metaLabel}>Niveau de lucidité</Text>
+                <View style={styles.metaRating}>
+                  {[1,2,3,4,5].map(n => (
+                    <TouchableOpacity key={n} onPress={() => setDreamMetadata(p => ({ ...p, lucidity: p.lucidity === n ? null : n }))} style={[styles.metaDot, dreamMetadata.lucidity >= n && styles.metaDotActive]} activeOpacity={0.7}>
+                      <Text style={[styles.metaDotText, dreamMetadata.lucidity >= n && styles.metaDotTextActive]}>{n}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <Text style={styles.metaRatingLabel}>
+                    {dreamMetadata.lucidity ? ['','Inconscient','Peu lucide','Partiel','Presque lucide','Lucide'][dreamMetadata.lucidity] : ''}
+                  </Text>
+                </View>
+
+                {/* QUALITÉ SOMMEIL */}
+                <Text style={styles.metaLabel}>Qualité du sommeil</Text>
+                <View style={styles.metaRating}>
+                  {[1,2,3,4,5].map(n => (
+                    <TouchableOpacity key={n} onPress={() => setDreamMetadata(p => ({ ...p, sleepQuality: p.sleepQuality === n ? null : n }))} style={[styles.metaDot, styles.metaDotSleep, dreamMetadata.sleepQuality >= n && styles.metaDotSleepActive]} activeOpacity={0.7}>
+                      <Text style={[styles.metaDotText, dreamMetadata.sleepQuality >= n && styles.metaDotTextActive]}>{n}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <Text style={styles.metaRatingLabel}>
+                    {dreamMetadata.sleepQuality ? ['','Très mauvaise','Mauvaise','Moyenne','Bonne','Excellente'][dreamMetadata.sleepQuality] : ''}
+                  </Text>
+                </View>
+
+                {/* ÉMOTIONS */}
+                <Text style={styles.metaLabel}>Émotions ressenties</Text>
+                <View style={styles.metaChips}>
+                  {EMOTIONS_LIST.map(e => (
+                    <TouchableOpacity key={e} onPress={() => toggleMeta('emotions', e)} style={[styles.metaChip, dreamMetadata.emotions.includes(e) && styles.metaChipActive]} activeOpacity={0.7}>
+                      <Text style={[styles.metaChipText, dreamMetadata.emotions.includes(e) && styles.metaChipTextActive]}>{e}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* THÈMES */}
+                <Text style={styles.metaLabel}>Thèmes du rêve</Text>
+                <View style={styles.metaChips}>
+                  {THEMES_LIST.map(t => (
+                    <TouchableOpacity key={t} onPress={() => toggleMeta('themes', t)} style={[styles.metaChip, dreamMetadata.themes.includes(t) && styles.metaChipActive]} activeOpacity={0.7}>
+                      <Text style={[styles.metaChipText, dreamMetadata.themes.includes(t) && styles.metaChipTextActive]}>{t}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.metaHint}>Ces informations enrichissent l'analyse mais ne sont jamais partagées.</Text>
+              </View>
+            )}
+
+            {/* QUICKDREAM */}
             <EngineCard
               icon="flash"
               iconColor="#00FFB0"
               accentColor="#00FFB0"
               title="QuickDream"
-              subtitle="Llama 3.3 70B • Gratuit et illimité"
+              subtitle="Gratuit et illimité"
               description="Analyses rapides et efficaces pour explorer vos rêves au quotidien."
               selected={selectedModel === 'llama'}
               onPress={() => handleSelectModel('llama')}
             />
 
-            {/* ============================================ */}
-            {/* DEEPDREAM - Premium - BLEU */}
-            {/* ============================================ */}
+            {/* DEEPDREAM */}
             <EngineCard
               icon="electron-framework"
               iconColor="#4F8DFF"
               accentColor="#4F8DFF"
               title="DeepDream Engine"
-              subtitle="Claude Sonnet 4.5 • Qualité d'analyses optimales"
+              subtitle={isPremium
+                ? "6 grilles · Personnalisé · Soutient le projet"
+                : deepDreamRemaining !== null && deepDreamRemaining <= 0
+                  ? "Limite atteinte — Soutenez-nous !"
+                  : deepDreamRemaining !== null && deepDreamRemaining <= 2
+                    ? deepDreamRemaining === 1
+                      ? "Dernière analyse gratuite ✨"
+                      : `Plus que ${deepDreamRemaining} analyses gratuites`
+                    : "6 grilles · Neurosciences · Approfondi"
+              }
               description="Analyse neuroscientifique approfondie avec 6 grilles (Hobson, Domhoff...). Réponses détaillées et personnalisées."
-              badge={isPremium ? "Activé" : "Recommandé"}
-              badgeIcon={isPremium ? "check-circle" : "star"}
-              badgeColor={isPremium ? "#00FFB0" : "#4F8DFF"}
+              badge={isPremium
+                ? "Activé"
+                : deepDreamRemaining !== null && deepDreamRemaining <= 0
+                  ? "Limité"
+                  : deepDreamRemaining !== null && deepDreamRemaining <= 2
+                    ? `${deepDreamRemaining} restant${deepDreamRemaining > 1 ? 's' : ''}`
+                    : "Recommandé"
+              }
+              badgeIcon={isPremium ? "check-circle" : deepDreamRemaining !== null && deepDreamRemaining <= 0 ? "lock" : deepDreamRemaining !== null && deepDreamRemaining <= 2 ? "hourglass-empty" : "star"}
+              badgeColor={isPremium ? "#00FFB0" : deepDreamRemaining !== null && deepDreamRemaining <= 0 ? "#EF4444" : deepDreamRemaining !== null && deepDreamRemaining <= 2 ? "#F59E0B" : "#4F8DFF"}
               selected={selectedModel === 'claude'}
               onPress={() => handleSelectModel('claude')}
             />
 
-            {/* ============================================ */}
-            {/* OPUS NOCTIS - Coming Soon */}
-            {/* ============================================ */}
+            {/* OPUS NOCTIS */}
             <EngineCard
               icon="star-four-points"
               iconColor="#D2B14C"
               title="Opus Noctis"
-              subtitle="Claude Opus 4.5 • L'œuvre de la nuit"
+              subtitle="L'œuvre de la nuit"
               description="DeepDream amplifié : raisonnement étendu, mémoire profonde, synthèse nuancée. Interprétation fine et contextuelle."
               badge="Prochainement"
               badgeIcon="schedule"
@@ -630,7 +779,7 @@ export default function PostRecordingScreen({ route, navigation }) {
             </TouchableOpacity>
           </>
         ) : (
-          // TAB TRANSCRIPT - ✏️ ÉDITABLE
+          // TAB TRANSCRIPT
           <View style={styles.transcriptContainer}>
             <View style={styles.transcriptHeader}>
               <MaterialIcons name="edit-note" size={24} color={THEME.colors.primary} />
@@ -639,18 +788,16 @@ export default function PostRecordingScreen({ route, navigation }) {
               </Text>
             </View>
             
-            {/* 💡 Tooltip contextuel selon la source */}
             <View style={styles.transcriptTooltip}>
               <MaterialIcons name="lightbulb-outline" size={16} color={THEME.colors.primary} />
               <Text style={styles.transcriptTooltipText}>
                 {source === 'write' 
-                  ? "Raconte ton rêve naturellement, comme si tu le racontais à quelqu'un."
-                  : "Tu peux modifier le texte si la transcription contient des erreurs."
+                  ? "Raconte ton rêve naturellement. Tu peux modifier ce texte avant l'analyse."
+                  : "La transcription peut contenir des erreurs — modifie le texte si nécessaire."
                 }
               </Text>
             </View>
             
-            {/* ✏️ Zone de texte éditable */}
             <View style={styles.transcriptBox}>
               <TextInput
                 style={styles.transcriptInput}
@@ -663,7 +810,6 @@ export default function PostRecordingScreen({ route, navigation }) {
               />
             </View>
             
-            {/* 🎯 CTA Valider */}
             <View style={styles.feedbackContainer}>
               <TouchableOpacity 
                 style={[
@@ -682,21 +828,77 @@ export default function PostRecordingScreen({ route, navigation }) {
         )}
       </ScrollView>
 
-      {/* Modal Rate Limit */}
-      <RateLimitModal
-        visible={showRateLimitModal}
-        onClose={() => setShowRateLimitModal(false)}
-        minutesLeft={limitInfo?.resetIn || 60}
-      />
+      {/* 🟢 BOUTON ANALYSER FLOTTANT */}
+      {activeTab === 'choice' && (
+        <View style={[styles.floatingAnalyzeContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <TouchableOpacity 
+            style={[styles.floatingAnalyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
+            onPress={handleAnalyze}
+            disabled={isAnalyzing}
+            activeOpacity={0.8}
+          >
+            {isAnalyzing ? (
+              <>
+                <ActivityIndicator color="#0c0e27" size="small" />
+                <Text style={styles.floatingAnalyzeButtonText}>{LOADING_MESSAGES[loadingMessageIndex]}</Text>
+              </>
+            ) : (
+              <>
+                <MaterialCommunityIcons name="brain" size={22} color="#0c0e27" />
+                <Text style={styles.floatingAnalyzeButtonText}>Analyser le rêve</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* 🆕 Modal Activer DeepDream */}
+      {/* ℹ️ Modal info moteurs */}
+      <Modal
+        visible={showEngineInfoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEngineInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <MaterialIcons name="info-outline" size={36} color={THEME.colors.primary} />
+              <Text style={styles.modalTitle}>Choisir son moteur</Text>
+            </View>
+            <Text style={styles.modalDescription}>Chaque moteur offre un niveau d'analyse différent selon vos besoins.</Text>
+            <View style={styles.modalFeatures}>
+              <View style={styles.modalFeatureRow}>
+                <MaterialCommunityIcons name="flash" size={18} color="#00FFB0" />
+                <Text style={styles.modalFeatureText}><Text style={{ color: '#00FFB0', fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>QuickDream</Text> — Gratuit, illimité. Rapide et efficace pour explorer ses rêves au quotidien.</Text>
+              </View>
+              <View style={styles.modalFeatureRow}>
+                <MaterialCommunityIcons name="electron-framework" size={18} color="#4F8DFF" />
+                <Text style={styles.modalFeatureText}><Text style={{ color: '#4F8DFF', fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>DeepDream</Text> — 5 analyses gratuites. Approche neuroscientifique avec 6 grilles d'analyse (Hobson, Domhoff…).</Text>
+              </View>
+              <View style={styles.modalFeatureRow}>
+                <MaterialCommunityIcons name="star-four-points" size={18} color="#D2B14C" />
+                <Text style={styles.modalFeatureText}><Text style={{ color: '#D2B14C', fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>Opus Noctis</Text> — Prochainement. DeepDream amplifié avec raisonnement étendu.</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.modalButtonPrimary, { backgroundColor: THEME.colors.primary }]}
+              onPress={() => setShowEngineInfoModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalButtonPrimaryText}>Compris</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ActivateDeepDreamModal
         visible={showActivateModal}
         onClose={() => setShowActivateModal(false)}
         onActivate={handleActivateDeepDream}
       />
+
+      {/* SupportModal gère tous les cas via le prop mode */}
       
-      {/* 🎨 Modal NoctaliaeAlert */}
       <AlertComponent />
     </View>
   );
@@ -725,11 +927,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
   },
-  
-  // Tabs
   tabsWrapper: {
     paddingHorizontal: 20,
     marginBottom: 20,
@@ -752,23 +952,19 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textSecondary,
   },
   tabTextActive: {
     color: THEME.colors.text,
   },
-  
-  // Content
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 160, // 🔧 FIX: Espace suffisant pour nav Android (augmenté)
+    paddingBottom: 160,
   },
-  
-  // Info Bar
   infoBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -785,12 +981,12 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: THEME.colors.text,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   infoTextHint: {
     fontSize: 12,
     color: THEME.colors.primary,
-    fontWeight: '500',
+    fontFamily: 'AtkinsonHyperlegibleNext-Medium',
   },
   infoDivider: {
     width: 1,
@@ -798,23 +994,17 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.cardBorder,
     marginHorizontal: 12,
   },
-  
-  // Section Title
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
     marginBottom: 16,
   },
-  
-  // ============================================
-  // ENGINE CARDS - Top 0.1% design
-  // ============================================
   engineCard: {
     backgroundColor: THEME.colors.cardBackground,
     borderRadius: 14,
     padding: 16,
-    paddingLeft: 20, // Espace pour la barre
+    paddingLeft: 20,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: THEME.colors.cardBorder,
@@ -828,7 +1018,6 @@ const styles = StyleSheet.create({
   engineCardDisabled: {
     opacity: 0.5,
   },
-  // 🎨 Barre colorée gauche (indicator)
   engineAccentBar: {
     position: 'absolute',
     left: 0,
@@ -838,8 +1027,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 14,
     borderBottomLeftRadius: 14,
   },
-  
-  // Header Row : Icon + Title + Check
   engineHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -854,19 +1041,17 @@ const styles = StyleSheet.create({
   },
   engineTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
   },
   engineTitleDisabled: {
     color: THEME.colors.textSecondary,
   },
-  
-  // Subtitle & Description - Alignés avec padding-left = icon width + gap
   engineSubtitle: {
     fontSize: 12,
     color: THEME.colors.textSecondary,
     marginBottom: 8,
-    marginLeft: 34, // 24 (icon) + 10 (gap)
+    marginLeft: 34,
   },
   engineDescription: {
     fontSize: 13,
@@ -877,10 +1062,8 @@ const styles = StyleSheet.create({
   engineDescriptionDisabled: {
     opacity: 0.7,
   },
-  
-  // Badge - Dans le flux, pas en absolute
   engineBadge: {
-    flexDirection: 'row', // 🔧 FIX: Pour aligner icône + texte
+    flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     marginLeft: 34,
@@ -891,10 +1074,8 @@ const styles = StyleSheet.create({
   },
   engineBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
-  
-  // Analyze Button
   analyzeButton: {
     backgroundColor: THEME.colors.primary,
     flexDirection: 'row',
@@ -916,11 +1097,71 @@ const styles = StyleSheet.create({
   },
   analyzeButtonText: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
-  
-  // Ko-fi Card
+  // 🌙 MÉTADONNÉES
+  metaToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 0,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  metaToggleLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  metaToggleText: { fontSize: 14, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: THEME.colors.textSecondary, flex: 1 },
+  metaPanel: {
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 2,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    marginBottom: 4,
+  },
+  metaLabel: { fontSize: 13, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: THEME.colors.textSecondary, marginBottom: 10, marginTop: 12 },
+  metaRating: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRatingLabel: { fontSize: 12, color: THEME.colors.textSecondary, marginLeft: 4, flex: 1 },
+  metaDot: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: THEME.colors.background,
+    borderWidth: 2, borderColor: THEME.colors.cardBorder,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  metaDotActive: { backgroundColor: THEME.colors.primary + '20', borderColor: THEME.colors.primary },
+  metaDotSleep: { borderColor: '#A0B4D4' },
+  metaDotSleepActive: { backgroundColor: '#A0B4D420', borderColor: '#A0B4D4' },
+  metaDotText: { fontSize: 14, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: THEME.colors.textSecondary },
+  metaDotTextActive: { color: THEME.colors.text },
+  metaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  metaChip: {
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: 20, borderWidth: 1.5,
+    borderColor: THEME.colors.cardBorder,
+    backgroundColor: 'transparent',
+  },
+  metaChipActive: { borderColor: THEME.colors.primary, backgroundColor: THEME.colors.primary + '18' },
+  metaChipText: { fontSize: 13, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: THEME.colors.textSecondary },
+  metaChipTextActive: { color: THEME.colors.primary },
+  metaHint: { fontSize: 12, color: THEME.colors.textSecondary, marginTop: 14, textAlign: 'center', opacity: 0.7 },
+  reactivateButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  reactivateButtonText: {
+    fontSize: 13,
+    color: 'rgba(210, 177, 76, 0.7)',
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    textDecorationLine: 'underline',
+  },
   kofiCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -943,7 +1184,7 @@ const styles = StyleSheet.create({
   },
   kofiTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#39FF88',
     marginBottom: 2,
   },
@@ -951,8 +1192,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: THEME.colors.textSecondary,
   },
-  
-  // Transcript Tab
   transcriptContainer: {
     flex: 1,
   },
@@ -963,8 +1202,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   transcriptTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
   },
   transcriptBox: {
@@ -983,7 +1222,6 @@ const styles = StyleSheet.create({
     minHeight: 250,
     textAlignVertical: 'top',
   },
-  // 💡 Tooltip contextuel
   transcriptTooltip: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -999,7 +1237,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.primary,
     lineHeight: 18,
   },
-  // 🎯 CTA Feedback
   feedbackContainer: {
     marginTop: 8,
   },
@@ -1024,8 +1261,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   feedbackButtonPositiveText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
   feedbackButtonDisabled: {
@@ -1044,12 +1281,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   feedbackButtonNegativeText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
   },
-  
-  // 💡 TOOLTIP DE GUIDANCE
   guidanceTooltip: {
     marginHorizontal: 20,
     marginBottom: 16,
@@ -1089,7 +1324,7 @@ const styles = StyleSheet.create({
   },
   guidanceTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
     marginBottom: 4,
   },
@@ -1107,41 +1342,39 @@ const styles = StyleSheet.create({
   },
   guidanceDismissText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
   },
-  
-  // 🔝 STICKY ANALYZE BUTTON
-  stickyAnalyzeContainer: {
+  floatingAnalyzeContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: THEME.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.cardBorder,
+    paddingTop: 12,
+    backgroundColor: THEME.colors.background + 'F0',
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.cardBorder,
   },
-  stickyAnalyzeButton: {
+  floatingAnalyzeButton: {
     backgroundColor: THEME.colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 14,
     gap: 10,
     shadowColor: THEME.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
   },
-  stickyAnalyzeButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+  floatingAnalyzeButtonText: {
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
-  
-  // ============================================
-  // 🆕 MODAL ACTIVER DEEPDREAM
-  // ============================================
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -1163,8 +1396,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
     marginTop: 12,
     textAlign: 'center',
@@ -1204,8 +1437,8 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.cardBorder,
   },
   modalButtonSecondaryText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textSecondary,
   },
   modalButtonPrimary: {
@@ -1219,7 +1452,7 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimaryText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
 });

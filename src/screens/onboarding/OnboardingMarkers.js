@@ -1,489 +1,486 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Platform
+  Platform,
+  Animated,
+  Dimensions,
+  Modal,
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../config/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+const OB = {
+  bg: '#060A14',
+  bgSheet: '#0D1220',
+  accent: '#D2B14C',
+  accentGlow: 'rgba(210, 177, 76, 0.12)',
+  text: '#F0EBE0',
+  textSub: 'rgba(240, 235, 224, 0.55)',
+  textMuted: 'rgba(240, 235, 224, 0.28)',
+  card: 'rgba(255,255,255,0.04)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+  cardSelected: 'rgba(210, 177, 76, 0.10)',
+  cardBorderSelected: '#D2B14C',
+  violet: 'rgba(100, 60, 180, 0.18)',
+  indigo: 'rgba(60, 80, 200, 0.12)',
+  divider: 'rgba(255,255,255,0.06)',
+};
+
+// ============================================
+// ✨ PHOSPHÈNES
+// ============================================
+const PHOSPHENE_DATA = [
+  { x: 0.88, y: 0.06, size: 2,   dur: 7000, delay: 300 },
+  { x: 0.15, y: 0.18, size: 1.5, dur: 8500, delay: 1000 },
+  { x: 0.70, y: 0.35, size: 2.5, dur: 6000, delay: 200 },
+  { x: 0.05, y: 0.52, size: 1.5, dur: 9000, delay: 1800 },
+  { x: 0.92, y: 0.70, size: 2,   dur: 7500, delay: 600 },
+  { x: 0.40, y: 0.82, size: 1.5, dur: 6500, delay: 2200 },
+];
+
+function Phosphene({ x, y, size, dur, delay }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(opacity, { toValue: 0.4, duration: dur / 2, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.05, duration: dur / 2, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+  return (
+    <Animated.View style={{
+      position: 'absolute',
+      left: x * SCREEN_W, top: y * SCREEN_H,
+      width: size, height: size, borderRadius: size,
+      backgroundColor: OB.accent, opacity,
+    }} />
+  );
+}
+
+// ============================================
+// 🔘 PROGRESS DOTS
+// ============================================
+function ProgressDots({ current, total }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 6 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <View key={i} style={{
+          width: i === current ? 20 : 7, height: 7, borderRadius: 4,
+          backgroundColor: i <= current ? OB.accent : OB.textMuted,
+        }} />
+      ))}
+    </View>
+  );
+}
+
+// ============================================
+// 📋 BOTTOM SHEET PICKER
+// ============================================
+function BottomSheetPicker({ visible, title, options, selected, onSelect, onClose }) {
+  const slideAnim = useRef(new Animated.Value(400)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 400, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[styles.sheetOverlay, { opacity: fadeAnim }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+          {/* Handle */}
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>{title}</Text>
+
+          {options.map((opt, i) => {
+            const isSelected = selected === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                style={[styles.sheetOption, i < options.length - 1 && styles.sheetOptionBorder]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onSelect(isSelected ? null : opt.id);
+                  onClose();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.sheetOptionEmoji}>{opt.emoji}</Text>
+                <Text style={[styles.sheetOptionLabel, isSelected && { color: OB.accent }]}>
+                  {opt.label}
+                </Text>
+                {isSelected && (
+                  <MaterialCommunityIcons name="check" size={18} color={OB.accent} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Option "Pas trop sûr" / "Préfère ne pas dire" */}
+          <TouchableOpacity
+            style={[styles.sheetOption, { marginTop: 8, borderTopWidth: 1, borderTopColor: OB.divider }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onSelect(selected === 'not_sure' ? null : 'not_sure');
+              onClose();
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={{ width: 28 }} />
+            <Text style={[
+              styles.sheetOptionLabel,
+              { color: 'rgba(100, 180, 140, 0.5)', fontFamily: 'AtkinsonHyperlegibleNext-Regular' },
+              selected === 'not_sure' && { color: 'rgba(100, 180, 140, 0.85)' }
+            ]}>
+              {title === "Tranche d'âge" ? 'Préfère ne pas dire' : 'Pas trop sûr'}
+            </Text>
+            {selected === 'not_sure' && (
+              <MaterialCommunityIcons name="check" size={16} color="rgba(100, 180, 140, 0.85)" />
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+// ============================================
+// 🎚️ SELECTOR ROW (déclenche le bottom sheet)
+// ============================================
+function SelectorRow({ label, icon, options, value, onPress }) {
+  const selectedOption = options.find(o => o.id === value);
+  const hasValue = value && value !== 'not_sure';
+  const isNotSure = value === 'not_sure';
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.selectorRow,
+        (hasValue || isNotSure) && styles.selectorRowSelected,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      <View style={styles.selectorLeft}>
+        <Text style={styles.selectorIcon}>{icon}</Text>
+        <View>
+          <Text style={styles.selectorLabel}>{label}</Text>
+          {selectedOption ? (
+            <Text style={styles.selectorValue}>
+              {selectedOption.emoji} {selectedOption.label}
+            </Text>
+          ) : isNotSure ? (
+            <Text style={[styles.selectorValue, { color: OB.textMuted }]}>Pas trop sûr</Text>
+          ) : (
+            <Text style={styles.selectorPlaceholder}>Appuyez pour choisir</Text>
+          )}
+        </View>
+      </View>
+      <MaterialIcons
+        name="keyboard-arrow-down"
+        size={22}
+        color={hasValue ? OB.accent : OB.textMuted}
+      />
+    </TouchableOpacity>
+  );
+}
+
+// ============================================
+// 🌙 ONBOARDING MARKERS
+// ============================================
 export default function OnboardingMarkers({ navigation }) {
-  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const [selectedMarkers, setSelectedMarkers] = useState({
     ageRange: null,
     rhythm: null,
     mood: null,
-    interests: [],
-    interestsSkipped: false  // 💡 Nouveau: "Plus tard" pour centres d'intérêt
   });
 
-  // 🧠 TOP 0.1% UX : Options simples + lien "Je ne sais pas" en vert néon
-  // PAS de "pas sûr" sur l'âge (trop personnel)
+  const [openSheet, setOpenSheet] = useState(null); // 'age' | 'rhythm' | 'mood' | null
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, []);
+
   const ageRanges = [
-    { id: '18-25', label: '18-25 ans', emoji: '🌱' },
-    { id: '26-35', label: '26-35 ans', emoji: '🌿' },
-    { id: '36-50', label: '36-50 ans', emoji: '🌳' },
-    { id: '50+', label: '50+ ans', emoji: '🌲' }
+    { id: '18-25', label: '18–25 ans', emoji: '🌱' },
+    { id: '26-35', label: '26–35 ans', emoji: '🌿' },
+    { id: '36-50', label: '36–50 ans', emoji: '🌳' },
+    { id: '50+',   label: '50+ ans',   emoji: '🌲' },
   ];
 
   const rhythms = [
-    { id: 'calm', label: 'Calme', emoji: '🧘' },
+    { id: 'calm',     label: 'Calme',     emoji: '🧘' },
     { id: 'balanced', label: 'Équilibré', emoji: '⚖️' },
-    { id: 'dynamic', label: 'Dynamique', emoji: '⚡' },
-    { id: 'intense', label: 'Intense', emoji: '🔥' }
+    { id: 'dynamic',  label: 'Dynamique', emoji: '⚡' },
+    { id: 'intense',  label: 'Intense',   emoji: '🔥' },
   ];
 
   const moods = [
-    { id: 'serene', label: 'Serein', emoji: '😌' },
+    { id: 'serene',  label: 'Serein',  emoji: '😌' },
     { id: 'curious', label: 'Curieux', emoji: '🤔' },
     { id: 'anxious', label: 'Anxieux', emoji: '😰' },
-    { id: 'joyful', label: 'Joyeux', emoji: '😊' }
+    { id: 'joyful',  label: 'Joyeux',  emoji: '😊' },
   ];
 
-  const interests = [
-    { id: 'creativity', label: 'Créativité', emoji: '🎨' },
-    { id: 'nature', label: 'Nature', emoji: '🌿' },
-    { id: 'tech', label: 'Tech', emoji: '💻' },
-    { id: 'sport', label: 'Sport', emoji: '⚽' },
-    { id: 'travel', label: 'Voyage', emoji: '✈️' },
-    { id: 'reading', label: 'Lecture', emoji: '📚' }
-  ];
-
-  const handleSelectAge = (id) => {
-    setSelectedMarkers({ ...selectedMarkers, ageRange: id });
-  };
-
-  const handleSelectRhythm = (id) => {
-    setSelectedMarkers({ ...selectedMarkers, rhythm: id });
-  };
-
-  const handleSelectMood = (id) => {
-    setSelectedMarkers({ ...selectedMarkers, mood: id });
-  };
-
-  const handleToggleInterest = (id) => {
-    const current = selectedMarkers.interests;
-    const updated = current.includes(id)
-      ? current.filter(i => i !== id)
-      : [...current, id];
-    setSelectedMarkers({ ...selectedMarkers, interests: updated, interestsSkipped: false });
-  };
-
-  // 💡 Toggle "Plus tard" pour centres d'intérêt
-  const handleSkipInterests = () => {
-    setSelectedMarkers({ 
-      ...selectedMarkers, 
-      interests: [],
-      interestsSkipped: !selectedMarkers.interestsSkipped 
-    });
-  };
-
-  const handleNext = () => {
-    // Passer les repères sélectionnés à l'écran suivant
-    navigation.navigate('OnboardingFingerprints', { markers: selectedMarkers });
-  };
-
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
-  const hasSelection = selectedMarkers.ageRange || selectedMarkers.rhythm || 
-                      selectedMarkers.mood || selectedMarkers.interests.length > 0;
+  const hasSelection = selectedMarkers.ageRange || selectedMarkers.rhythm || selectedMarkers.mood;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
+      <View style={styles.glowViolet} />
+      <View style={styles.glowIndigo} />
+      {PHOSPHENE_DATA.map((p, i) => <Phosphene key={i} {...p} />)}
+
       {/* Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 20 }]}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <MaterialIcons name="arrow-back" size={24} color={theme.colors.text} />
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 16 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <MaterialIcons name="arrow-back" size={22} color={OB.textSub} />
         </TouchableOpacity>
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressDot, { backgroundColor: theme.colors.primary }]} />
-          <View style={[styles.progressDot, { backgroundColor: theme.colors.primary }]} />
-          <View style={[styles.progressDot, { backgroundColor: theme.colors.textMuted }]} />
-        </View>
+        <ProgressDots current={1} total={3} />
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView 
-        style={styles.scrollView}
+      <Animated.ScrollView
+        style={[styles.scrollView, { opacity: fadeAnim }]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          Premiers pas
-        </Text>
-        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-          Ces informations sont facultatives, sachez juste que plus approfondirez les analyses de vos reves et plus elles seront personnaliser.
+        <Text style={styles.title}>Quelques repères</Text>
+        <Text style={styles.subtitle}>
+          Tout est facultatif. Ce que vous partagez reste sur votre téléphone — et enrichit les analyses qui vous sont destinées.
         </Text>
 
-        {/* Tranche d'âge - PAS de "je ne sais pas" ici */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            🎂 Tranche d'âge
-          </Text>
-          <View style={styles.optionsGrid}>
-            {ageRanges.map((age) => (
-              <TouchableOpacity
-                key={age.id}
-                style={[
-                  styles.optionCard,
-                  { 
-                    backgroundColor: selectedMarkers.ageRange === age.id 
-                      ? theme.colors.primaryGlow 
-                      : theme.colors.cardBackground,
-                    borderColor: selectedMarkers.ageRange === age.id 
-                      ? theme.colors.primary 
-                      : theme.colors.cardBorder
-                  }
-                ]}
-                onPress={() => handleSelectAge(age.id)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.optionEmoji}>{age.emoji}</Text>
-                <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
-                  {age.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {/* Sélecteurs */}
+        <View style={styles.selectorsCard}>
+          <SelectorRow
+            label="Tranche d'âge"
+            icon="🌱"
+            options={ageRanges}
+            value={selectedMarkers.ageRange}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOpenSheet('age'); }}
+          />
+          <View style={styles.selectorDivider} />
+          <SelectorRow
+            label="Rythme de vie"
+            icon="⚡"
+            options={rhythms}
+            value={selectedMarkers.rhythm}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOpenSheet('rhythm'); }}
+          />
+          <View style={styles.selectorDivider} />
+          <SelectorRow
+            label="État d'esprit"
+            icon="🧠"
+            options={moods}
+            value={selectedMarkers.mood}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOpenSheet('mood'); }}
+          />
         </View>
 
-        {/* Rythme de vie */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            ⏱️ Rythme de vie
+        {/* Note */}
+        <View style={styles.noteRow}>
+          <MaterialCommunityIcons name="shield-lock-outline" size={16} color={OB.accent} />
+          <Text style={styles.noteText}>
+            Ces informations restent uniquement sur votre téléphone et ne sont jamais partagées.
           </Text>
-          <View style={[
-            styles.optionsGrid,
-            selectedMarkers.rhythm === 'not_sure' && styles.optionsGridFaded
-          ]}>
-            {rhythms.map((rhythm) => (
-              <TouchableOpacity
-                key={rhythm.id}
-                style={[
-                  styles.optionCard,
-                  { 
-                    backgroundColor: selectedMarkers.rhythm === rhythm.id 
-                      ? theme.colors.primaryGlow 
-                      : theme.colors.cardBackground,
-                    borderColor: selectedMarkers.rhythm === rhythm.id 
-                      ? theme.colors.primary 
-                      : theme.colors.cardBorder
-                  },
-                  selectedMarkers.rhythm === 'not_sure' && styles.optionCardFaded
-                ]}
-                onPress={() => handleSelectRhythm(rhythm.id)}
-                activeOpacity={0.7}
-                disabled={selectedMarkers.rhythm === 'not_sure'}
-              >
-                <Text style={styles.optionEmoji}>{rhythm.emoji}</Text>
-                <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
-                  {rhythm.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* 💡 Lien "Pas trop sûr" en vert néon - TOGGLE */}
-          <TouchableOpacity 
-            style={[
-              styles.notSureLink,
-              selectedMarkers.rhythm === 'not_sure' && styles.notSureLinkActive
-            ]}
-            onPress={() => handleSelectRhythm(selectedMarkers.rhythm === 'not_sure' ? null : 'not_sure')}
-          >
-            <Text style={[
-              styles.notSureLinkText, 
-              { color: selectedMarkers.rhythm === 'not_sure' ? theme.colors.background : theme.colors.primary },
-              selectedMarkers.rhythm === 'not_sure' && { fontWeight: '700' }
-            ]}>
-              {selectedMarkers.rhythm === 'not_sure' ? '✓ Pas trop sûr' : 'Pas trop sûr'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        {/* État d'esprit */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            💭 État d'esprit général
-          </Text>
-          <View style={[
-            styles.optionsGrid,
-            selectedMarkers.mood === 'not_sure' && styles.optionsGridFaded
-          ]}>
-            {moods.map((mood) => (
-              <TouchableOpacity
-                key={mood.id}
-                style={[
-                  styles.optionCard,
-                  { 
-                    backgroundColor: selectedMarkers.mood === mood.id 
-                      ? theme.colors.primaryGlow 
-                      : theme.colors.cardBackground,
-                    borderColor: selectedMarkers.mood === mood.id 
-                      ? theme.colors.primary 
-                      : theme.colors.cardBorder
-                  },
-                  selectedMarkers.mood === 'not_sure' && styles.optionCardFaded
-                ]}
-                onPress={() => handleSelectMood(mood.id)}
-                activeOpacity={0.7}
-                disabled={selectedMarkers.mood === 'not_sure'}
-              >
-                <Text style={styles.optionEmoji}>{mood.emoji}</Text>
-                <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
-                  {mood.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* 💡 Lien "Pas trop sûr" en vert néon - TOGGLE */}
-          <TouchableOpacity 
-            style={[
-              styles.notSureLink,
-              selectedMarkers.mood === 'not_sure' && styles.notSureLinkActive
-            ]}
-            onPress={() => handleSelectMood(selectedMarkers.mood === 'not_sure' ? null : 'not_sure')}
-          >
-            <Text style={[
-              styles.notSureLinkText, 
-              { color: selectedMarkers.mood === 'not_sure' ? theme.colors.background : theme.colors.primary },
-              selectedMarkers.mood === 'not_sure' && { fontWeight: '700' }
-            ]}>
-              {selectedMarkers.mood === 'not_sure' ? '✓ Pas trop sûr' : 'Pas trop sûr'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Centres d'intérêt */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            ❤️ Centres d'intérêt
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.textSecondary }]}>
-            Sélectionnez-en plusieurs
-          </Text>
-          <View style={[
-            styles.optionsGrid,
-            selectedMarkers.interestsSkipped && styles.optionsGridFaded
-          ]}>
-            {interests.map((interest) => (
-              <TouchableOpacity
-                key={interest.id}
-                style={[
-                  styles.optionCard,
-                  { 
-                    backgroundColor: selectedMarkers.interests.includes(interest.id)
-                      ? theme.colors.primaryGlow 
-                      : theme.colors.cardBackground,
-                    borderColor: selectedMarkers.interests.includes(interest.id)
-                      ? theme.colors.primary 
-                      : theme.colors.cardBorder
-                  },
-                  selectedMarkers.interestsSkipped && styles.optionCardFaded
-                ]}
-                onPress={() => handleToggleInterest(interest.id)}
-                activeOpacity={0.7}
-                disabled={selectedMarkers.interestsSkipped}
-              >
-                <Text style={styles.optionEmoji}>{interest.emoji}</Text>
-                <Text style={[styles.optionLabel, { color: theme.colors.text }]}>
-                  {interest.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* 💡 Lien "Plus tard" en vert néon - TOGGLE comme "Pas trop sûr" */}
-          <TouchableOpacity 
-            style={[
-              styles.notSureLink,
-              selectedMarkers.interestsSkipped && styles.notSureLinkActive
-            ]}
-            onPress={handleSkipInterests}
-          >
-            <Text style={[
-              styles.notSureLinkText, 
-              { color: selectedMarkers.interestsSkipped ? theme.colors.background : theme.colors.primary },
-              selectedMarkers.interestsSkipped && { fontWeight: '700' }
-            ]}>
-              {selectedMarkers.interestsSkipped ? '✓ Plus tard' : 'Plus tard'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ height: 120 }} />
-      </ScrollView>
+        <View style={{ height: 140 }} />
+      </Animated.ScrollView>
 
       {/* Footer */}
-      <View style={[styles.footer, { 
-        backgroundColor: theme.colors.background,
-        paddingBottom: Math.max(insets.bottom, 20) + 20 
-      }]}>
-        {/* Bouton principal */}
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
         <TouchableOpacity
-          style={[
-            styles.nextButton, 
-            { backgroundColor: theme.colors.primary }
-          ]}
-          onPress={handleNext}
-          activeOpacity={0.8}
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate('OnboardingFingerprints', { markers: selectedMarkers })}
+          activeOpacity={0.85}
         >
-          <Text style={[styles.nextButtonText, { color: theme.colors.background }]}>
-            {hasSelection ? 'Continuer' : 'Passer cette étape'}
-          </Text>
-          <MaterialCommunityIcons 
-            name="arrow-right" 
-            size={24} 
-            color={theme.colors.background} 
-          />
+          <Text style={styles.primaryButtonText}>{hasSelection ? 'Continuer' : 'Passer'}</Text>
+          <MaterialCommunityIcons name="arrow-right" size={22} color={OB.bg} />
         </TouchableOpacity>
-        
-        {/* Mention facultatif */}
         {!hasSelection && (
-          <Text style={[styles.skipHint, { color: theme.colors.textSecondary }]}>
-            Vous pourrez toujours compléter plus tard
-          </Text>
+          <Text style={styles.skipHint}>Vous pourrez compléter dans Persona à tout moment</Text>
         )}
       </View>
+
+      {/* Bottom Sheets */}
+      <BottomSheetPicker
+        visible={openSheet === 'age'}
+        title="Tranche d'âge"
+        options={ageRanges}
+        selected={selectedMarkers.ageRange}
+        onSelect={v => setSelectedMarkers(m => ({ ...m, ageRange: v }))}
+        onClose={() => setOpenSheet(null)}
+      />
+      <BottomSheetPicker
+        visible={openSheet === 'rhythm'}
+        title="Rythme de vie"
+        options={rhythms}
+        selected={selectedMarkers.rhythm}
+        onSelect={v => setSelectedMarkers(m => ({ ...m, rhythm: v }))}
+        onClose={() => setOpenSheet(null)}
+      />
+      <BottomSheetPicker
+        visible={openSheet === 'mood'}
+        title="État d'esprit"
+        options={moods}
+        selected={selectedMarkers.mood}
+        onSelect={v => setSelectedMarkers(m => ({ ...m, mood: v }))}
+        onClose={() => setOpenSheet(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: OB.bg },
+  glowViolet: {
+    position: 'absolute', top: -60, right: -40,
+    width: 240, height: 240, borderRadius: 120,
+    backgroundColor: OB.violet,
+  },
+  glowIndigo: {
+    position: 'absolute', bottom: 40, left: -60,
+    width: 220, height: 220, borderRadius: 110,
+    backgroundColor: OB.indigo,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 20,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 16,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 30,
-  },
+  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 28 },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: 34, color: OB.text, fontFamily: 'CormorantUpright-Bold',
+    marginBottom: 10, lineHeight: 40,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 32,
-    lineHeight: 22,
+    fontSize: 15, color: OB.textSub, lineHeight: 22,
+    marginBottom: 32, fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  optionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 16,
-  },
-  optionCard: {
-    width: '47%',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    gap: 8,
-  },
-  optionEmoji: {
-    fontSize: 32,
-  },
-  optionLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  // 💡 Lien "Pas trop sûr" / "Plus tard" en vert néon
-  notSureLink: {
-    alignSelf: 'center',
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  notSureLinkActive: {
-    backgroundColor: '#00FFB0', // Vert néon quand actif
-  },
-  notSureLinkText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // 🕳️ Grisage des options quand "Pas trop sûr" est sélectionné
-  optionsGridFaded: {
-    opacity: 0.35,
-  },
-  optionCardFaded: {
-    borderColor: 'transparent',
-  },
-  footer: {
-    paddingHorizontal: 30,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
+
+  // Card des sélecteurs
+  selectorsCard: {
+    backgroundColor: OB.card,
     borderRadius: 16,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: OB.cardBorder,
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  selectorDivider: { height: 1, backgroundColor: OB.divider, marginHorizontal: 20 },
+
+  // Selector row
+  selectorRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 18, paddingHorizontal: 20,
+  },
+  selectorRowSelected: { backgroundColor: OB.cardSelected },
+  selectorLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  selectorIcon: { fontSize: 22, width: 28, textAlign: 'center' },
+  selectorLabel: {
+    fontSize: 13, color: OB.accent, fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2,
+  },
+  selectorValue: {
+    fontSize: 15, color: OB.text, fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+  },
+  selectorPlaceholder: {
+    fontSize: 14, color: OB.textMuted, fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
+
+  // Note
+  noteRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: OB.accentGlow, borderRadius: 10,
+    paddingVertical: 12, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: 'rgba(210, 177, 76, 0.15)',
+  },
+  noteText: {
+    flex: 1, fontSize: 13, color: OB.textSub, lineHeight: 19,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
+
+  // Footer
+  footer: {
+    paddingHorizontal: 28, paddingTop: 20,
+    borderTopWidth: 1, borderTopColor: OB.divider,
+    backgroundColor: OB.bg,
+  },
+  primaryButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: OB.accent, paddingVertical: 18, borderRadius: 14, gap: 8,
     ...Platform.select({
-      ios: {
-        shadowColor: '#9B59B6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
+      ios: { shadowColor: OB.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12 },
+      android: { elevation: 8 },
     }),
   },
-  nextButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+  primaryButtonText: {
+    fontSize: 17, color: OB.bg, fontFamily: 'AtkinsonHyperlegibleNext-Bold', letterSpacing: 0.3,
   },
   skipHint: {
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 12,
+    fontSize: 13, color: OB.textMuted, textAlign: 'center', marginTop: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+  },
+
+  // Bottom Sheet
+  sheetOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: OB.bgSheet,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingBottom: 40, paddingTop: 12,
+    borderWidth: 1, borderBottomWidth: 0,
+    borderColor: OB.cardBorder,
+  },
+  sheetHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: OB.textMuted,
+    alignSelf: 'center', marginBottom: 20,
+  },
+  sheetTitle: {
+    fontSize: 13, color: OB.accent,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    letterSpacing: 1.2, textTransform: 'uppercase',
+    paddingHorizontal: 24, marginBottom: 8,
+  },
+  sheetOption: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 16, paddingHorizontal: 24, gap: 16,
+  },
+  sheetOptionBorder: {
+    borderBottomWidth: 1, borderBottomColor: OB.divider,
+  },
+  sheetOptionEmoji: { fontSize: 22, width: 28, textAlign: 'center' },
+  sheetOptionLabel: {
+    flex: 1, fontSize: 16, color: OB.text,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
 });

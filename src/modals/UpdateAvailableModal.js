@@ -95,8 +95,13 @@ export function UpdateAvailableModal({
           {/* Notes de version (si disponibles) */}
           {releaseNotes && (
             <View style={styles.releaseNotesContainer}>
-              <Text style={styles.releaseNotesTitle}>Nouveautés :</Text>
-              <Text style={styles.releaseNotesText}>{releaseNotes}</Text>
+              <Text style={styles.releaseNotesTitle}>✨ Ce qui est nouveau</Text>
+              {String(releaseNotes).split('\n').filter(l => l.trim()).map((line, i) => (
+                <View key={i} style={styles.releaseNoteLine}>
+                  <Text style={styles.releaseNotesDot}>•</Text>
+                  <Text style={styles.releaseNotesText}>{line.replace(/^[\u2022\-\*\+]\s*/, '').trim()}</Text>
+                </View>
+              ))}
             </View>
           )}
           
@@ -171,8 +176,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 107, 107, 0.2)',
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -198,14 +203,14 @@ const styles = StyleSheet.create({
   },
   versionLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   versionValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textPrimary,
     marginTop: 2,
   },
@@ -226,11 +231,24 @@ const styles = StyleSheet.create({
   },
   releaseNotesTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
     marginBottom: 6,
   },
+  releaseNoteLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 5,
+  },
+  releaseNotesDot: {
+    fontSize: 13,
+    color: THEME.colors.primary,
+    lineHeight: 18,
+    marginTop: 1,
+  },
   releaseNotesText: {
+    flex: 1,
     fontSize: 13,
     lineHeight: 18,
     color: THEME.colors.textSecondary,
@@ -264,12 +282,12 @@ const styles = StyleSheet.create({
   },
   buttonPrimaryText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.background,
   },
   buttonSecondaryText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textPrimary,
   },
   platformNote: {

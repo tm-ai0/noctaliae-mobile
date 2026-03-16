@@ -88,3 +88,6 @@ RATE_LIMITING_SSH_SCRIPT.sh
 # Temporary reorganization script
 REORGANIZE_PROJECT.ps1
 
+# Claude Desktop worktrees
+.claude/
+

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Noctaliae",
     "slug": "noctaliae-mobile",
-    "version": "0.9.17",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#1a0b2e"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.noctaliae.mobile",
@@ -26,7 +24,6 @@
       }
     },
     "android": {
-      "versionCode": 17,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a0b2e"
@@ -34,17 +31,20 @@
       "navigationBarColor": "#0A0F1C",
       "package": "com.noctaliae.mobile",
       "permissions": [
-        "RECORD_AUDIO",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
         "android.permission.CAMERA",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM"
       ],
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "resizeableActivity": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -58,6 +58,14 @@
       ],
       "expo-localization",
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification_icon.png",
+          "color": "#00FFB0",
+          "defaultChannel": "noctaliae"
+        }
+      ],
       [
         "expo-local-authentication",
         {
@@ -76,6 +84,12 @@
       "eas": {
         "projectId": "2f45576d-d20a-49af-b612-fd007ee3c352"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2f45576d-d20a-49af-b612-fd007ee3c352"
     }
   }
 }

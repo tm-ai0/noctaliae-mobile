@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#FFD700',
   },
   message: {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   kofiButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#FFFFFF',
   },
 });

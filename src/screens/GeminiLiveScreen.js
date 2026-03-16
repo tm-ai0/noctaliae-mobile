@@ -504,8 +504,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 26,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.warmGold,
   },
   liveIndicator: {
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   },
   liveText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.error,
   },
   headerRight: {
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.warmGold,
     marginBottom: 8,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   transcriptionText: {
     fontSize: 16,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.scientificBlueGreen,
     marginBottom: 8,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   responseText: {
     fontSize: 16,
@@ -635,8 +635,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   onboardingTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 30,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
     marginBottom: 30,
     textAlign: 'center',
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
     marginBottom: 4,
   },
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.background,
   },
   // 🚀 TEASER MODE STYLES
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
   },
   comingSoonText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
     letterSpacing: 1,
   },
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   },
   backButtonTeaserText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
   },
   helpModal: {
@@ -749,8 +749,8 @@ const styles = StyleSheet.create({
     borderBottomColor: THEME.colors.cardBorder,
   },
   helpTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
   },
   helpContent: {
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
   },
   helpSection: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
     marginTop: 20,
     marginBottom: 10,
@@ -784,8 +784,8 @@ const styles = StyleSheet.create({
     borderBottomColor: THEME.colors.cardBorder,
   },
   contextTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
   },
   contextContent: {
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
   },
   contextSection: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.warmGold,
     marginTop: 20,
     marginBottom: 10,

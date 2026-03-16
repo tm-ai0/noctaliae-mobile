@@ -73,7 +73,7 @@ export default function RateLimitModal({ visible, onClose, minutesLeft = 60 }) {
             </View>
             <Text style={styles.title}>🌙 Limite DeepDream atteinte</Text>
             <Text style={styles.subtitle}>
-              Les analyses profondes avec Claude Sonnet 4.5 sont limitées pour maintenir la qualité du service.
+              Les analyses DeepDream sont limitées pour les utilisateurs gratuits. Soutenez le projet pour un accès illimité !
             </Text>
           </View>
 
@@ -111,40 +111,21 @@ export default function RateLimitModal({ visible, onClose, minutesLeft = 60 }) {
                   <Text style={styles.kofiEmoji}>☕</Text>
                   <View>
                     <Text style={styles.kofiTitle}>Un café</Text>
-                    <Text style={styles.kofiSubtitle}>~13 analyses DeepDream</Text>
+                    <Text style={styles.kofiSubtitle}>Analyses DeepDream illimitées</Text>
                   </View>
                 </View>
                 <Text style={styles.kofiPrice}>1,99€</Text>
               </View>
             </TouchableOpacity>
 
-            {/* P'tit déj - 3,39€ */}
-            <TouchableOpacity
-              style={[styles.kofiButton, styles.kofiButtonBreakfast]}
-              onPress={() => handleKofi(3.39)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.kofiContent}>
-                <View style={styles.kofiLeft}>
-                  <Text style={styles.kofiEmoji}>🥐</Text>
-                  <View>
-                    <Text style={styles.kofiTitle}>Un p'tit déj</Text>
-                    <Text style={styles.kofiSubtitle}>~23 analyses DeepDream</Text>
-                  </View>
-                </View>
-                <Text style={styles.kofiPrice}>3,39€</Text>
-              </View>
-              <View style={styles.recommendedBadge}>
-                <Text style={styles.recommendedText}>Recommandé</Text>
-              </View>
-            </TouchableOpacity>
+
           </View>
 
           {/* Alternative gratuite */}
           <View style={styles.alternativeContainer}>
             <MaterialCommunityIcons name="information-outline" size={20} color={THEME.colors.textSecondary} />
             <Text style={styles.alternativeText}>
-              En attendant, utilisez <Text style={styles.alternativeBold}>QuickDream</Text> (Llama 3.3) - gratuit et illimité !
+              En attendant, utilisez <Text style={styles.alternativeBold}>QuickDream</Text> - gratuit et illimité !
             </Text>
           </View>
 
@@ -202,8 +183,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
     textAlign: 'center',
     marginBottom: 8,
@@ -223,7 +204,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 48,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
     marginVertical: 8,
   },
@@ -241,7 +222,7 @@ const styles = StyleSheet.create({
   },
   costTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
     marginBottom: 12,
   },
@@ -257,7 +238,7 @@ const styles = StyleSheet.create({
   },
   costValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
   },
   costNote: {
@@ -271,7 +252,7 @@ const styles = StyleSheet.create({
   },
   buttonsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
     marginBottom: 12,
     textAlign: 'center',
@@ -314,7 +295,7 @@ const styles = StyleSheet.create({
   },
   kofiTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#FFFFFF',
   },
   kofiSubtitle: {
@@ -324,7 +305,7 @@ const styles = StyleSheet.create({
   },
   kofiPrice: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#FFFFFF',
   },
   recommendedBadge: {
@@ -338,7 +319,7 @@ const styles = StyleSheet.create({
   },
   recommendedText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
   alternativeContainer: {
@@ -357,7 +338,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   alternativeBold: {
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
   },
   closeButton: {
@@ -368,7 +349,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
   },
 });

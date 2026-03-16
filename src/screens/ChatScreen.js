@@ -14,7 +14,7 @@ import {
   Animated
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
+import { Clipboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import { chatWithDream, transcribeAudio } from '../services/apiService';
@@ -468,8 +468,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
   },
   iconButton: {
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   analysisTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.text,
   },
   analysisScroll: {
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
   },
   inputContainer: {

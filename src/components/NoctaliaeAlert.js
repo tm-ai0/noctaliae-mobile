@@ -70,7 +70,7 @@ export default function NoctaliaeAlert({ config, onClose }) {
     if (config) {
       // Haptic feedback
       const alertConfig = ALERT_CONFIGS[config.type] || ALERT_CONFIGS.info;
-      if (config.type === 'confirm') {
+      if (config.type === 'confirm' || config.type === 'info') {
         Haptics.impactAsync(alertConfig.haptic);
       } else {
         Haptics.notificationAsync(alertConfig.haptic);
@@ -227,8 +227,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: 'CormorantUpright-Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -259,14 +259,14 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
   confirmButton: {
     // backgroundColor dynamique
   },
   confirmButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
 });

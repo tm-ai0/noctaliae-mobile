@@ -143,17 +143,17 @@ export function MarkdownText({ children, style }) {
 
 const styles = StyleSheet.create({
   bold: {
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
   },
   boldQuestion: {
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
   },
   // 🏆 QUESTIONS (ligne qui finit par "?")
   question: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.primary,
     lineHeight: 26,
     marginVertical: 10,
@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
   },
   // 🏆 HEADINGS améliorés
   mainHeading: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     marginTop: 20,
     marginBottom: 12,
     color: THEME.colors.primary,
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   heading: {
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: 21,
+    fontFamily: 'CormorantUpright-Bold',
     marginTop: 16,
     marginBottom: 10,
     color: THEME.colors.textPrimary,
@@ -188,16 +188,16 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   subHeading: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 19,
+    fontFamily: 'CormorantUpright-Bold',
     marginTop: 14,
     marginBottom: 8,
     color: THEME.colors.primary,
     lineHeight: 24,
   },
   emojiHeading: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontFamily: 'CormorantUpright-Bold',
     marginTop: 16,
     marginBottom: 10,
     color: THEME.colors.primary,
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     fontSize: 18,
     color: THEME.colors.primary,
-    fontWeight: '700',
+    fontFamily: 'CormorantUpright-Bold',
     lineHeight: 24,
   },
   bulletText: {

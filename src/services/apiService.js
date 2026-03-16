@@ -4,6 +4,7 @@ import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 import { premiumService } from './premiumService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuthHeaders, handleTokenError } from './authTokenService';
+import { freeTierService } from './freeTierService';
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 
@@ -53,7 +54,7 @@ async function loadUserFingerprints() {
 }
 
 // Analyser un rêve depuis du texte
-export async function analyzeDreamFromText(dreamText, isPremium = false) {
+export async function analyzeDreamFromText(dreamText, isPremium = false, dreamMetadata = null) {
   try {
     console.log('📤 Envoi du rêve pour analyse');
     
@@ -71,7 +72,9 @@ export async function analyzeDreamFromText(dreamText, isPremium = false) {
       `${API_BASE_URL}${endpoint}`,
       {
         transcript: dreamText,
-        userFingerprints: userFingerprints
+        userFingerprints: userFingerprints,
+        isPremium: isPremium,
+        dreamMetadata: dreamMetadata,  // 🌙 Métadonnées optionnelles (lucidité, qualité, émotions, thèmes)
       },
       {
         headers,
@@ -98,6 +101,8 @@ export async function analyzeDreamFromText(dreamText, isPremium = false) {
       emoji: response.data.emoji || '💭',
       title: response.data.title || 'Rêve sans titre',
       tags: response.data.tags || [],
+      imagePrompt: response.data.imagePrompt || '',
+      palette: response.data.palette || ['#00FFB0', '#4F8DFF', '#D2B14C'],
       suggestedQuestions: response.data.suggestedQuestions || [],
       model: response.data.model || (isPremium ? 'claude-sonnet-4' : 'llama-3.3-70b'),
       limitInfo: limitInfo
@@ -109,6 +114,13 @@ export async function analyzeDreamFromText(dreamText, isPremium = false) {
     const tokenError = handleTokenError(error.response);
     if (tokenError) {
       throw new Error(tokenError.message);
+    }
+    
+    // 🚨 Rate limit global (IP) — code spécifique pour fallback QuickDream
+    if (error.response?.status === 429) {
+      const err = new Error(error.response?.data?.message || 'Limite quotidienne atteinte');
+      err.code = 'DAILY_LIMIT';
+      throw err;
     }
     
     throw new Error(error.response?.data?.message || 'Erreur d\'analyse');
@@ -442,6 +454,100 @@ export async function callNoctaliaeAssistant(dreamTranscription, dreamAnalysis, 
     }
     
     throw new Error(error.response?.data?.error || 'Erreur NoctaliaeAI+');
+  }
+}
+
+/**
+ * 🎨 Génère un visuel pour un rêve analysé
+ * Envoie imagePrompt au backend Gemini, reçoit base64, sauvegarde en fichier local
+ * @param {string} imagePrompt - Le prompt de génération (retourné par l'analyse)
+ * @param {string} dreamId - ID du rêve (pour nommer le fichier)
+ * @param {string} dreamTitle - Titre du rêve
+ * @returns {{ imageUrl: string, imagePrompt: string }} ou null si erreur
+ */
+export async function generateDreamImage(imagePrompt, dreamId, dreamTitle = '') {
+  try {
+    if (!imagePrompt) {
+      console.warn('⚠️ Pas de imagePrompt, skip génération');
+      return null;
+    }
+
+    console.log('🎨 Génération visuelle du rêve...');
+    console.log('🎨 Prompt:', imagePrompt.substring(0, 80) + '...');
+
+    // 🎯 Vérifier la limite free tier AVANT d'appeler Gemini
+    const imageAllowance = await freeTierService.checkImageAllowance();
+    if (!imageAllowance.allowed) {
+      console.log(`🎨 Limite images Gemini atteinte (${imageAllowance.count}/${imageAllowance.limit}) — skip génération`);
+      return null; // Pas d'image, la carte s'affichera sans hero
+    }
+
+    // 🏧 Envoyer le statut premium au backend pour le free tier tracking
+    const isPremiumUser = await premiumService.isPremium();
+    const headers = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_BASE_URL}${API_ENDPOINTS.generateDreamImage}`,
+      {
+        imagePrompt,
+        dreamTitle,
+        isPremium: isPremiumUser,
+      },
+      {
+        headers,
+        timeout: 60000,
+      }
+    );
+
+    const { imageBase64, mimeType, limited, limitInfo } = response.data;
+
+    // 🏧 Vérifier si limite free tier atteinte
+    if (limited || !imageBase64) {
+      if (limitInfo?.code === 'IMAGE_LIMIT') {
+        console.log(`🏧 Limite images Gemini atteinte (${limitInfo.count}/${limitInfo.limit})`);
+      } else {
+        console.warn('⚠️ Backend n\'a pas retourné d\'image');
+      }
+      return null;
+    }
+
+    // 💾 Sauvegarder en fichier local persistant
+    const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
+    const imageDir = `${FileSystem.documentDirectory}dream-images/`;
+    const imagePath = `${imageDir}${dreamId}.${ext}`;
+
+    // Créer le dossier si nécessaire
+    const dirInfo = await FileSystem.getInfoAsync(imageDir);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(imageDir, { intermediates: true });
+    }
+
+    // Écrire le fichier
+    await FileSystem.writeAsStringAsync(imagePath, imageBase64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    console.log(`✅ Image sauvegardée: ${imagePath} (${(imageBase64.length / 1024).toFixed(0)}KB)`);
+
+    // 🎯 Incrémenter le compteur free tier
+    await freeTierService.incrementImageCount();
+
+    return {
+      imageUrl: imagePath,
+      imagePrompt: response.data.prompt || imagePrompt,
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur génération visuelle:', error);
+
+    const tokenError = handleTokenError(error.response);
+    if (tokenError) {
+      console.error('🔐 Token error:', tokenError.message);
+    }
+
+    // Non-bloquant — le rêve s'affiche sans image
+    console.warn('⚠️ Visuel non disponible, fallback placeholder');
+    return null;
   }
 }
 

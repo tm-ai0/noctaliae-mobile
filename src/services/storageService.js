@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { streakService } from './streakService';
 
 const DREAMS_KEY = '@noctaliae_dreams';
 
@@ -18,6 +19,9 @@ export async function saveDream(audioUri, transcription = '') {
     dreams.unshift(newDream);
     await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
     
+    // 🔥 Streak — incrémenter à chaque rêve enregistré
+    streakService.onDreamRecorded().catch(() => {});
+
     return newDream;
   } catch (error) {
     console.error('Erreur sauvegarde:', error);
@@ -153,6 +157,79 @@ export async function saveTranscription(dreamId, transcription) {
   }
 }
 
+// 🎨 Sauvegarder les données visuelles d'un rêve (appelé après génération image)
+export async function saveDreamImage(dreamId, imageData) {
+  try {
+    const dreams = await getAllDreams();
+    const dreamIndex = dreams.findIndex(d => d.id === dreamId);
+    
+    if (dreamIndex !== -1) {
+      dreams[dreamIndex].imageUrl = imageData.imageUrl || null;
+      dreams[dreamIndex].imagePrompt = imageData.imagePrompt || null;
+      dreams[dreamIndex].imagePalette = imageData.palette || [];
+      dreams[dreamIndex].imageStyle = imageData.style || null;
+      await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
+      console.log('🎨 Visuel sauvegardé pour rêve:', dreamId);
+    }
+  } catch (error) {
+    console.error('Erreur sauvegarde visuel:', error);
+    // Pas de throw — on ne bloque pas l'UX pour un visuel
+  }
+}
+
+// 🌙 Sauvegarder les métadonnées manuelles (lucidité, qualité sommeil, émotions, thèmes)
+export async function saveDreamMetadata(dreamId, metadata) {
+  try {
+    const dreams = await getAllDreams();
+    const idx = dreams.findIndex(d => d.id === dreamId);
+    if (idx !== -1) {
+      if (metadata.lucidity != null)      dreams[idx].lucidity = metadata.lucidity;
+      if (metadata.sleepQuality != null)  dreams[idx].sleepQuality = metadata.sleepQuality;
+      if (metadata.emotions?.length)      dreams[idx].emotions = metadata.emotions;
+      if (metadata.themes?.length)        dreams[idx].themes = metadata.themes;
+      await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
+      console.log('🌙 Métadonnées rêve sauvegardées:', dreamId);
+    }
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde métadonnées:', error);
+    // Non-bloquant
+  }
+}
+
+// ⭐ Toggle favori sur un rêve
+export async function toggleFavoriteDream(id) {
+  try {
+    const dreams = await getAllDreams();
+    const idx = dreams.findIndex(d => d.id === id);
+    if (idx !== -1) {
+      dreams[idx].isFavorite = !dreams[idx].isFavorite;
+      await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
+      return dreams[idx].isFavorite;
+    }
+    return false;
+  } catch (error) {
+    console.error('Erreur toggle favori:', error);
+    return false;
+  }
+}
+
+// 📌 Épingler un rêve (max 1 à la fois — désépingle les autres)
+export async function setPinnedDream(id) {
+  try {
+    const dreams = await getAllDreams();
+    const idx = dreams.findIndex(d => d.id === id);
+    if (idx === -1) return false;
+    const newPinned = !dreams[idx].isPinned;
+    dreams.forEach(d => { d.isPinned = false; });
+    dreams[idx].isPinned = newPinned;
+    await AsyncStorage.setItem(DREAMS_KEY, JSON.stringify(dreams));
+    return newPinned;
+  } catch (error) {
+    console.error('Erreur épinglage:', error);
+    return false;
+  }
+}
+
 // Sauvegarder l'analyse d'un rêve + métadonnées
 export async function saveAnalysis(dreamId, analysisData, modelUsed = 'llama') {
   try {
@@ -170,6 +247,12 @@ export async function saveAnalysis(dreamId, analysisData, modelUsed = 'llama') {
         dreams[dreamIndex].dreamTitle = analysisData.title; // 🆕
         dreams[dreamIndex].tags = analysisData.tags; // 🆕
         dreams[dreamIndex].suggestedQuestions = analysisData.suggestedQuestions; // 🆕
+        
+        // 🎨 Données visuelles du rêve
+        dreams[dreamIndex].imageUrl = analysisData.imageUrl || null;
+        dreams[dreamIndex].imagePrompt = analysisData.imagePrompt || null;
+        dreams[dreamIndex].imagePalette = analysisData.palette || analysisData.imagePalette || [];
+        dreams[dreamIndex].imageStyle = analysisData.imageStyle || null;
         
         // Override le titre générique si on a un titre IA
         if (analysisData.title && analysisData.title !== 'Rêve sans titre') {

@@ -33,7 +33,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onActivate }) {
           
           {/* Body */}
           <Text style={styles.modalDescription}>
-            DeepDream Engine utilise Claude Sonnet 4.5 pour des analyses plus profondes et personnalisées.
+            DeepDream Engine offre des analyses plus profondes et personnalisées grâce à un modèle premium.
           </Text>
           
           <View style={styles.modalFeatures}>
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontFamily: 'CormorantUpright-Bold',
     color: THEME.colors.text,
     marginTop: 12,
     textAlign: 'center',
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   modalButtonSecondaryText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: THEME.colors.textSecondary,
   },
   modalButtonPrimary: {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimaryText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: '#0c0e27',
   },
 });

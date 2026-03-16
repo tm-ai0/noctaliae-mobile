@@ -1,6 +1,6 @@
 // Noctaliae Theme Configuration - Multi-Theme System
-// Version: 3.1.0 - 3 Free + 3 Premium themes
-// Updated: 2025-11-08
+// Version: 3.2.0 - 3 Free + 3 Premium themes + Typography update
+// Updated: 2026-02-27
 
 // ============================================
 // 🎨 THEME VARIANTS (6 total: 3 free + 3 premium)
@@ -270,6 +270,23 @@ const commonTheme = {
     huge: 32,
   },
   
+  fontFamily: {
+    // Display / Titres — Cormorant Upright (serif gravure)
+    display: 'CormorantUpright-Bold',           // 700 - titres principaux
+    displayRegular: 'CormorantUpright-Regular',  // 400
+    displaySemiBold: 'CormorantUpright-SemiBold', // 600
+    displayBold: 'CormorantUpright-Bold',        // 700
+    // Body / UI — Atkinson Hyperlegible Next (accessibility-first sans-serif)
+    body: 'AtkinsonHyperlegibleNext-Regular',       // 400 - texte courant
+    bodyMedium: 'AtkinsonHyperlegibleNext-Medium',  // 500
+    bodySemiBold: 'AtkinsonHyperlegibleNext-SemiBold', // 600
+    bodyBold: 'AtkinsonHyperlegibleNext-Bold',      // 700
+    // Fallbacks system
+    systemSans: 'System',
+    systemSerif: 'serif',
+    mono: 'monospace',
+  },
+  
   fontWeight: {
     regular: '400',
     medium: '500',
@@ -338,16 +355,17 @@ export const THEMES = {
   'soft-pink': { ...commonTheme, ...SOFT_PINK_THEME },
 };
 
-// Liste des thèmes pour le sélecteur (3 free + 3 premium)
+// Liste des thèmes pour le sélecteur
+// isAvailable = true → sélectionnable, false → grisé "bientôt"
 export const THEME_LIST = [
-  // FREE
-  { id: 'original', name: 'Original', icon: 'water', iconFamily: 'MaterialIcons', description: 'Bleu-mauve profond', isPremium: false },
-  { id: 'warm-gold', name: 'Warm Gold', icon: 'wb-sunny', iconFamily: 'MaterialIcons', description: 'Or chaleureux', isPremium: false },
-  { id: 'earthy-brown', name: 'Earthy Brown', icon: 'terrain', iconFamily: 'MaterialIcons', description: 'Brun terreux', isPremium: false },
-  // PREMIUM
-  { id: 'neon-green', name: 'Neon Green', icon: 'flash-on', iconFamily: 'MaterialIcons', description: 'Vert néon intense', isPremium: true },
-  { id: 'deep-ocean', name: 'Deep Ocean', icon: 'waves', iconFamily: 'MaterialIcons', description: 'Océan profond', isPremium: true },
-  { id: 'soft-pink', name: 'Soft Pink', icon: 'local-florist', iconFamily: 'MaterialIcons', description: 'Rose doux', isPremium: true },
+  // DISPONIBLES
+  { id: 'original', name: 'Original', icon: 'water', iconFamily: 'MaterialIcons', description: 'Bleu-mauve profond', isPremium: false, isAvailable: true },
+  { id: 'deep-ocean', name: 'Deep Ocean', icon: 'waves', iconFamily: 'MaterialIcons', description: 'Océan profond', isPremium: false, isAvailable: true },
+  // BIENTÔT
+  { id: 'warm-gold', name: 'Warm Gold', icon: 'wb-sunny', iconFamily: 'MaterialIcons', description: 'Or chaleureux', isPremium: true, isAvailable: false },
+  { id: 'earthy-brown', name: 'Earthy Brown', icon: 'terrain', iconFamily: 'MaterialIcons', description: 'Brun terreux', isPremium: true, isAvailable: false },
+  { id: 'neon-green', name: 'Neon Green', icon: 'flash-on', iconFamily: 'MaterialIcons', description: 'Vert néon intense', isPremium: true, isAvailable: false },
+  { id: 'soft-pink', name: 'Soft Pink', icon: 'local-florist', iconFamily: 'MaterialIcons', description: 'Rose doux', isPremium: true, isAvailable: false },
 ];
 
 // Export du thème par défaut (pour compatibilité)
