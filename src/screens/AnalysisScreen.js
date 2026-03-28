@@ -34,11 +34,9 @@ export default function AnalysisScreen({ navigation, route }) {
   const [isSelectionMode, setIsSelectionMode] = useState(route.params?.startInSelectionMode || false);
   const [selectedDreams, setSelectedDreams] = useState(new Set());
   
-  // 🔐 Filtre "Rêves secrets uniquement"
-  const [showOnlySecrets, setShowOnlySecrets] = useState(route.params?.showOnlySecrets || false);
-
-  // ⭐ Filtre favoris
-  const [filterFavorites, setFilterFavorites] = useState(false);
+  // 🔽 Filtre popover (Tous / Favoris / Secrets)
+  const [activeFilter, setActiveFilter] = useState(route.params?.showOnlySecrets ? 'secrets' : null);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
   
   // 💡 Hint pour le bouton menu (première utilisation)
   const [showMenuHint, setShowMenuHint] = useState(false);
@@ -79,7 +77,7 @@ export default function AnalysisScreen({ navigation, route }) {
       }
       // 🔐 Activer le filtre secrets si demandé par Settings
       if (route.params?.showOnlySecrets) {
-        setShowOnlySecrets(true);
+        setActiveFilter('secrets');
         navigation.setParams({ showOnlySecrets: false });
       }
     }, [route.params?.startInSelectionMode, route.params?.showOnlySecrets])
@@ -99,9 +97,9 @@ export default function AnalysisScreen({ navigation, route }) {
   function groupDreamsByDate() {
     const filtered = dreams.filter(dream => {
       // 🔐 Filtre secrets : si actif, ne montrer que les secrets
-      if (showOnlySecrets && !dream.isSecret) return false;
-      // ⭐ Filtre favoris
-      if (filterFavorites && !dream.isFavorite) return false;
+      if (activeFilter === 'secrets' && !dream.isSecret) return false;
+      // 🔽 Filtre favoris
+      if (activeFilter === 'favorites' && !dream.isFavorite) return false;
       // 📌 Exclure le rêve épinglé de la liste (affiché en haut séparément)
       if (dream.isPinned) return false;
 
@@ -253,7 +251,7 @@ export default function AnalysisScreen({ navigation, route }) {
         isSelectionMode={isSelectionMode}
         isSelected={selectedDreams.has(dream.id)}
         onSelectionToggle={() => toggleDreamSelection(dream.id)}
-        showMenuHint={showMenuHint && isFirstOverall && !isSelectionMode && !showOnlySecrets}
+        showMenuHint={showMenuHint && isFirstOverall && !isSelectionMode && activeFilter !== 'secrets'}
         onMenuHintDismiss={handleMenuHintDismiss}
         onPress={() => {
           if (isSelectionMode) {
@@ -346,7 +344,7 @@ export default function AnalysisScreen({ navigation, route }) {
               <Text style={[styles.selectAllText, { color: theme.colors.primary }]}>Tout</Text>
             </TouchableOpacity>
           </>
-        ) : showOnlySecrets ? (
+        ) : activeFilter === 'secrets' ? (
           // 🔐 Mode "Rêves secrets" actif
           <>
             <TouchableOpacity 
@@ -358,7 +356,7 @@ export default function AnalysisScreen({ navigation, route }) {
                 if (navigation.canGoBack()) {
                   navigation.goBack();
                 } else {
-                  setShowOnlySecrets(false);
+                  setActiveFilter(null);
                 }
               }}
             >
@@ -389,20 +387,68 @@ export default function AnalysisScreen({ navigation, route }) {
             </View>
 
             <View style={styles.headerActions}>
-              {/* ⭐ Filtre favoris */}
-              <TouchableOpacity
-                style={[
-                  styles.headerIconButton,
-                  { 
-                    backgroundColor: filterFavorites ? '#D2B14C20' : theme.colors.cardBackground,
-                    borderWidth: 1,
-                    borderColor: filterFavorites ? '#D2B14C' : theme.colors.cardBorder
-                  }
-                ]}
-                onPress={() => setFilterFavorites(v => !v)}
-              >
-                <MaterialIcons name={filterFavorites ? 'star' : 'star-outline'} size={22} color={filterFavorites ? '#D2B14C' : theme.colors.textSecondary} />
-              </TouchableOpacity>
+              {/* 🔽 Bouton filtre + popover */}
+              <View>
+                <TouchableOpacity
+                  style={[
+                    styles.headerIconButton,
+                    {
+                      backgroundColor: activeFilter ? '#D2B14C20' : theme.colors.cardBackground,
+                      borderWidth: 1,
+                      borderColor: activeFilter ? '#D2B14C' : theme.colors.cardBorder
+                    }
+                  ]}
+                  onPress={() => setShowFilterMenu(v => !v)}
+                >
+                  <MaterialIcons
+                    name="filter-list"
+                    size={22}
+                    color={activeFilter ? '#D2B14C' : theme.colors.textSecondary}
+                  />
+                </TouchableOpacity>
+
+                {showFilterMenu && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.filterOverlay}
+                      activeOpacity={1}
+                      onPress={() => setShowFilterMenu(false)}
+                    />
+                    <View style={[styles.filterPopover, { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.cardBorder }]}>
+                      {[
+                        { key: null, label: 'Tous les r\u00eaves', icon: 'moon-waning-crescent', lib: 'mci' },
+                        { key: 'favorites', label: 'Favoris', icon: 'star', lib: 'mi' },
+                        { key: 'secrets', label: 'Secrets', icon: 'lock', lib: 'mi' },
+                      ].map((opt, i, arr) => {
+                        const isActive = activeFilter === opt.key;
+                        return (
+                          <TouchableOpacity
+                            key={String(opt.key)}
+                            style={[
+                              styles.filterOption,
+                              isActive && { backgroundColor: '#D2B14C15' },
+                              i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.colors.cardBorder }
+                            ]}
+                            onPress={() => {
+                              setActiveFilter(opt.key);
+                              setShowFilterMenu(false);
+                            }}
+                          >
+                            {opt.lib === 'mci'
+                              ? <MaterialCommunityIcons name={opt.icon} size={17} color={isActive ? '#D2B14C' : theme.colors.textSecondary} />
+                              : <MaterialIcons name={opt.icon} size={17} color={isActive ? '#D2B14C' : theme.colors.textSecondary} />
+                            }
+                            <Text style={[styles.filterOptionText, { color: isActive ? '#D2B14C' : theme.colors.text }]}>
+                              {opt.label}
+                            </Text>
+                            {isActive && <MaterialIcons name="check" size={15} color="#D2B14C" style={{ marginLeft: 'auto' }} />}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+              </View>
 
               <TouchableOpacity
                 style={[
@@ -472,7 +518,7 @@ export default function AnalysisScreen({ navigation, route }) {
       </View>
 
       {/* 📌 Rêve épinglé */}
-      {pinnedDream && !isSelectionMode && !showOnlySecrets && !filterFavorites && (
+      {pinnedDream && !isSelectionMode && !activeFilter && (
         <View style={[styles.pinnedSection, { paddingHorizontal: 20 }]}>
           <View style={styles.pinnedHeader}>
             <MaterialCommunityIcons name="pin" size={14} color="#4F8DFF" />
@@ -485,7 +531,7 @@ export default function AnalysisScreen({ navigation, route }) {
       {/* Liste */}
       {groupedDreams.length === 0 ? (
         <View style={styles.emptyContainer}>
-          {showOnlySecrets ? (
+          {activeFilter === 'secrets' ? (
             // 🔐 Empty state pour mode secrets
             <>
               <MaterialCommunityIcons 
@@ -746,5 +792,40 @@ const styles = StyleSheet.create({
   secretsHeaderTitle: {
     fontSize: 26,
     fontFamily: 'CormorantUpright-Bold',
+  },
+  // 🔽 Filtre popover
+  filterOverlay: {
+    position: 'absolute',
+    top: -9999,
+    left: -9999,
+    right: -9999,
+    bottom: -9999,
+    zIndex: 10,
+  },
+  filterPopover: {
+    position: 'absolute',
+    top: 50,
+    right: 0,
+    width: 190,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  filterOptionText: {
+    fontSize: 14,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
   },
 });

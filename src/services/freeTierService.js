@@ -20,7 +20,7 @@ import { premiumService } from './premiumService';
 // 🤝 TRUST MODE — accès illimité tant que < 100 users
 // Passer à false pour réactiver le paywall Ko-fi
 // ============================================
-const TRUST_MODE = true;
+const TRUST_MODE = false;
 
 // ============================================
 // CONSTANTES

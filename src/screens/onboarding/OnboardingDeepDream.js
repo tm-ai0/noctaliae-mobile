@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect } from 'react'
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
-import { premiumService } from '../../services/premiumService'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 
@@ -81,24 +80,11 @@ function Phosphene({ x, y, size, dur, delay }) {
   )
 }
 
-// ─── Feature row ──────────────────────────────────────────────────────────
-function Feature({ icon, text }) {
-  return (
-    <View style={styles.featureRow}>
-      <View style={styles.featureIconWrap}>
-        <MaterialCommunityIcons name={icon} size={16} color={OB.blue} />
-      </View>
-      <Text style={styles.featureText}>{text}</Text>
-    </View>
-  )
-}
-
 // ─── Main screen ──────────────────────────────────────────────────────────
 export default function OnboardingDeepDream({ navigation }) {
   const insets = useSafeAreaInsets()
   const fadeAnim = useRef(new Animated.Value(0)).current
   const cardScale = useRef(new Animated.Value(0.94)).current
-  const [isActivating, setIsActivating] = useState(false)
 
   useEffect(() => {
     Animated.parallel([
@@ -118,18 +104,6 @@ export default function OnboardingDeepDream({ navigation }) {
 
   // → OnboardingNotifications (demande permission notifs en dernier)
   const goHome = () => navigation.replace('OnboardingNotifications')
-
-  const handleActivate = async () => {
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      setIsActivating(true)
-      await premiumService.enablePremium()
-      goHome()
-    } catch (e) {
-      console.error('❌ Activation DeepDream onboarding:', e)
-      setIsActivating(false)
-    }
-  }
 
   const handleSkip = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -162,9 +136,9 @@ export default function OnboardingDeepDream({ navigation }) {
           {/* Headline */}
           <Text style={styles.title}>Vous êtes prêt.</Text>
           <Text style={styles.subtitle}>
-            Votre journal de rêves vous attend.{' '}
+            Votre journal de rêves est prêt.{' '}
             <Text style={{ color: OB.textSub }}>
-              Commencez dès maintenant — gratuit, sans limite.
+              La première analyse est offerte avec notre moteur le plus avancé.
             </Text>
           </Text>
 
@@ -189,10 +163,10 @@ export default function OnboardingDeepDream({ navigation }) {
             </View>
           </View>
 
-          {/* Séparateur "aller plus loin" */}
+          {/* Séparateur */}
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Ce qui vous attend</Text>
+            <Text style={styles.dividerText}>Voyez la différence</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -212,37 +186,44 @@ export default function OnboardingDeepDream({ navigation }) {
               <Text style={styles.deepTitle}>DeepDream Engine</Text>
             </View>
 
-            <Text style={styles.deepTagline}>
-              Analyse neuroscientifique avec les 6 frameworks de référence.
+            {/* Avant/Après — Contraste visuel */}
+            <View style={styles.comparisonContainer}>
+              {/* QUICK — aperçu atténué */}
+              <View style={styles.comparisonQuick}>
+                <Text style={styles.comparisonLabel}>⚡ QuickDream</Text>
+                <Text style={styles.comparisonPreview}>
+                  "Votre rêve contient des thèmes de peur et de changement. Cela peut refléter une période de transition."
+                </Text>
+              </View>
+
+              {/* Séparateur VS */}
+              <View style={styles.comparisonDivider}>
+                <Text style={styles.comparisonVS}>vs</Text>
+              </View>
+
+              {/* DEEP — aperçu lumineux */}
+              <View style={styles.comparisonDeep}>
+                <Text style={[styles.comparisonLabel, { color: OB.blue }]}>✨ DeepDream</Text>
+                <Text style={styles.comparisonPreviewDeep}>
+                  "Le corridor sombre de votre rêve évoque ce que Revonsuo appelle une simulation de menace — votre cerveau répète un scénario anxiogène pour mieux vous y préparer..."
+                </Text>
+                <View style={styles.comparisonExtras}>
+                  <View style={styles.comparisonExtraItem}>
+                    <Text style={styles.comparisonExtraIcon}>🎨</Text>
+                    <Text style={styles.comparisonExtraText}>Image IA unique</Text>
+                  </View>
+                  <View style={styles.comparisonExtraItem}>
+                    <Text style={styles.comparisonExtraIcon}>💬</Text>
+                    <Text style={styles.comparisonExtraText}>Conversation</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Ligne unique sous la comparaison */}
+            <Text style={styles.freeTrialLine}>
+              Votre première analyse DeepDream est offerte.
             </Text>
-
-            <View style={styles.featureList}>
-              <Feature icon="brain" text="6 grilles (Hobson, Domhoff, Jung…)" />
-              <Feature
-                icon="account-circle-outline"
-                text="Réponses personnalisées à votre profil"
-              />
-              <Feature
-                icon="image-outline"
-                text="Image générée pour chaque rêve"
-              />
-              <Feature
-                icon="coffee-outline"
-                text="Soutient le développement du projet"
-              />
-              <Feature
-                icon="message-text-outline"
-                text="Exploration approfondie en conversation"
-              />
-            </View>
-
-            {/* Teaser unlock — sans prix, sans friction */}
-            <View style={styles.unlockTeaser}>
-              <MaterialCommunityIcons name="lock-open-outline" size={14} color={OB.blue} />
-              <Text style={styles.unlockTeaserText}>
-                Disponible après votre première analyse — vous découvrirez la différence par vous-même.
-              </Text>
-            </View>
           </Animated.View>
 
           {/* Spacer */}
@@ -425,51 +406,80 @@ const styles = StyleSheet.create({
     color: OB.text,
     fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
-  deepTagline: {
-    fontSize: 14,
+
+  // Comparison before/after
+  comparisonContainer: {
+    gap: 0,
+    marginTop: 12,
+  },
+  comparisonQuick: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 2,
+  },
+  comparisonDeep: {
+    backgroundColor: 'rgba(79, 141, 255, 0.06)',
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 141, 255, 0.2)',
+  },
+  comparisonLabel: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
     color: OB.textSub,
-    lineHeight: 20,
-    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
-    marginBottom: 16,
+    marginBottom: 6,
   },
-
-  // Features
-  featureList: { gap: 10, marginBottom: 18 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  featureIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: OB.blueGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureText: {
+  comparisonPreview: {
     fontSize: 13,
-    color: OB.text,
     fontFamily: 'AtkinsonHyperlegibleNext-Regular',
-    flex: 1,
+    color: OB.textMuted,
+    lineHeight: 19,
+    fontStyle: 'italic',
   },
-
-  // Unlock teaser (remplace gift block)
-  unlockTeaser: {
+  comparisonPreviewDeep: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: OB.text,
+    lineHeight: 19,
+    fontStyle: 'italic',
+  },
+  comparisonDivider: {
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  comparisonVS: {
+    fontSize: 11,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: OB.textMuted,
+    letterSpacing: 1,
+  },
+  comparisonExtras: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 10,
+  },
+  comparisonExtraItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(79,141,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(79,141,255,0.15)',
+    gap: 4,
   },
-  unlockTeaserText: {
-    flex: 1,
+  comparisonExtraIcon: {
+    fontSize: 14,
+  },
+  comparisonExtraText: {
     fontSize: 11,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: OB.blue,
+  },
+  freeTrialLine: {
+    fontSize: 13,
     fontFamily: 'AtkinsonHyperlegibleNext-Regular',
-    color: 'rgba(240,235,224,0.4)',
-    lineHeight: 16,
+    color: OB.blue,
+    textAlign: 'center',
+    marginTop: 14,
+    opacity: 0.8,
   },
 
   // Footer

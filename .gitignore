@@ -49,6 +49,9 @@ google-credentials.json
 # 🌙 NOCTALIÆ - CUSTOM IGNORES
 # ============================================
 
+# Builds (APK/AAB stockés dans E:\PROJECTS\Dream app\Builds)
+builds/
+
 # Personal notes and session files
 _PERSONAL_NOTES/
 SESSION_*.md
@@ -90,4 +93,3 @@ REORGANIZE_PROJECT.ps1
 
 # Claude Desktop worktrees
 .claude/
-

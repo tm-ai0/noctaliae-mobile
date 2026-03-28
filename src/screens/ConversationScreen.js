@@ -64,6 +64,7 @@ export default function ConversationScreen({ route, navigation }) {
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
   const [showActivateModal, setShowActivateModal] = useState(false)
+  const [deepDreamRemaining, setDeepDreamRemaining] = useState(null)
   const [isSecret, setIsSecret] = useState(false)
   const [heroImageError, setHeroImageError] = useState(false)
   const [showImageViewer, setShowImageViewer] = useState(false)
@@ -226,6 +227,20 @@ export default function ConversationScreen({ route, navigation }) {
     loadPremiumStatus()
   }, [])
 
+  // 🎯 Charger deepDreamRemaining si pas premium
+  useEffect(() => {
+    const loadDeepDreamRemaining = async () => {
+      if (isPremium) return
+      try {
+        const remaining = await freeTierService.getDeepDreamRemaining()
+        setDeepDreamRemaining(remaining)
+      } catch (e) {
+        setDeepDreamRemaining(0)
+      }
+    }
+    loadDeepDreamRemaining()
+  }, [isPremium])
+
   const date = new Date(dreamDate)
   const formattedTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
   const formattedDate = date.toLocaleDateString('fr-FR')
@@ -239,8 +254,7 @@ export default function ConversationScreen({ route, navigation }) {
     reanalyzeWithModel(useClaude)
   }
 
-  async function handleActivateDeepDream() {
-    await premiumService.setPremium(true)
+  function handlePurchaseSuccess() {
     setIsPremium(true)
     setShowActivateModal(false)
     reanalyzeWithModel(true)
@@ -517,6 +531,17 @@ export default function ConversationScreen({ route, navigation }) {
             <Text style={styles.metaDot}>·</Text>
             <Text style={styles.metaText}>{formattedTime}</Text>
           </View>
+          {modelUsed?.toLowerCase().includes('llama') && !isPremium && (
+            <TouchableOpacity
+              onPress={() => setShowActivateModal(true)}
+              activeOpacity={0.7}
+              style={{ marginLeft: 8 }}
+            >
+              <Text style={{ fontSize: 11, color: '#4F8DFF', fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>
+                Essayer DeepDream →
+              </Text>
+            </TouchableOpacity>
+          )}
           {dreamTags && dreamTags.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroTags}>
               {dreamTags.map((tag, index) => {
@@ -586,7 +611,7 @@ export default function ConversationScreen({ route, navigation }) {
         </View>
       )}
 
-      <ActivateDeepDreamModal visible={showActivateModal} onClose={() => setShowActivateModal(false)} onActivate={handleActivateDeepDream} />
+      <ActivateDeepDreamModal visible={showActivateModal} onClose={() => setShowActivateModal(false)} onPurchaseSuccess={handlePurchaseSuccess} hasFreeTrials={deepDreamRemaining !== null && deepDreamRemaining > 0} freeTrialsRemaining={deepDreamRemaining || 0} />
 
       {/* 📤 Share Action Sheet */}
       {showShareMenu && (

@@ -19,15 +19,13 @@ import { useTheme } from '../config/ThemeContext'
 import DebugScreenLabel from '../components/DebugScreenLabel'
 import { DeepDreamInfoModal } from '../components/DeepDreamInfoModal'
 import { ContributeResearchModal } from '../components/ContributeResearchModal'
+import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal'
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert'
 import { ResearchOptInVIP } from '../components/ResearchOptInVIP'
 import { useGlow } from '../contexts/GlowContext'
 import { getAllDreams, deleteDream } from '../services/storageService'
 import BiometricService from '../services/biometricService'
-import {
-  forceUpdateCheck,
-  getCurrentAppVersion,
-} from '../services/updateService'
+import { getCurrentAppVersion } from '../services/updateService'
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 import {
   notificationService,
@@ -40,6 +38,7 @@ const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed'
 const PLAYGROUND_KOFI_KEY = '@noctaliae_playground_kofi'
 const MENU_HINT_KEY = '@noctaliae_menu_hint_shown'
 const APP_VERSION = getCurrentAppVersion()
+const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe9TVWMzCk761X4jLwoGBR53WNyfPirQD_EjdWhxRvvOlhaNg/viewform'
 
 export default function SettingsScreen({ navigation }) {
   const { theme, currentThemeId, changeTheme, availableThemes } = useTheme()
@@ -53,9 +52,9 @@ export default function SettingsScreen({ navigation }) {
   const [kofiExpanded, setKofiExpanded] = useState(false)
   const [fingerprintCount, setFingerprintCount] = useState(0)
   const [showDeepDreamModal, setShowDeepDreamModal] = useState(false)
+  const [showActivateModal, setShowActivateModal] = useState(false)
   const [kofiStyles, setKofiStyles] = useState(null)
   const [devTapCount, setDevTapCount] = useState(0)
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
 
   // 🔔 Notifications & Streak
   const [notifSettings, setNotifSettings] = useState(DEFAULT_NOTIF_SETTINGS)
@@ -226,10 +225,9 @@ export default function SettingsScreen({ navigation }) {
 
   // ─── AUTRES HANDLERS ──────────────────────────────────────────────────────
 
-  const handleTogglePremium = async (value) => {
-    setIsPremium(value)
-    if (value) await premiumService.enablePremium()
-    else await premiumService.disablePremium()
+  const handlePurchaseSuccess = async () => {
+    setIsPremium(true)
+    setShowActivateModal(false)
     refreshGlowStates()
   }
 
@@ -319,40 +317,6 @@ export default function SettingsScreen({ navigation }) {
     }
   }
 
-  const handleCheckUpdate = async () => {
-    setIsCheckingUpdate(true)
-    try {
-      const info = await forceUpdateCheck()
-      if (info && info.available) {
-        showAlert({
-          type: 'info',
-          title: `Noctaliae v${info.latestVersion} disponible`,
-          message: info.releaseNotes || 'Une nouvelle version est disponible.',
-          confirmText: 'Mettre à jour',
-          cancelText: 'Plus tard',
-          onConfirm: () => {
-            if (info.downloadUrl) Linking.openURL(info.downloadUrl)
-          },
-        })
-      } else {
-        showAlert({
-          type: 'success',
-          title: 'À jour !',
-          message: `Vous utilisez la dernière version (v${getCurrentAppVersion()}).`,
-          confirmText: 'OK',
-        })
-      }
-    } catch {
-      showAlert({
-        type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de vérifier les mises à jour.',
-        confirmText: 'OK',
-      })
-    } finally {
-      setIsCheckingUpdate(false)
-    }
-  }
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
 
@@ -787,6 +751,11 @@ export default function SettingsScreen({ navigation }) {
                     >
                       {isPremium ? 'DeepDream Engine' : 'QuickDream'}
                     </Text>
+                    {isPremium && (
+                      <View style={{ backgroundColor: '#4F8DFF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 10, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#FFFFFF' }}>Actif</Text>
+                      </View>
+                    )}
                   </View>
                   <Text
                     style={[
@@ -798,15 +767,30 @@ export default function SettingsScreen({ navigation }) {
                       ? 'Analyses approfondies et sur-mesure pour explorer vos rêves en profondeur.'
                       : 'Gratuit et illimité pour des analyses rapides et efficaces.'}
                   </Text>
+                  {!isPremium && (
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(79, 141, 255, 0.1)',
+                        borderWidth: 1.5,
+                        borderColor: '#4F8DFF',
+                        borderRadius: 12,
+                        paddingVertical: 12,
+                        gap: 8,
+                        marginTop: 12,
+                      }}
+                      onPress={() => setShowActivateModal(true)}
+                      activeOpacity={0.7}
+                    >
+                      <MaterialIcons name="favorite" size={16} color="#4F8DFF" />
+                      <Text style={{ fontSize: 15, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#4F8DFF' }}>
+                        Débloquer DeepDream
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <Switch
-                  value={isPremium}
-                  onValueChange={handleTogglePremium}
-                  disabled={isLoading}
-                  trackColor={{ false: '#39FF88', true: '#4F8DFF' }}
-                  thumbColor="#FFFFFF"
-                  ios_backgroundColor={theme.colors.backgroundElevated}
-                />
               </View>
               <TouchableOpacity
                 style={[
@@ -855,7 +839,7 @@ export default function SettingsScreen({ navigation }) {
                 { color: theme.colors.textPrimary },
               ]}
             >
-              Vous testez actuellement DeepDream Engine
+              DeepDream Engine activé
             </Text>
             <Text
               style={[
@@ -863,7 +847,7 @@ export default function SettingsScreen({ navigation }) {
                 { color: theme.colors.textSecondary },
               ]}
             >
-              Accessible aujourd'hui grâce à votre soutien
+              Merci pour votre soutien
             </Text>
           </View>
         )}
@@ -1339,46 +1323,6 @@ export default function SettingsScreen({ navigation }) {
                   styles.helpButton,
                   { borderBottomColor: theme.colors.cardBorder },
                 ]}
-                onPress={handleCheckUpdate}
-                disabled={isCheckingUpdate}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name="system-update"
-                  size={24}
-                  color={theme.colors.primary}
-                />
-                <View style={styles.helpButtonContent}>
-                  <Text
-                    style={[
-                      styles.helpButtonTitle,
-                      { color: theme.colors.text },
-                    ]}
-                  >
-                    {isCheckingUpdate
-                      ? 'Vérification...'
-                      : 'Vérifier les mises à jour'}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.helpButtonSubtitle,
-                      { color: theme.colors.textSecondary },
-                    ]}
-                  >
-                    S'assurer d'avoir la dernière version
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={24}
-                  color={theme.colors.textSecondary}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.helpButton,
-                  { borderBottomColor: 'transparent' },
-                ]}
                 onPress={() => {
                   const marketUrl = 'market://details?id=com.noctaliae.mobile'
                   const fallbackUrl = 'https://play.google.com/store/apps/details?id=com.noctaliae.mobile'
@@ -1411,6 +1355,43 @@ export default function SettingsScreen({ navigation }) {
                     ]}
                   >
                     Un avis, ça change tout pour un projet solo
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.helpButton,
+                  { borderBottomColor: 'transparent' },
+                ]}
+                onPress={() => Linking.openURL(FEEDBACK_FORM_URL)}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="feedback"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+                <View style={styles.helpButtonContent}>
+                  <Text
+                    style={[
+                      styles.helpButtonTitle,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    Donner mon avis
+                  </Text>
+                  <Text
+                    style={[
+                      styles.helpButtonSubtitle,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Suggestions, bugs, idées — tout est utile
                   </Text>
                 </View>
                 <MaterialIcons
@@ -1522,6 +1503,13 @@ export default function SettingsScreen({ navigation }) {
         visible={showDeepDreamModal}
         onClose={() => setShowDeepDreamModal(false)}
         onSupport={handleSupport}
+      />
+      <ActivateDeepDreamModal
+        visible={showActivateModal}
+        onClose={() => setShowActivateModal(false)}
+        onPurchaseSuccess={handlePurchaseSuccess}
+        hasFreeTrials={false}
+        freeTrialsRemaining={0}
       />
       <AlertComponent />
     </View>

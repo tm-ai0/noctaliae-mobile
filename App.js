@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react'
 import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import { initSentry } from './src/config/sentry.config'
+import Purchases from 'react-native-purchases'
 import {
   View,
   TouchableOpacity,
@@ -76,6 +77,9 @@ import {
 } from './src/services/updateService'
 import { UpdateAvailableModal } from './src/modals/UpdateAvailableModal'
 import { UpdateToast } from './src/components/UpdateToast'
+import { freeTierService } from './src/services/freeTierService'
+import { premiumService } from './src/services/premiumService'
+import { ActivateDeepDreamModal } from './src/modals/ActivateDeepDreamModal'
 
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed'
 
@@ -97,6 +101,7 @@ function MainTabsWithFAB({ navigation }) {
   const [showPhotoPreview, setShowPhotoPreview] = useState(false) // Aperçu avant analyse
   const [selectedPhoto, setSelectedPhoto] = useState(null) // { uri, base64 }
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false) // Loader analyse
+  const [showActivateModal, setShowActivateModal] = useState(false) // 🔒 Paywall photo
 
   // ✅ FIX: Utiliser Recording au lieu du hook
   const recordingRef = React.useRef(null)
@@ -362,9 +367,24 @@ function MainTabsWithFAB({ navigation }) {
     setShowPhotoModal(true)
   }
 
+  function handleCancelPhoto() {
+    setSelectedPhoto(null)
+    setShowPhotoPreview(false)
+  }
+
   // 📷 PHOTO - Analyser l'image
   async function handleAnalyzePhoto() {
     if (!selectedPhoto?.base64) return
+
+    // 🔒 Check free tier avant analyse photo (DeepDream)
+    const premium = await premiumService.isPremium()
+    if (!premium) {
+      const allowance = await freeTierService.checkDeepDreamAllowance()
+      if (allowance.remaining <= 0) {
+        setShowActivateModal(true)
+        return
+      }
+    }
 
     setIsAnalyzingPhoto(true)
 
@@ -396,6 +416,11 @@ function MainTabsWithFAB({ navigation }) {
       setShowPhotoPreview(false)
       setSelectedPhoto(null)
       setIsAnalyzingPhoto(false)
+
+      // 📊 Incrémenter le compteur DeepDream si free tier
+      if (!premium) {
+        await freeTierService.incrementDeepDreamCount()
+      }
 
       // 🚀 Naviguer DIRECTEMENT vers Conversation (analyse déjà faite !)
       navigation.navigate('Conversation', {
@@ -550,18 +575,23 @@ function MainTabsWithFAB({ navigation }) {
               </Text>
             </View>
 
-            <ScrollView style={styles.writeInputContainer}>
-              <TextInput
-                style={styles.writeInput}
-                placeholder="J'étais dans un endroit étrange..."
-                placeholderTextColor={THEME.colors.textSecondary}
-                value={writtenDream}
-                onChangeText={setWrittenDream}
-                multiline
-                textAlignVertical="top"
-                autoFocus
-              />
-            </ScrollView>
+            <View style={{ position: 'relative' }}>
+              <ScrollView style={styles.writeInputContainer}>
+                <TextInput
+                  style={styles.writeInput}
+                  placeholder="J'étais dans un endroit étrange..."
+                  placeholderTextColor={THEME.colors.textSecondary}
+                  value={writtenDream}
+                  onChangeText={setWrittenDream}
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus
+                />
+              </ScrollView>
+              <Text style={{ position: 'absolute', bottom: 28, right: 12, fontSize: 12, color: THEME.colors.textSecondary, opacity: 0.4, fontFamily: 'AtkinsonHyperlegibleNext-Regular' }}>
+                {writtenDream.length} / 1 500
+              </Text>
+            </View>
 
             <View style={styles.writeModalButtons}>
               <TouchableOpacity
@@ -754,6 +784,13 @@ function MainTabsWithFAB({ navigation }) {
           ) : (
             // 🖼️ Aperçu de la photo
             <View style={styles.photoPreviewContainer}>
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, padding: 4 }}
+                onPress={handleCancelPhoto}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialIcons name="close" size={24} color={THEME.colors.textSecondary} />
+              </TouchableOpacity>
               <Text style={styles.photoPreviewTitle}>🖼️ Aperçu</Text>
 
               {selectedPhoto && (
@@ -780,6 +817,13 @@ function MainTabsWithFAB({ navigation }) {
               <View style={styles.photoPreviewButtons}>
                 <TouchableOpacity
                   style={styles.photoRetakeButton}
+                  onPress={handleCancelPhoto}
+                >
+                  <Text style={[styles.photoRetakeText, { color: THEME.colors.textSecondary }]}>Annuler</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.photoRetakeButton}
                   onPress={handleRetakePhoto}
                 >
                   <MaterialIcons
@@ -801,6 +845,17 @@ function MainTabsWithFAB({ navigation }) {
           )}
         </View>
       </Modal>
+
+      <ActivateDeepDreamModal
+        visible={showActivateModal}
+        onClose={() => setShowActivateModal(false)}
+        onPurchaseSuccess={() => {
+          setShowActivateModal(false)
+          handleAnalyzePhoto()
+        }}
+        hasFreeTrials={false}
+        freeTrialsRemaining={0}
+      />
     </>
   )
 }
@@ -1046,6 +1101,7 @@ export default function App() {
 
   // 🔄 Migration + Ping installation + Sentry + Vérification mise à jour au démarrage
   React.useEffect(() => {
+    Purchases.configure({ apiKey: 'goog_vueROZxZrzKUspAiXpguacEaBXO' }) // 💎 RevenueCat
     initSentry() // 🛡️ Crash reporting
     secureStorageService.migrateFromAsyncStorage()
     sendInstallPing() // Track les installations

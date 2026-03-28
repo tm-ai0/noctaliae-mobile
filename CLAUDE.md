@@ -1,7 +1,7 @@
 # CLAUDE.md — Noctaliæ
 
 ## Projet
-Noctaliæ est une app React Native d'analyse de rêves basée sur les neurosciences. Créée par Thomas Maury (graphic/motion designer, 15 ans d'expérience Adobe, pas de background dev — vibe coding assisté par IA).
+Noctaliæ est une app React Native d'analyse de rêves basée sur les neurosciences. Créée par Thomas Maury (graphic/motion designer, 15 ans d'expérience Adobe, pas de background dev, vibe coding assisté par IA).
 
 ## Stack technique
 - **Framework** : React Native / Expo SDK 54 (expo@54.0.23, react-native@0.81.5)
@@ -13,6 +13,7 @@ Noctaliæ est une app React Native d'analyse de rêves basée sur les neuroscien
 - **Images** : Gemini 2.5 Flash Image generation
 - **Backend** : Node.js sur Infomaniak — https://api.thomasmaury.fr
 - **Build** : EAS Build (versionCode remote), profils: development, preview, production, open-testing
+- **Monétisation** : RevenueCat (react-native-purchases v9.15.0) — one-time IAP via Google Play Billing
 - **Analytics** : Amplitude
 - **Crash reporting** : Sentry (@sentry/react-native)
 
@@ -33,12 +34,14 @@ src/
 ├── screens/
 │   ├── ConversationScreen.js # Chat principal (DeepDream/QuickDream)
 │   ├── DeepChatScreen.js     # Questions d'approfondissement
-│   ├── AnalysisScreen.js     # Écran d'analyse du rêve
-│   ├── PostRecordingScreen.js
-│   ├── SettingsScreen.js     # Rappels, apparence, thèmes
+│   ├── AnalysisScreen.js     # Écran d'analyse du rêve (filtre Tous/Favoris/Secrets)
+│   ├── PostRecordingScreen.js # Auto-select moteur, bandeau contextuel, nudge DeepDream
+│   ├── SettingsScreen.js     # Rappels, apparence, thèmes, toggle dev premium
 │   ├── ArchivesScreen.js     # Restaurer/Supprimer avec urgency badge
 │   └── TrendsScreen.js       # Lollipop chart (pas bar chart)
 ├── services/
+│   ├── premiumService.js     # RevenueCat — isPremium/getOfferings/purchaseDeepDream/restorePurchases + dev toggles
+│   ├── freeTierService.js    # Quotas free tier (DeepDream, images)
 │   └── streakService.js      # Consecutive days, records, total dreams
 └── ...
 ```
@@ -55,7 +58,19 @@ src/
 ### Builds
 - Chaque build EAS prend 20-30 minutes. NE JAMAIS lancer de build sans avoir testé en preview.
 - `appVersionSource: "remote"` → versionCode géré par EAS, pas dans app.json
-- `git push` peut retourner HTTP 408 sur gros push mais complète toujours — ne pas paniquer
+- `autoIncrement: true` uniquement sur profils `production` et `open-testing` (pas `preview`)
+- `git push` peut retourner HTTP 408 sur gros push mais complète toujours, ne pas paniquer
+- Play Console exige un AAB (pas APK). Ne JAMAIS lancer un build preview/APK quand l'objectif est d'uploader sur Play Console.
+- Version dans `app.json` (ex: "1.3.0"), versionCode auto-incrémenté par EAS. Convention: minor bump (1.x.0) pour nouvelle feature, patch (1.x.Y) pour bugfix.
+
+### RevenueCat
+- SDK Key : `goog_vueROZxZrzKUspAiXpguacEaBXO`
+- Entitlement : `deepdream`
+- Configuré dans `App.js` useEffect de boot (`Purchases.configure(...)`)
+- `premiumService.js` : isPremium() vérifie via RevenueCat, fallback cache AsyncStorage offline
+- `react-native-purchases` est un module natif pur, PAS un Expo config plugin. NE PAS l'ajouter dans `plugins` de app.json.
+- Service account : `revenuecat@noctaliaetts.iam.gserviceaccount.com`
+- 4 products (tier1-4), offering "default", Google Play 15% indie
 
 ### UX / Design
 - Notifications : toggles OFF par défaut (ON par défaut = dark pattern)
@@ -66,18 +81,40 @@ src/
 ### Partage
 - Hook `useDreamShare` centralise toute la logique de partage
 - Image : template 9:16 brandé (ImageIA + palette + titre + one-liner + tags + "Noctaliæ" gold + badge Play Store)
-- Texte fallback : mini résumé + 🧠 explication scientifique + #tags + nocty.thomasmaury.fr + Play Store
+- Texte fallback : mini résumé + explication scientifique + #tags + nocty.thomasmaury.fr + Play Store
 
 ### Philosophie
-- **Science > Mystique** — 6 frameworks neurosciences validés (Arnulf, Walker, Revonsuo, Domhoff...)
+- **Science > Mystique** — 6 frameworks neurosciences validés (Arnulf, Walker, Revonsuo, Domhoff, Hobson, Schredl)
 - **Privacy-first** — 100% données on-device (AsyncStorage/SecureStore), rien sur serveur
 - **Free tier généreux** — Llama via Groq pour les utilisateurs gratuits
 - **Éthique** — Pas de dark patterns, pas d'extraction commerciale
 
-## État actuel
-- **v1.2.0 Build 36** en production sur Google Play
-- **Build 39** en cours (fix onboarding + thèmes + partage texte)
-- Prochain sprint : i18n (FR/EN/ES) avec i18next
+## État actuel (28 mars 2026)
+- **v1.3.0** en développement
+- **Dernier build prod** : Build 48 (v1.2.0, Play Store)
+
+### DONE
+- **TRUST_MODE = false** dans freeTierService.js. FREE_DEEPDREAM_LIMIT = 5. Le compteur réel AsyncStorage contrôle les taste tests.
+- **ActivateDeepDreamModal** : refonte complète avec 4 paliers RevenueCat (getOfferings + purchaseDeepDream + restorePurchases). Props : onPurchaseSuccess, hasFreeTrials, freeTrialsRemaining.
+- **PostRecordingScreen** : auto-select moteur, bandeau compteur taste tests, section "Enrichir l'analyse" (lucidité/sommeil/émotions/thèmes, collapsible), metaPayload branché.
+- **ConversationScreen** : handlePurchaseSuccess (plus de toggle dev enablePremium), nouvelles props modal.
+- **AnalysisScreen** : popover filtre Tous/Favoris/Secrets (remplace l'ancien bouton étoile). States activeFilter + showFilterMenu.
+- **Phase 1 RevenueCat SDK** : react-native-purchases installé, premiumService refondé, App.js configuré.
+- **R2** : Bouton "Vérifier les mises à jour" retiré de SettingsScreen (handler + state + import forceUpdateCheck supprimés). Les MAJ restent vérifiées au boot (App.js).
+- **R3** : Compteur caractères `{writtenDream.length} / 1 500` ajouté sous le TextInput de la modal écriture (App.js). Informatif, pas de maxLength.
+- **B3** : handleAnalyzePhoto (App.js) vérifie désormais premiumService.isPremium() + freeTierService.checkDeepDreamAllowance() avant analyse. Ouvre le paywall modal si épuisé. Incrémente le compteur DeepDream après analyse réussie (free tier).
+
+### TODO
+- **QF-2** : Google Form feedback (URL à créer)
+- **QF-4** : Prix HT Play Console (manuel, pas de code)
+- **Backlog** : i18n (FR/EN/ES) avec i18next
+
+### CE QU'IL NE FAUT PAS CASSER
+- PostRecordingScreen : la section "Enrichir l'analyse" (métadonnées lucidité/sommeil/émotions/thèmes) DOIT rester
+- ActivateDeepDreamModal : les 4 paliers RevenueCat avec achat réel (pas de toggle dev)
+- AnalysisScreen : le popover filtre à 3 options (pas un simple bouton étoile)
+- freeTierService.js : TRUST_MODE doit rester false
+- ConversationScreen : reanalyzeWithModel(true) est appelé après achat réussi
 
 ## Fichiers à ne PAS toucher sans demander
 - `app.json` (config Expo sensible)
@@ -87,12 +124,15 @@ src/
 ## Commandes utiles
 ```bash
 npx expo start --clear          # Dev avec cache clean
-eas build --platform android     # Build production
-eas build --platform android --profile preview  # Build de test
+eas build --platform android     # Build production (AAB, auto-increment)
+eas build --platform android --profile preview  # Build de test (APK, pas d'auto-increment)
 npx expo install --check         # Vérifier compatibilité packages
 ```
 
 ## Contexte additionnel
-- Le fichier `🚨_PROMPT_REPRISE_OBLIGATOIRE.txt` à la racine contient l'état détaillé du projet (builds, checklist, patches). Le consulter en priorité pour le contexte actuel.
-- Play Store : https://play.google.com/store/apps/details?id=com.noctaliae.mobile
+- Play Console : https://play.google.com/store/apps/details?id=com.noctaliae.mobile
 - Landing : https://nocty.thomasmaury.fr
+- Developer account : tm-ai0 (ID 6195473086195707777), email tm@thomasmaury.fr
+- EAS account : tm_ai, Sentry org : maury
+- Notion recap page : 2ce97634-6b36-8026-a5a1-d5a6748b2238
+- Mascotte Nocty : assets dans assets/Avatars/, CDN Masko activé (masko.ai/m/nocty)
