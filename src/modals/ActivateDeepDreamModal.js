@@ -25,6 +25,8 @@ const FALLBACK_TIERS = [
   { emoji: '✨', price: '9,99\u00a0€', name: 'Encourager la recherche' },
   { emoji: '🔮', price: '19,99\u00a0€', name: 'Mécène du rêve' },
 ];
+// Note : ces prix sont les fallback TTC affichés si RevenueCat est offline.
+// Les vrais prix viennent de RevenueCat/Google Play (dynamiques).
 
 export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, hasFreeTrials, freeTrialsRemaining }) {
   const [packages, setPackages] = useState([]);

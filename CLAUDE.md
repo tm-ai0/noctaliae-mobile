@@ -100,13 +100,19 @@ src/
 - **ConversationScreen** : handlePurchaseSuccess (plus de toggle dev enablePremium), nouvelles props modal.
 - **AnalysisScreen** : popover filtre Tous/Favoris/Secrets (remplace l'ancien bouton étoile). States activeFilter + showFilterMenu.
 - **Phase 1 RevenueCat SDK** : react-native-purchases installé, premiumService refondé, App.js configuré.
-- **R2** : Bouton "Vérifier les mises à jour" retiré de SettingsScreen (handler + state + import forceUpdateCheck supprimés). Les MAJ restent vérifiées au boot (App.js).
-- **R3** : Compteur caractères `{writtenDream.length} / 1 500` ajouté sous le TextInput de la modal écriture (App.js). Informatif, pas de maxLength.
-- **B3** : handleAnalyzePhoto (App.js) vérifie désormais premiumService.isPremium() + freeTierService.checkDeepDreamAllowance() avant analyse. Ouvre le paywall modal si épuisé. Incrémente le compteur DeepDream après analyse réussie (free tier).
+- **R2** : Bouton "Vérifier les mises à jour" retiré de SettingsScreen.
+- **R3** : Compteur caractères overlay dans le champ écriture (App.js). Informatif, pas de maxLength.
+- **B3** : handleAnalyzePhoto gate freeTier + increment compteur + X/Annuler sur photo preview.
+- **Paywall redesign** : layout vertical Quick/Deep, 4 features DeepDream (grilles, photo/OCR, images, thèmes) + soutien projet (gold), badge "Le plus choisi".
+- **Radio moteur** : PostRecordingScreen, 2 boutons ⚡ QuickDream / ✨ DeepDream, Deep pré-coché si taste tests dispo, QuickDream sinon.
+- **Settings** : Switch dev supprimé, remplacé par CTA "Débloquer DeepDream" + paywall. Badge "Actif" si premium.
+- **Image gen** : réservée à DeepDream (`result.imagePrompt && useDeepDream`).
+- **QF-2** : Bouton "Donner mon avis" dans Settings > Aide, linké au Google Form.
 
 ### TODO
-- **QF-2** : Google Form feedback (URL à créer)
-- **QF-4** : Prix HT Play Console (manuel, pas de code)
+- **QF-4** : Prix HT Play Console (recalculer pour montants TTC ronds)
+- **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions, features)
+- **Shake-to-feedback** : expo-sensors Accelerometer (prochain sprint)
 - **Backlog** : i18n (FR/EN/ES) avec i18next
 
 ### CE QU'IL NE FAUT PAS CASSER
