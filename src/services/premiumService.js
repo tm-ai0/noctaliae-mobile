@@ -92,6 +92,16 @@ export const premiumService = {
       return { emoji: '💎', name: 'DeepDream', label: 'Supporter' };
     } catch (error) {
       console.warn('⚠️ getPremiumTierInfo error:', error);
+      // Fallback dev : si premium via cache (Expo Go), retourner un tier par défaut
+      try {
+        const cached = await AsyncStorage.getItem(PREMIUM_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.isPremium && parsed.devOverride) {
+            return TIER_MAP[0]; // Simule Supporter en dev
+          }
+        }
+      } catch {}
       return null;
     }
   },

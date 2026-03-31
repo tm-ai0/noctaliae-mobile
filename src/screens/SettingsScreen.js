@@ -47,6 +47,7 @@ export default function SettingsScreen({ navigation }) {
   const { showAlert, AlertComponent } = useNoctaliaeAlert()
 
   const [isPremium, setIsPremium] = useState(false)
+  const [tierInfo, setTierInfo] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [appearanceExpanded, setAppearanceExpanded] = useState(false)
   const [kofiExpanded, setKofiExpanded] = useState(false)
@@ -138,6 +139,10 @@ export default function SettingsScreen({ navigation }) {
     try {
       const status = await premiumService.isPremium()
       setIsPremium(status)
+      if (status) {
+        const tier = await premiumService.getPremiumTierInfo()
+        setTierInfo(tier)
+      }
     } catch (error) {
       console.error('Erreur chargement statut Premium:', error)
     } finally {
@@ -229,6 +234,9 @@ export default function SettingsScreen({ navigation }) {
     setIsPremium(true)
     setShowActivateModal(false)
     refreshGlowStates()
+    // Recharger le tier info après achat/upgrade
+    const tier = await premiumService.getPremiumTierInfo()
+    setTierInfo(tier)
   }
 
   const handleThemeChange = async (themeId) => {
@@ -833,22 +841,51 @@ export default function SettingsScreen({ navigation }) {
               },
             ]}
           >
-            <Text
-              style={[
-                styles.premiumBadgeText,
-                { color: theme.colors.textPrimary },
-              ]}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ fontSize: 28 }}>{tierInfo?.emoji || '💎'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.premiumBadgeText,
+                    { color: theme.colors.textPrimary, textAlign: 'left' },
+                  ]}
+                >
+                  {tierInfo?.label || 'DeepDream activé'}
+                </Text>
+                <Text
+                  style={[
+                    styles.premiumBadgeSubtext,
+                    { color: theme.colors.textSecondary, textAlign: 'left' },
+                  ]}
+                >
+                  Merci pour votre soutien, DeepDream est débloqué à vie.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowActivateModal(true)}
+              activeOpacity={0.7}
+              style={{
+                marginTop: 14,
+                paddingVertical: 11,
+                paddingHorizontal: 20,
+                borderRadius: 12,
+                backgroundColor: 'rgba(210, 177, 76, 0.12)',
+                alignItems: 'center',
+                alignSelf: 'stretch',
+              }}
             >
-              DeepDream Engine activé
-            </Text>
-            <Text
-              style={[
-                styles.premiumBadgeSubtext,
-                { color: theme.colors.textSecondary },
-              ]}
-            >
-              Merci pour votre soutien
-            </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+                  color: '#D2B14C',
+                  letterSpacing: 0.3,
+                }}
+              >
+                Soutenir davantage
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1074,9 +1111,10 @@ export default function SettingsScreen({ navigation }) {
                   { color: theme.colors.textSecondary },
                 ]}
               >
-                Noctaliæ est gratuit et le restera. Soutiens le projet à partir
-                de 0,99€ — tu choisis le montant — et obtiens l'accès DeepDream
-                à vie en retour.
+                {isPremium
+                  ? 'Merci pour ton soutien ! Tu peux offrir un café supplémentaire via Ko-fi pour encourager le projet.'
+                  : 'Noctaliæ est gratuit et le restera. Soutiens le projet à partir de 0,99€, tu choisis le montant, et obtiens l\'accès DeepDream à vie en retour.'
+                }
               </Text>
               <TouchableOpacity
                 style={styles.learnMoreLink}
@@ -1120,7 +1158,7 @@ export default function SettingsScreen({ navigation }) {
                           { color: theme.colors.textPrimary },
                         ]}
                       >
-                        Un café
+                        {isPremium ? 'Offrir un café' : 'Un café'}
                       </Text>
                       <Text
                         style={[
@@ -1128,7 +1166,7 @@ export default function SettingsScreen({ navigation }) {
                           { color: theme.colors.textSecondary },
                         ]}
                       >
-                        Accès DeepDream à vie en retour
+                        {isPremium ? 'Soutien supplémentaire via Ko-fi' : 'Accès DeepDream à vie en retour'}
                       </Text>
                     </View>
                   </View>

@@ -358,8 +358,8 @@ export default function PostRecordingScreen({ route, navigation }) {
             <MaterialCommunityIcons name="tune-variant" size={18} color={hasMetadata ? THEME.colors.primary : THEME.colors.textSecondary} />
             <Text style={[styles.metaToggleText, hasMetadata && { color: THEME.colors.primary }]}>
               {hasMetadata
-                ? `🎯 Enrichir l'analyse \u00b7 ${[dreamMetadata.lucidity && 'lucidit\u00e9', dreamMetadata.sleepQuality && 'sommeil', dreamMetadata.emotions.length && `${dreamMetadata.emotions.length} \u00e9motion${dreamMetadata.emotions.length > 1 ? 's' : ''}`, dreamMetadata.themes.length && `${dreamMetadata.themes.length} th\u00e8me${dreamMetadata.themes.length > 1 ? 's' : ''}`].filter(Boolean).join(', ')}`
-                : "\ud83c\udfaf Enrichir l'analyse \u00b7 optionnel"}
+                ? `🎯 Enrichir l'analyse · ${[dreamMetadata.lucidity && 'lucidité', dreamMetadata.sleepQuality && 'sommeil', dreamMetadata.emotions.length && `${dreamMetadata.emotions.length} émotion${dreamMetadata.emotions.length > 1 ? 's' : ''}`, dreamMetadata.themes.length && `${dreamMetadata.themes.length} thème${dreamMetadata.themes.length > 1 ? 's' : ''}`].filter(Boolean).join(', ')}`
+                : "🎯 Enrichir l'analyse · optionnel"}
             </Text>
           </View>
           <MaterialIcons name={showMetadata ? 'expand-less' : 'expand-more'} size={20} color={THEME.colors.textSecondary} />
@@ -389,7 +389,7 @@ export default function PostRecordingScreen({ route, navigation }) {
                 </TouchableOpacity>
               ))}
               <Text style={styles.metaRatingLabel}>
-                {dreamMetadata.sleepQuality ? ['','Tr\u00e8s mauvaise','Mauvaise','Moyenne','Bonne','Excellente'][dreamMetadata.sleepQuality] : ''}
+                {dreamMetadata.sleepQuality ? ['','Très mauvaise','Mauvaise','Moyenne','Bonne','Excellente'][dreamMetadata.sleepQuality] : ''}
               </Text>
             </View>
 

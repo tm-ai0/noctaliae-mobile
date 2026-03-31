@@ -1101,7 +1101,11 @@ export default function App() {
 
   // 🔄 Migration + Ping installation + Sentry + Vérification mise à jour au démarrage
   React.useEffect(() => {
-    Purchases.configure({ apiKey: 'goog_vueROZxZrzKUspAiXpguacEaBXO' }) // 💎 RevenueCat
+    try {
+      Purchases.configure({ apiKey: 'goog_vueROZxZrzKUspAiXpguacEaBXO' }) // 💎 RevenueCat
+    } catch (e) {
+      console.warn('RevenueCat configure skipped (Expo Go?):', e.message)
+    }
     initSentry() // 🛡️ Crash reporting
     secureStorageService.migrateFromAsyncStorage()
     sendInstallPing() // Track les installations

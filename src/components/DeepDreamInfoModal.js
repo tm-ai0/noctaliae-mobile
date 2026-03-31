@@ -52,7 +52,7 @@ export function DeepDreamInfoModal({ visible, onClose, isPremium, onOpenPaywall 
           {/* Header */}
           <View style={styles.header}>
             <MaterialCommunityIcons name="electron-framework" size={28} color="#4F8DFF" />
-            <Text style={styles.headerTitle}>Les moteurs Noctali\u00e6</Text>
+            <Text style={styles.headerTitle}>Les moteurs Noctaliæ</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <MaterialIcons name="close" size={22} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
@@ -68,8 +68,8 @@ export function DeepDreamInfoModal({ visible, onClose, isPremium, onOpenPaywall 
               <View style={styles.premiumBadge}>
                 <Text style={styles.premiumEmoji}>{tierInfo.emoji}</Text>
                 <View style={styles.premiumBadgeText}>
-                  <Text style={styles.premiumLabel}>Vous \u00eates {tierInfo.label}</Text>
-                  <Text style={styles.premiumSub}>Merci pour votre soutien, DeepDream est d\u00e9bloqu\u00e9 \u00e0 vie.</Text>
+                  <Text style={styles.premiumLabel}>Vous êtes {tierInfo.label}</Text>
+                  <Text style={styles.premiumSub}>Merci pour votre soutien, DeepDream est débloqué à vie.</Text>
                 </View>
               </View>
             )}
@@ -79,50 +79,50 @@ export function DeepDreamInfoModal({ visible, onClose, isPremium, onOpenPaywall 
               {/* QuickDream */}
               <View style={styles.engineCard}>
                 <View style={styles.engineHeader}>
-                  <Text style={styles.engineIcon}>\u26a1</Text>
+                  <Text style={styles.engineIcon}>⚡</Text>
                   <Text style={styles.engineName}>QuickDream</Text>
                 </View>
                 <View style={styles.engineBadge}>
-                  <Text style={styles.engineBadgeText}>Gratuit \u00b7 illimit\u00e9</Text>
+                  <Text style={styles.engineBadgeText}>Gratuit · illimité</Text>
                 </View>
                 <View style={styles.featureList}>
                   <FeatureItem icon="check" color={THEME.colors.textSecondary} text="Analyse rapide" />
-                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="R\u00e9sum\u00e9 + th\u00e8mes cl\u00e9s" />
-                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="Tendances et s\u00e9ries" />
+                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="Résumé + thèmes clés" />
+                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="Tendances et séries" />
                 </View>
               </View>
 
               {/* DeepDream */}
               <View style={[styles.engineCard, styles.engineCardDeep]}>
                 <View style={styles.engineHeader}>
-                  <Text style={styles.engineIcon}>\ud83e\udde0</Text>
+                  <Text style={styles.engineIcon}>🧠</Text>
                   <Text style={[styles.engineName, { color: '#4F8DFF' }]}>DeepDream</Text>
                 </View>
                 <View style={[styles.engineBadge, styles.engineBadgeDeep]}>
-                  <Text style={[styles.engineBadgeText, { color: '#4F8DFF' }]}>Neurosciences avanc\u00e9es</Text>
+                  <Text style={[styles.engineBadgeText, { color: '#4F8DFF' }]}>Neurosciences avancées</Text>
                 </View>
                 <View style={styles.featureList}>
                   <FeatureItem icon="auto-awesome" color="#4F8DFF" text="6 grilles scientifiques" />
                   <FeatureItem icon="camera-alt" color="#4F8DFF" text="Capture photo / OCR" />
-                  <FeatureItem icon="image" color="#4F8DFF" text="G\u00e9n\u00e9ration d\u2019image du r\u00eave" />
-                  <FeatureItem icon="palette" color="#4F8DFF" text="Th\u00e8mes exclusifs" />
+                  <FeatureItem icon="image" color="#4F8DFF" text="Génération d'image du rêve" />
+                  <FeatureItem icon="palette" color="#4F8DFF" text="Thèmes exclusifs" />
                 </View>
               </View>
             </View>
 
             {/* Section science */}
             <View style={styles.scienceSection}>
-              <Text style={styles.scienceTitle}>Fond\u00e9 sur la recherche</Text>
+              <Text style={styles.scienceTitle}>Fondé sur la recherche</Text>
               <Text style={styles.scienceText}>
-                DeepDream s\u2019appuie sur les mod\u00e8les neurobiologiques de Hobson, Domhoff, Solms, Revonsuo et Walker, enrichis par les travaux d\u2019Isabelle Arnulf et Perrine Ruby. Chaque analyse croise 6 grilles scientifiques valid\u00e9es.
+                DeepDream s'appuie sur les modèles neurobiologiques de Hobson, Domhoff, Solms, Revonsuo et Walker, enrichis par les travaux d'Isabelle Arnulf et Perrine Ruby. Chaque analyse croise 6 grilles scientifiques validées.
               </Text>
             </View>
 
             {/* Section soutien */}
             <View style={styles.supportSection}>
-              <Text style={styles.supportTitle}>\u2764\ufe0f  Projet ind\u00e9pendant</Text>
+              <Text style={styles.supportTitle}>❤️  Projet indépendant</Text>
               <Text style={styles.supportText}>
-                Pas de pubs, pas de tracking, pas de revente de donn\u00e9es. Noctali\u00e6 est un projet personnel, cr\u00e9\u00e9 avec passion et financ\u00e9 par votre soutien.
+                Pas de pubs, pas de tracking, pas de revente de données. Noctaliæ est un projet personnel, créé avec passion et financé par votre soutien.
               </Text>
             </View>
           </ScrollView>
@@ -133,15 +133,15 @@ export function DeepDreamInfoModal({ visible, onClose, isPremium, onOpenPaywall 
             {!isPremium && (
               <TouchableOpacity style={styles.paywallButton} onPress={handlePaywall} activeOpacity={0.8}>
                 <MaterialIcons name="favorite" size={18} color="#FFFFFF" />
-                <Text style={styles.paywallButtonText}>D\u00e9bloquer DeepDream</Text>
+                <Text style={styles.paywallButtonText}>Débloquer DeepDream</Text>
               </TouchableOpacity>
             )}
 
             {/* Ko-fi + WhatsApp */}
             <View style={styles.footerButtons}>
               <TouchableOpacity style={styles.footerBtn} onPress={handleKofi} activeOpacity={0.7}>
-                <Text style={styles.footerBtnEmoji}>\u2615</Text>
-                <Text style={styles.footerBtnText}>{isPremium ? 'Soutien suppl\u00e9mentaire' : 'Ko-fi'}</Text>
+                <Text style={styles.footerBtnEmoji}>☕</Text>
+                <Text style={styles.footerBtnText}>{isPremium ? 'Soutien supplémentaire' : 'Ko-fi'}</Text>
               </TouchableOpacity>
 
               <View style={styles.footerDivider} />
