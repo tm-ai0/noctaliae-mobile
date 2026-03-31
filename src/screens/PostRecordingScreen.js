@@ -10,6 +10,7 @@ import {
   TextInput
 } from 'react-native';
 import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
+import { DeepDreamInfoModal } from '../components/DeepDreamInfoModal';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,6 +80,7 @@ export default function PostRecordingScreen({ route, navigation }) {
   const [isPremium, setIsPremium] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [deepDreamRemaining, setDeepDreamRemaining] = useState(null);
   const [selectedEngine, setSelectedEngine] = useState('deep');
 
@@ -416,6 +418,16 @@ export default function PostRecordingScreen({ route, navigation }) {
         )}
 
         {/* Sélecteur moteur */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            onPress={() => setShowInfoModal(true)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ padding: 4 }}
+          >
+            <MaterialIcons name="info-outline" size={18} color={THEME.colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
         {isPremium ? (
           <Text style={[styles.engineLine, { color: '#4F8DFF' }]}>✨ DeepDream</Text>
         ) : (
@@ -489,6 +501,13 @@ export default function PostRecordingScreen({ route, navigation }) {
         onPurchaseSuccess={handlePurchaseSuccess}
         hasFreeTrials={deepDreamRemaining !== null && deepDreamRemaining > 0}
         freeTrialsRemaining={deepDreamRemaining || 0}
+      />
+
+      <DeepDreamInfoModal
+        visible={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        isPremium={isPremium}
+        onOpenPaywall={() => setShowActivateModal(true)}
       />
 
       <AlertComponent />

@@ -1,202 +1,169 @@
-import React from 'react';
-import { View, Text, StyleSheet, Modal, ScrollView, TouchableOpacity, Linking } from 'react-native';
+/**
+ * 🌙 DeepDreamInfoModal — Modal informatif adaptatif
+ * FREE  : comparaison moteurs + CTA paywall + Ko-fi + contact
+ * PREMIUM : comparaison moteurs + statut palier + Ko-fi + contact
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+} from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { THEME } from '../config/theme';
+import { premiumService } from '../services/premiumService';
 
-export function DeepDreamInfoModal({ visible, onClose, onSupport }) {
+export function DeepDreamInfoModal({ visible, onClose, isPremium, onOpenPaywall }) {
+  const [tierInfo, setTierInfo] = useState(null);
+
+  useEffect(() => {
+    if (visible && isPremium) {
+      premiumService.getPremiumTierInfo().then(setTierInfo);
+    }
+  }, [visible, isPremium]);
+
   const handleWhatsApp = () => {
     Linking.openURL('https://wa.me/33645003566?text=Salut%20Thomas%20!%20%F0%9F%8C%99');
   };
 
-  const handleNarcolepsyLearnMore = () => {
-    // TODO: Navigation vers LearnScreen section Narcolepsie
-    // Pour l'instant on peut juste afficher une alerte
-    console.log('📚 Navigation vers LearnScreen > Narcolepsie');
+  const handleKofi = () => {
+    Linking.openURL('https://ko-fi.com/tm_ai0');
+  };
+
+  const handlePaywall = () => {
+    onClose();
+    setTimeout(() => onOpenPaywall?.(), 300);
   };
 
   return (
     <Modal
       visible={visible}
-      transparent={true}
+      transparent
       animationType="fade"
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.modal, { backgroundColor: THEME.colors.backgroundElevated }]}>
+        <View style={styles.modal}>
           {/* Header */}
           <View style={styles.header}>
-  <Text style={[styles.headerTitle, { color: '#4F8DFF', flex: 1, textAlign: 'center' }]}>
-    DeepDream Engine, c'est quoi ?
-  </Text>
-  <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-    <MaterialIcons name="highlight-off" size={24} color={THEME.colors.text} />
-  </TouchableOpacity>
-</View>
+            <MaterialCommunityIcons name="electron-framework" size={28} color="#4F8DFF" />
+            <Text style={styles.headerTitle}>Les moteurs Noctali\u00e6</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <MaterialIcons name="close" size={22} color={THEME.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
-
-          <ScrollView 
-            style={styles.content} 
-            contentContainerStyle={styles.contentContainer}
+          <ScrollView
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
             bounces={false}
           >
-            {/* Titre avec icône centrée */}
-            <View style={styles.titleContainer}>
-              <MaterialCommunityIcons 
-                name="electron-framework" 
-                size={48} 
-                color="#39FF88"
-                style={styles.titleIcon}
-              />
-              <Text style={[styles.title, { color: THEME.colors.textPrimary }]}>
-                <Text style={{ color: '#ffffffff' }}>Un outil innovant</Text>
-                {' basée sur les neurosciences et dédié à l\'analyse des rêves.'}
-                <Text style={{ color: '#39FF88' }}> C'est lui qui est au cœur de Noctaliæ.</Text>
-              </Text>
-              <View style={styles.moonIcon}>
-                <Text style={{ fontSize: 32 }}>🌙</Text>
+            {/* Badge statut premium */}
+            {isPremium && tierInfo && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumEmoji}>{tierInfo.emoji}</Text>
+                <View style={styles.premiumBadgeText}>
+                  <Text style={styles.premiumLabel}>Vous \u00eates {tierInfo.label}</Text>
+                  <Text style={styles.premiumSub}>Merci pour votre soutien, DeepDream est d\u00e9bloqu\u00e9 \u00e0 vie.</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Comparaison moteurs */}
+            <View style={styles.comparisonContainer}>
+              {/* QuickDream */}
+              <View style={styles.engineCard}>
+                <View style={styles.engineHeader}>
+                  <Text style={styles.engineIcon}>\u26a1</Text>
+                  <Text style={styles.engineName}>QuickDream</Text>
+                </View>
+                <View style={styles.engineBadge}>
+                  <Text style={styles.engineBadgeText}>Gratuit \u00b7 illimit\u00e9</Text>
+                </View>
+                <View style={styles.featureList}>
+                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="Analyse rapide" />
+                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="R\u00e9sum\u00e9 + th\u00e8mes cl\u00e9s" />
+                  <FeatureItem icon="check" color={THEME.colors.textSecondary} text="Tendances et s\u00e9ries" />
+                </View>
+              </View>
+
+              {/* DeepDream */}
+              <View style={[styles.engineCard, styles.engineCardDeep]}>
+                <View style={styles.engineHeader}>
+                  <Text style={styles.engineIcon}>\ud83e\udde0</Text>
+                  <Text style={[styles.engineName, { color: '#4F8DFF' }]}>DeepDream</Text>
+                </View>
+                <View style={[styles.engineBadge, styles.engineBadgeDeep]}>
+                  <Text style={[styles.engineBadgeText, { color: '#4F8DFF' }]}>Neurosciences avanc\u00e9es</Text>
+                </View>
+                <View style={styles.featureList}>
+                  <FeatureItem icon="auto-awesome" color="#4F8DFF" text="6 grilles scientifiques" />
+                  <FeatureItem icon="camera-alt" color="#4F8DFF" text="Capture photo / OCR" />
+                  <FeatureItem icon="image" color="#4F8DFF" text="G\u00e9n\u00e9ration d\u2019image du r\u00eave" />
+                  <FeatureItem icon="palette" color="#4F8DFF" text="Th\u00e8mes exclusifs" />
+                </View>
               </View>
             </View>
 
-            {/* Section Claude Sonnet */}
-<Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
+            {/* Section science */}
+            <View style={styles.scienceSection}>
+              <Text style={styles.scienceTitle}>Fond\u00e9 sur la recherche</Text>
+              <Text style={styles.scienceText}>
+                DeepDream s\u2019appuie sur les mod\u00e8les neurobiologiques de Hobson, Domhoff, Solms, Revonsuo et Walker, enrichis par les travaux d\u2019Isabelle Arnulf et Perrine Ruby. Chaque analyse croise 6 grilles scientifiques valid\u00e9es.
+              </Text>
+            </View>
 
-  <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>DeepDream Engine</Text> est un moteur d'analyse des rêves que 
-  j'ai développé en m'appuyant sur un modèle d'IA de pointe, après avoir 
-  réuni et organisé dans <Text style={{ fontStyle: "italic" }}>NotebookLM</Text> un large ensemble de sources issues 
-  des grands modèles neuroscientifiques et des recherches récentes. Cette base de connaissances 
-  m'a permis d'adapter l'outil pour explorer avec précision les nuances émotionnelles et narratives 
-  des rêves.{"\n\n"}
-
-  Son approche s'inscrit dans la continuité des grands modèles neurobiologiques du rêve : 
-  la <Text style={{ fontStyle: "italic" }}>théorie de l'activation-synthèse</Text> proposée par J. Allan Hobson et Robert McCarley, 
-  la <Text style={{ fontStyle: "italic" }}>perspective de la continuité</Text> développée par G. William Domhoff, 
-  ou encore l'approche <Text style={{ fontStyle: "italic" }}>neurocognitive</Text> défendue par Mark Solms.{"\n\n"}
-
-  Les travaux d'Antti Revonsuo sur les rêves comme simulations de menaces, 
-  ceux de Matthew Walker sur la mémoire et l'émotion, 
-  ainsi que les recherches de Perrine Ruby et de son équipe à Lyon enrichissent ce champ.{"\n\n"}
-
-  Enfin, le modèle de rapport d'analyse neurocognitive du rêve proposé par Isabelle Arnulf 
-  et ses collaborateurs illustre la manière dont la recherche contemporaine articule 
-  consensus et controverses.{"\n\n"}
-
-  👉 <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>DeepDream Engine</Text> n'est pas seulement un outil technique : 
-  il s'ancre dans un corpus scientifique solide, en dialogue avec les débats actuels des 
-  neurosciences du rêve, et évolue continuellement grâce au travail de sélection, 
-  d'organisation et d'adaptation des connaissances que j'y apporte.{"\n\n"}
-
-  <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary, fontFamily: 'AtkinsonHyperlegibleNext-Bold' }]}>
-    🌙 Toutes les sources, prompts et grilles et rapports d'analyses seront bientôt mis à disposition dans Noctaliæ, patience!
-  </Text>
-
-</Text>
-            {/* Section Limites */}
-            <Text style={[styles.sectionTitle, { color: '#39FF88' }]}>
-              ⚡ Pourquoi limité à 10 analyses par jour ?
-            </Text>
-
-            <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              Les IA sont des outils fascinants dont nous commençons à peine à explorer le potentiel. À bien des égards, elles rappellent les rêves. Mais une différence essentielle demeure : rêver ne requiert que quelques calories pour activer pensée et imagination, tandis que les IA s'appuient sur des infrastructures massivement énergivores pour accomplir des tâches pourtant simples.
-            </Text>
-
-            <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              Chaque analyse DeepDream Engine = 2 recherches Google.
-            </Text>
-
-            <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              Ça semble peu, c'est vrai. Mais avec 10 utilisateurs faisant 3-4 requêtes/jour, ça représente l'énergie pour charger 20 téléphones, ou un trajet de 15 min en voiture.
-            </Text>
-
-            <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              En imaginant que la plupart des gens font ~5 rêves/nuit, et 0-1 mémorable. 10/jour est largement raisonnable... sauf si vous êtes{' '}
-              <Text 
-                style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#39FF88', textDecorationLine: 'underline' }}
-                onPress={handleNarcolepsyLearnMore}
-              >
-                narcoleptique
-              </Text>,{' '}
-              <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#4F8DFF' }}>rêveur lucide</Text>, ou{' '}
-              <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#4F8DFF' }}>passionné par les rêves !</Text>
-            </Text>
-
-            {/* Section Contact */}
-            <Text style={[styles.sectionTitle, { color: '#39FF88' }]}>
-              Expériences à partager, questions randoms, idées ou bugs à signaler sur Noctaliæ ou simplement envie d'en savoir plus ?
-            </Text>
-            <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              N'hesitez pas à me contacter ! 💬
-</Text>
-      
-
-            {/*<Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-              La communauté est encore mini, mais c'est comme ça qu'elle grandit !
-            </Text>*/}
-
-            
-
-            {/* Section Soutien */}
-            <Text style={[styles.sectionTitle, { color: '#39FF88' }]}>
-              ✨ Votre soutien m'aide à :
-            </Text>
-
-            <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-              • Amortir les coûts d'API (~2€/jour pour 100 analyses)
-            </Text>
-
-            <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-              • Améliorer la qualité des analyses
-            </Text>
-
-            <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-              • Enrichir notre Learning center bientot disponible !
-            </Text>
-
-            <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-              • Rester motivé pour innover !
-            </Text>
-
-            <Text style={[styles.paragraph, { color: THEME.colors.textPrimary, marginTop: 12 }]}>
-              Votre soutien, c'est bien plus qu'une aide financière. C'est la preuve que Noctaliæ vous est utile. Et ça, c'est ce qui me motive à continuer d'innover et d'améliorer l'app chaque jour et avec passion ! 🌙
-            </Text>
+            {/* Section soutien */}
+            <View style={styles.supportSection}>
+              <Text style={styles.supportTitle}>\u2764\ufe0f  Projet ind\u00e9pendant</Text>
+              <Text style={styles.supportText}>
+                Pas de pubs, pas de tracking, pas de revente de donn\u00e9es. Noctali\u00e6 est un projet personnel, cr\u00e9\u00e9 avec passion et financ\u00e9 par votre soutien.
+              </Text>
+            </View>
           </ScrollView>
 
-          {/* Footer */}
-          <View style={[styles.footer, { borderTopColor: THEME.colors.dividerStrong }]}>
-            
+          {/* Footer adaptatif */}
+          <View style={styles.footer}>
+            {/* CTA Paywall (free only) */}
+            {!isPremium && (
+              <TouchableOpacity style={styles.paywallButton} onPress={handlePaywall} activeOpacity={0.8}>
+                <MaterialIcons name="favorite" size={18} color="#FFFFFF" />
+                <Text style={styles.paywallButtonText}>D\u00e9bloquer DeepDream</Text>
+              </TouchableOpacity>
+            )}
 
-            <TouchableOpacity
-  style={[
-    styles.footerButtonWhatsApp,
-    {
-      backgroundColor: '#25D366',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 20,
-      borderRadius: 50, // bord arrondi type pill
-      width: '100%',    // pleine largeur
-      maxWidth: 400,    // limite sur grands écrans si besoin
-      alignSelf: 'center', // centré dans le footer
-    },
-  ]}
-  onPress={handleWhatsApp}
->
-  <MaterialCommunityIcons
-    name="whatsapp"
-    size={24}
-    color="white"
-    style={{ marginRight: 12 }}
-  />
-  <Text style={{ color: 'white', fontSize: 16, fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>
-    Contacter sur WhatsApp
-  </Text>
-</TouchableOpacity>
+            {/* Ko-fi + WhatsApp */}
+            <View style={styles.footerButtons}>
+              <TouchableOpacity style={styles.footerBtn} onPress={handleKofi} activeOpacity={0.7}>
+                <Text style={styles.footerBtnEmoji}>\u2615</Text>
+                <Text style={styles.footerBtnText}>{isPremium ? 'Soutien suppl\u00e9mentaire' : 'Ko-fi'}</Text>
+              </TouchableOpacity>
+
+              <View style={styles.footerDivider} />
+
+              <TouchableOpacity style={styles.footerBtn} onPress={handleWhatsApp} activeOpacity={0.7}>
+                <MaterialCommunityIcons name="whatsapp" size={18} color="#25D366" />
+                <Text style={styles.footerBtnText}>Contacter</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
     </Modal>
+  );
+}
+
+function FeatureItem({ icon, color, text }) {
+  return (
+    <View style={styles.featureRow}>
+      <MaterialIcons name={icon} size={16} color={color} />
+      <Text style={[styles.featureText, { color }]}>{text}</Text>
+    </View>
   );
 }
 
@@ -206,92 +173,223 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   modal: {
+    backgroundColor: THEME.colors.cardBackground,
+    borderRadius: 24,
     width: '100%',
-    maxWidth: 500,
-    height: '90%',
-    borderRadius: 20,
+    maxWidth: 420,
+    maxHeight: '85%',
+    borderWidth: 1,
+    borderColor: 'rgba(79, 141, 255, 0.15)',
     overflow: 'hidden',
-    ...THEME.shadow.xl,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingBottom: 15,
+    paddingBottom: 4,
+    gap: 10,
   },
   headerTitle: {
-    fontSize: 26,
-    fontFamily: 'CormorantUpright-Bold',
-  },
-  closeButton: {
-    padding: 5,
-  },
-  content: {
     flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  titleContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  titleIcon: {
-    marginBottom: 12,
-  },
-  title: {
     fontSize: 22,
     fontFamily: 'CormorantUpright-Bold',
-    lineHeight: 26,
-    textAlign: 'center',
-    marginBottom: 8,
+    color: THEME.colors.text,
   },
-  moonIcon: {
-    marginTop: 8,
+  closeButton: {
+    padding: 4,
   },
-  sectionTitle: {
+
+  scrollContent: {
+    padding: 20,
+    paddingTop: 16,
+  },
+
+  // Premium badge
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(210, 177, 76, 0.1)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(210, 177, 76, 0.25)',
+    gap: 12,
+  },
+  premiumEmoji: {
+    fontSize: 32,
+  },
+  premiumBadgeText: {
+    flex: 1,
+  },
+  premiumLabel: {
     fontSize: 17,
     fontFamily: 'AtkinsonHyperlegibleNext-Bold',
-    marginTop: 20,
-    marginBottom: 10,
-    lineHeight: 24,
+    color: '#D2B14C',
   },
-  paragraph: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 12,
+  premiumSub: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: THEME.colors.textSecondary,
+    marginTop: 2,
   },
-  bulletPoint: {
-    fontSize: 15,
-    lineHeight: 22,
+
+  // Comparaison moteurs
+  comparisonContainer: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  engineCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  engineCardDeep: {
+    backgroundColor: 'rgba(79, 141, 255, 0.05)',
+    borderColor: 'rgba(79, 141, 255, 0.2)',
+  },
+  engineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 8,
   },
-  footer: {
+  engineIcon: {
+    fontSize: 20,
+  },
+  engineName: {
+    fontSize: 17,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: THEME.colors.text,
+  },
+  engineBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0, 255, 176, 0.08)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  engineBadgeDeep: {
+    backgroundColor: 'rgba(79, 141, 255, 0.1)',
+  },
+  engineBadgeText: {
+    fontSize: 11,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: '#00FFB0',
+    letterSpacing: 0.3,
+  },
+  featureList: {
+    gap: 6,
+  },
+  featureRow: {
     flexDirection: 'row',
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-  },
-  footerButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 12,
     alignItems: 'center',
+    gap: 8,
   },
-  footerButtonWhatsApp: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  featureText: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    lineHeight: 18,
+  },
+
+  // Science
+  scienceSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: THEME.colors.cardBorder,
+  },
+  scienceTitle: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: '#00FFB0',
+    marginBottom: 6,
+  },
+  scienceText: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: THEME.colors.textSecondary,
+    lineHeight: 18,
+  },
+
+  // Support
+  supportSection: {
+    backgroundColor: 'rgba(210, 177, 76, 0.05)',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(210, 177, 76, 0.12)',
+  },
+  supportTitle: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: '#D2B14C',
+    marginBottom: 6,
+  },
+  supportText: {
+    fontSize: 12,
+    fontFamily: 'AtkinsonHyperlegibleNext-Regular',
+    color: THEME.colors.textSecondary,
+    lineHeight: 18,
+  },
+
+  // Footer
+  footer: {
+    padding: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.cardBorder,
+    gap: 10,
+  },
+  paywallButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#4F8DFF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    gap: 8,
   },
-  footerButtonText: {
+  paywallButtonText: {
     fontSize: 16,
     fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: '#FFFFFF',
+  },
+  footerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+  },
+  footerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 8,
+  },
+  footerBtnEmoji: {
+    fontSize: 16,
+  },
+  footerBtnText: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    color: THEME.colors.textSecondary,
+  },
+  footerDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: THEME.colors.cardBorder,
   },
 });

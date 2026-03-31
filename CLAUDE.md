@@ -89,9 +89,23 @@ src/
 - **Free tier généreux** — Llama via Groq pour les utilisateurs gratuits
 - **Éthique** — Pas de dark patterns, pas d'extraction commerciale
 
-## État actuel (28 mars 2026)
-- **v1.3.0** en développement
-- **Dernier build prod** : Build 48 (v1.2.0, Play Store)
+## État actuel (31 mars 2026)
+- **v1.3.1 Build 50 EN COURS** (31 mars 2026) — refonte DeepDreamInfoModal + fix RevenueCat
+- **v1.3.0 Build 49** sur le Play Store (production, 28 mars 2026)
+- **25-28 users installés**, 5.000★ rating, 6€ gross revenue
+- **Backend** : v2.18 sur Infomaniak. Pas de process manager (PM2) en place.
+- **RevenueCat IAP** : ✅ FONCTIONNEL depuis le 31/03/2026. Bug résolu = package name était `com.tmAi.noctaliae` au lieu de `com.noctaliae.mobile`. Credentials valides, "Restaurer mes achats" OK.
+
+### ✅ RÉSOLU le 31/03/2026
+- **Merchant payment** : compte bancaire vérifié, banner "removed April 26" disparu
+- **RevenueCat** : package name corrigé (`com.tmAi.noctaliae` → `com.noctaliae.mobile`), IAP fonctionnel
+
+### TODO
+1. **Backend** : vérifier api.thomasmaury.fr, envisager PM2
+2. **Google developer notifications** : connecter RevenueCat Pub/Sub (non configuré)
+3. **i18n FR/EN/ES LATAM** : prochain chantier majeur (plan dans `PLAN_I18N.md`)
+4. **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions)
+5. **Shake-to-feedback** : expo-sensors Accelerometer
 
 ### DONE
 - **TRUST_MODE = false** dans freeTierService.js. FREE_DEEPDREAM_LIMIT = 5. Le compteur réel AsyncStorage contrôle les taste tests.
@@ -110,10 +124,11 @@ src/
 - **QF-2** : Bouton "Donner mon avis" dans Settings > Aide, linké au Google Form.
 
 ### TODO
-- **QF-4** : Prix HT Play Console (recalculer pour montants TTC ronds)
+- **QF-4** : ✅ Prix HT corrigés dans Play Console (1.66/4.16/8.33/16.66 HT → 1.99/4.99/9.99/19.99 TTC)
 - **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions, features)
 - **Shake-to-feedback** : expo-sensors Accelerometer (prochain sprint)
-- **Backlog** : i18n (FR/EN/ES) avec i18next
+- **Item 5** : flow photo ne génère pas d'image (bypass PostRecordingScreen où generateDreamImage est appelé)
+- **i18n FR/EN/ES LATAM** : prochain chantier majeur, utiliser i18next + fichiers de traduction
 
 ### CE QU'IL NE FAUT PAS CASSER
 - PostRecordingScreen : la section "Enrichir l'analyse" (métadonnées lucidité/sommeil/émotions/thèmes) DOIT rester

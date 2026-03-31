@@ -1502,7 +1502,8 @@ export default function SettingsScreen({ navigation }) {
       <DeepDreamInfoModal
         visible={showDeepDreamModal}
         onClose={() => setShowDeepDreamModal(false)}
-        onSupport={handleSupport}
+        isPremium={isPremium}
+        onOpenPaywall={() => setShowActivateModal(true)}
       />
       <ActivateDeepDreamModal
         visible={showActivateModal}
