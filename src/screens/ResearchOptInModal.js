@@ -1,15 +1,17 @@
 import {
-  View, 
-  Text, 
-  StyleSheet, 
-  Modal, 
-  ScrollView, 
-  TouchableOpacity, 
-  Linking 
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  TouchableOpacity,
+  Linking
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export function ResearchOptInModal({ visible, onClose, onAccept }) {
+  const { t } = useTranslation();
   return (
     <Modal
       visible={visible}
@@ -35,63 +37,63 @@ export function ResearchOptInModal({ visible, onClose, onAccept }) {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.content}>
-              <Text style={styles.title}>Comment contribuer à la recherche 🔬</Text>
-              
+              <Text style={styles.title}>{t('researchOptInModal.title')}</Text>
+
               <Text style={styles.paragraph}>
-                Vos rêves seront <Text style={styles.bold}>strictement anonymisés</Text> (zéro donnée personnelle) avant tout partage avec des laboratoires de recherche reconnus.
+                {t('researchOptInModal.paragraph1_pre')}<Text style={styles.bold}>{t('researchOptInModal.paragraph1_bold')}</Text>{t('researchOptInModal.paragraph1_post')}
                 {'\n\n'}
-                Ces données anonymes aideront l'équipe{' '}
-                <Text 
+                {t('researchOptInModal.paragraph2_pre')}
+                <Text
                   style={styles.link}
                   onPress={() => Linking.openURL('https://institutducerveau.org/equipes-recherche-linstitut-cerveau/dreamteam-sommeil-reves-et-cognition')}
                 >
-                  DreamTeam - Sommeil, Rêves et Cognition
+                  {t('researchOptInModal.paragraph2_link')}
                 </Text>
-                {' '}dirigée par le Dr. Isabelle Arnulf à l'Institut du Cerveau (Paris), référence mondiale en neurosciences des rêves.
+                {t('researchOptInModal.paragraph2_post')}
               </Text>
 
-              <Text style={styles.sectionTitle}>✨ Cela aide à :</Text>
-              
+              <Text style={styles.sectionTitle}>{t('researchOptInModal.sectionTitle')}</Text>
+
               <View style={styles.benefitItem}>
                 <View style={styles.iconCircle}>
                   <MaterialCommunityIcons name="brain" size={18} color="#4F8DFF" />
                 </View>
-                <Text style={styles.benefitText}>Comprendre les mécanismes du sommeil</Text>
+                <Text style={styles.benefitText}>{t('researchOptInModal.benefit1')}</Text>
               </View>
 
               <View style={styles.benefitItem}>
                 <View style={styles.iconCircle}>
                   <MaterialCommunityIcons name="check-decagram" size={18} color="#4F8DFF" />
                 </View>
-                <Text style={styles.benefitText}>Valider les théories scientifiques</Text>
+                <Text style={styles.benefitText}>{t('researchOptInModal.benefit2')}</Text>
               </View>
 
               <View style={styles.benefitItem}>
                 <View style={styles.iconCircle}>
                   <MaterialCommunityIcons name="rocket-launch" size={18} color="#4F8DFF" />
                 </View>
-                <Text style={styles.benefitText}>Faire avancer la science des rêves</Text>
+                <Text style={styles.benefitText}>{t('researchOptInModal.benefit3')}</Text>
               </View>
 
               <View style={styles.protectionBox}>
                 <MaterialCommunityIcons name="shield-check" size={20} color="#4F8DFF" />
                 <Text style={styles.protectionText}>
-                  Vos rêves sont anonymisés puis chiffrés AES-256 avant partage. Vous pouvez désactiver ce partage à tout moment.
+                  {t('researchOptInModal.protectionText')}
                 </Text>
               </View>
 
-              <Text style={styles.thankYou}>Merci de faire avancer la science avec nous ! 🌙</Text>
+              <Text style={styles.thankYou}>{t('researchOptInModal.thankYou')}</Text>
             </View>
           </ScrollView>
 
           {/* Footer */}
           <View style={styles.footer}>
             <TouchableOpacity style={styles.buttonCancel} onPress={onClose} activeOpacity={0.8}>
-              <Text style={styles.buttonCancelText}>Annuler</Text>
+              <Text style={styles.buttonCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.buttonAccept} onPress={onAccept} activeOpacity={0.8}>
               <MaterialCommunityIcons name="check-bold" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonAcceptText}>J'accepte</Text>
+              <Text style={styles.buttonAcceptText}>{t('researchOptInModal.accept')}</Text>
             </TouchableOpacity>
           </View>
         </View>

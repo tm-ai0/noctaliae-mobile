@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../config/ThemeContext';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
@@ -47,64 +48,7 @@ export default function PersonaScreen({ navigation }) {
     };
   }, []);
 
-  // 🌍 Multilangue (FR par défaut, prêt pour EN/ES)
-  const i18n = {
-    fr: {
-      title: 'Persona',
-      infoText: 'Ces empreintes aident Noctaliæ à personnaliser ses analyses et conversations',
-      emptyTitle: 'Aucune empreinte',
-      emptySubtitle: 'Ajoute des repères sur toi pour des analyses plus personnalisées',
-      inputPlaceholder: 'Ex: Je suis graphiste, j\'aime la montagne...',
-      add: 'Ajouter',
-      cancel: 'Annuler',
-      deleteTitle: 'Supprimer',
-      deleteMessage: 'Cette empreinte sera effacée définitivement',
-      fieldEmpty: 'Champ vide',
-      fieldEmptyMessage: 'Écris quelque chose sur toi',
-      tooShort: 'Trop court',
-      tooShortMessage: 'Minimum 5 caractères',
-      ok: 'OK',
-      counter: (count) => `${count} empreinte${count > 1 ? 's' : ''}`,
-      restartOnboarding: 'Refaire l\'introduction',
-      restartOnboardingConfirm: 'Cela relancera le tutoriel de bienvenue. Continuer ?'
-    },
-    en: {
-      title: 'My Fingerprints',
-      infoText: 'These fingerprints help Noctaliæ personalize its analyses and conversations',
-      emptyTitle: 'No fingerprint',
-      emptySubtitle: 'Add some markers about yourself for more personalized analyses',
-      inputPlaceholder: 'E.g. I\'m a graphic designer, I love mountains...',
-      add: 'Add',
-      cancel: 'Cancel',
-      deleteTitle: 'Delete',
-      deleteMessage: 'This fingerprint will be permanently deleted',
-      fieldEmpty: 'Empty field',
-      fieldEmptyMessage: 'Write something about yourself',
-      tooShort: 'Too short',
-      tooShortMessage: 'Minimum 5 characters',
-      ok: 'OK',
-      counter: (count) => `${count} fingerprint${count > 1 ? 's' : ''}`
-    },
-    es: {
-      title: 'Mis Huellas',
-      infoText: 'Estas huellas ayudan a Noctaliæ a personalizar sus análisis y conversaciones',
-      emptyTitle: 'Sin huellas',
-      emptySubtitle: 'Añade marcadores sobre ti para análisis más personalizados',
-      inputPlaceholder: 'Ej: Soy diseñador gráfico, me encanta la montaña...',
-      add: 'Añadir',
-      cancel: 'Cancelar',
-      deleteTitle: 'Eliminar',
-      deleteMessage: 'Esta huella se eliminará definitivamente',
-      fieldEmpty: 'Campo vacío',
-      fieldEmptyMessage: 'Escribe algo sobre ti',
-      tooShort: 'Muy corto',
-      tooShortMessage: 'Mínimo 5 caracteres',
-      ok: 'OK',
-      counter: (count) => `${count} huella${count > 1 ? 's' : ''}`
-    }
-  };
-
-  const t = i18n.fr; // Langue par défaut (à remplacer par state global plus tard)
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadFingerprints();
@@ -129,9 +73,9 @@ export default function PersonaScreen({ navigation }) {
       console.error('❌ Erreur sauvegarde empreintes:', error);
       showAlert({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de sauvegarder',
-        confirmText: t.ok
+        title: t('common.error'),
+        message: t('persona.errSave_msg'),
+        confirmText: t('common.ok')
       });
     }
   }
@@ -142,9 +86,9 @@ export default function PersonaScreen({ navigation }) {
     if (!trimmed) {
       showAlert({
         type: 'warning',
-        title: t.fieldEmpty,
-        message: t.fieldEmptyMessage,
-        confirmText: t.ok
+        title: t('persona.validEmpty_title'),
+        message: t('persona.validEmpty_msg'),
+        confirmText: t('common.ok')
       });
       return;
     }
@@ -152,9 +96,9 @@ export default function PersonaScreen({ navigation }) {
     if (trimmed.length < 5) {
       showAlert({
         type: 'warning',
-        title: t.tooShort,
-        message: t.tooShortMessage,
-        confirmText: t.ok
+        title: t('persona.validShort_title'),
+        message: t('persona.validShort_msg'),
+        confirmText: t('common.ok')
       });
       return;
     }
@@ -174,10 +118,10 @@ export default function PersonaScreen({ navigation }) {
   function handleDeleteFingerprint(id) {
     showAlert({
       type: 'confirm',
-      title: t.deleteTitle,
-      message: t.deleteMessage,
-      confirmText: t.deleteTitle,
-      cancelText: t.cancel,
+      title: t('persona.deleteAlert_title'),
+      message: t('persona.deleteAlert_msg'),
+      confirmText: t('persona.deleteAlert_confirm'),
+      cancelText: t('persona.deleteAlert_cancel'),
       onConfirm: () => {
         const updated = fingerprints.filter(f => f.id !== id);
         saveFingerprints(updated);
@@ -189,10 +133,10 @@ export default function PersonaScreen({ navigation }) {
   function handleRestartOnboarding() {
     showAlert({
       type: 'confirm',
-      title: t.restartOnboarding,
-      message: t.restartOnboardingConfirm,
-      confirmText: t.ok,
-      cancelText: t.cancel,
+      title: t('persona.redo'),
+      message: t('persona.redoConfirm'),
+      confirmText: t('common.ok'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         try {
           await AsyncStorage.removeItem(ONBOARDING_COMPLETED_KEY);
@@ -314,11 +258,11 @@ export default function PersonaScreen({ navigation }) {
           />
           <View>
             <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-              {t.title}
+              {t('persona.title')}
             </Text>
             {fingerprints.length > 0 && (
               <Text style={[styles.headerCounter, { color: theme.colors.primary }]}>
-                {t.counter(fingerprints.length)}
+                {t('persona.counter', { count: fingerprints.length })}
               </Text>
             )}
           </View>
@@ -330,7 +274,7 @@ export default function PersonaScreen({ navigation }) {
         <View style={[styles.infoCard, { backgroundColor: theme.colors.primaryGlow }]}>
           <MaterialCommunityIcons name="information" size={20} color={theme.colors.primary} />
           <Text style={[styles.infoText, { color: theme.colors.text }]}>
-            {t.infoText}
+            {t('persona.infoText')}
           </Text>
         </View>
       </View>
@@ -349,10 +293,10 @@ export default function PersonaScreen({ navigation }) {
               color={theme.colors.textSecondary} 
             />
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-              {t.emptyTitle}
+              {t('persona.empty')}
             </Text>
             <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-              {t.emptySubtitle}
+              {t('persona.emptySub')}
             </Text>
           </View>
         ) : (
@@ -373,7 +317,7 @@ export default function PersonaScreen({ navigation }) {
         >
           <MaterialIcons name="replay" size={20} color={theme.colors.textSecondary} />
           <Text style={[styles.restartOnboardingText, { color: theme.colors.textSecondary }]}>
-            {t.restartOnboarding}
+            {t('persona.redo')}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -397,7 +341,7 @@ export default function PersonaScreen({ navigation }) {
                 color: theme.colors.text
               }
             ]}
-            placeholder={t.inputPlaceholder}
+            placeholder={t('persona.placeholder')}
             placeholderTextColor={theme.colors.textSecondary}
             value={newFingerprint}
             onChangeText={setNewFingerprint}
@@ -414,7 +358,7 @@ export default function PersonaScreen({ navigation }) {
               style={[styles.cancelButton, { backgroundColor: theme.colors.cardBackground }]}
             >
               <Text style={[styles.cancelButtonText, { color: theme.colors.textSecondary }]}>
-                {t.cancel}
+                {t('persona.cancel')}
               </Text>
             </TouchableOpacity>
             
@@ -428,7 +372,7 @@ export default function PersonaScreen({ navigation }) {
             >
               <MaterialIcons name="check" size={20} color={theme.colors.background} />
               <Text style={[styles.saveButtonText, { color: theme.colors.background }]}>
-                {t.add}
+                {t('persona.add')}
               </Text>
             </TouchableOpacity>
           </View>

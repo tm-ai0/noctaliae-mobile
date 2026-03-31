@@ -10,6 +10,7 @@ import { useTheme } from '../config/ThemeContext';
 import BiometricService from '../services/biometricService';
 import DreamFallbackHero from './DreamFallbackHero';
 import { useDreamShare } from '../hooks/useDreamShare';
+import { useTranslation } from 'react-i18next';
 
 
 /**
@@ -26,6 +27,7 @@ import { useDreamShare } from '../hooks/useDreamShare';
  */
 export default function DreamCard({ dream, onPress, onArchive, onShare, onSecretToggle, isSelectionMode, isSelected, onSelectionToggle, showMenuHint, onMenuHintDismiss, onFirstArchive, onFavoriteToggle, onPinToggle }) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const swipeableRef = useRef(null);
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -71,7 +73,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
     return (
       <Animated.View style={[styles.swipeAction, styles.archiveAction, { backgroundColor: '#FF9966' }, { transform: [{ scale }] }]}>
         <MaterialIcons name="archive" size={28} color="#FFFFFF" />
-        <Text style={styles.swipeActionText}>Archiver</Text>
+        <Text style={styles.swipeActionText}>{t('dreamCard.swipeArchive')}</Text>
       </Animated.View>
     );
   };
@@ -81,7 +83,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
     return (
       <Animated.View style={[styles.swipeAction, styles.shareAction, { backgroundColor: '#00FFB0' }, { transform: [{ scale }] }]}>
         <MaterialIcons name="share" size={28} color="#0c0e27" />
-        <Text style={[styles.swipeActionText, { color: '#0c0e27' }]}>Partager</Text>
+        <Text style={[styles.swipeActionText, { color: '#0c0e27' }]}>{t('dreamCard.swipeShare')}</Text>
       </Animated.View>
     );
   };
@@ -164,7 +166,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
     let tagsSection = '';
     if (dream.tags && Array.isArray(dream.tags) && dream.tags.length > 0) {
       const tagsList = dream.tags
-        .map(t => { const cleaned = String(t).replace(/[\[\]]/g, '').trim(); return cleaned ? `• ${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}` : null; })
+        .map(rawTag => { const cleaned = String(rawTag).replace(/[\[\]]/g, '').trim(); return cleaned ? `• ${cleaned.charAt(0).toUpperCase() + cleaned.slice(1)}` : null; })
         .filter(Boolean).join('\n');
       if (tagsList) tagsSection = `\n🏷️ THÈMES DÉTECTÉS\n─────────────────\n${tagsList}\n`;
     }
@@ -198,9 +200,9 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
       .replace(/---/g, '<hr/>').replace(/\n/g, '<br/>');
     let tagsHtml = '';
     if (dream.tags && Array.isArray(dream.tags) && dream.tags.length > 0) {
-      const cleanedTags = dream.tags.map(t => String(t).replace(/[\[\]]/g, '').trim()).filter(Boolean);
+      const cleanedTags = dream.tags.map(tag => String(tag).replace(/[\[\]]/g, '').trim()).filter(Boolean);
       if (cleanedTags.length > 0) {
-        tagsHtml = `<div class="section"><h2>🏷️ Thèmes détectés</h2><div class="tags">${cleanedTags.map(t => `<span class="tag">${t}</span>`).join('')}</div></div>`;
+        tagsHtml = `<div class="section"><h2>🏷️ Thèmes détectés</h2><div class="tags">${cleanedTags.map(tag => `<span class="tag">${tag}</span>`).join('')}</div></div>`;
       }
     }
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rapport de rêve - Noctaliæ</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0c0e27;color:#FFF;padding:40px;line-height:1.6}.container{max-width:800px;margin:0 auto;background:#0f1130;border-radius:20px;padding:40px;border:1px solid #1a1f3a}.header{text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #D2B14C}.logo{font-size:32px;font-weight:700;color:#D2B14C;margin-bottom:10px}.subtitle{color:#A0B4D4;font-size:14px}.meta{display:flex;justify-content:space-between;margin-bottom:30px;padding:15px;background:#1a1f3a;border-radius:12px}.meta-label{color:#A0B4D4;font-size:12px}.meta-value{color:#FFF;font-weight:600}.analysis-badge{background:${analysisColor};color:white;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}.section{margin-bottom:30px}.section h2{color:#D2B14C;font-size:18px;margin-bottom:15px}.section-content{background:#1a1f3a;padding:20px;border-radius:12px;color:#E0E0E0}.tags{display:flex;flex-wrap:wrap;gap:10px}.tag{background:#D2B14C20;color:#D2B14C;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600}.footer{text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #1a1f3a;color:#A0B4D4;font-size:12px}</style></head><body><div class="container"><div class="header"><div class="logo">🌙 Noctaliæ</div><div class="subtitle">Rapport de rêve</div></div><div class="meta"><div><span class="meta-label">📅 Date</span> <span class="meta-value">${formattedDate}</span></div><div><span class="analysis-badge">${analysisType}</span></div></div><div class="section"><h2>📝 Récit du rêve</h2><div class="section-content">${transcription}</div></div><div class="section"><h2>🧠 Analyse scientifique</h2><div class="section-content">${analysisText}</div></div>${tagsHtml}<div class="footer">Analysé avec <strong>Noctaliæ</strong><br/><a href="https://nocty.thomasmaury.fr">nocty.thomasmaury.fr</a></div></div></body></html>`;
@@ -357,7 +359,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
       for (const tag of dream.tags) {
         const cleaned = String(tag).replace(/[\[\]]/g, '').trim();
         if (cleaned.includes('#') || (cleaned.includes(' ') && cleaned.length > 20)) {
-          const parts = cleaned.split(/[\s,]+/).filter(Boolean).map(t => t.replace(/^#/, '').trim()).filter(Boolean);
+          const parts = cleaned.split(/[\s,]+/).filter(Boolean).map(part => part.replace(/^#/, '').trim()).filter(Boolean);
           normalizedTags.push(...parts);
         } else { if (cleaned) normalizedTags.push(cleaned); }
       }
@@ -419,7 +421,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
       const text = dream.transcription.trim();
       return text.length > 120 ? text.substring(0, 120) + '...' : text;
     }
-    return 'Aucune description disponible...';
+    return t('dreamCard.noSummary');
   };
 
   // ============================================
@@ -469,8 +471,8 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
             <View style={styles.secretOverlay}>
               <View style={styles.secretContent}>
                 <MaterialCommunityIcons name="lock" size={40} color="#8B5CF6" />
-                <Text style={styles.secretText}>Rêve protégé</Text>
-                <Text style={styles.secretHint}>Appuyer pour déverrouiller</Text>
+                <Text style={styles.secretText}>{t('dreamCard.secretText')}</Text>
+                <Text style={styles.secretHint}>{t('dreamCard.secretHint')}</Text>
               </View>
             </View>
           )}
@@ -567,12 +569,12 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
         <TouchableOpacity style={styles.shareSheetOverlay} activeOpacity={1} onPress={() => setShowShareModal(false)}>
           <View style={[styles.shareSheet, { backgroundColor: theme.colors.cardBackground }]}>
             <View style={styles.sheetHandle} />
-            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Partager ce rêve</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>{t('dreamCard.shareModal_title')}</Text>
             <TouchableOpacity style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]} onPress={() => { setShowShareModal(false); handleShareFriendly(); }}>
               <View style={[styles.shareOptionIcon, { backgroundColor: '#FF9966' }]}><MaterialCommunityIcons name="heart-outline" size={24} color="#FFFFFF" /></View>
               <View style={styles.shareOptionText}>
-                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>Partage Friendly</Text>
-                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>Famille, amis, proches — résumé illustré</Text>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{t('dreamCard.shareModal_friendly')}</Text>
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{t('dreamCard.shareModal_friendlyDesc')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
@@ -581,13 +583,13 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
                 {isGeneratingPdf ? <ActivityIndicator size="small" color="#FFFFFF" /> : <MaterialCommunityIcons name="stethoscope" size={24} color="#FFFFFF" />}
               </View>
               <View style={styles.shareOptionText}>
-                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{isGeneratingPdf ? 'Génération...' : 'Rapport Professionnel'}</Text>
-                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>Psy, médecin, recherche — PDF complet</Text>
+                <Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{isGeneratingPdf ? t('dreamCard.shareModal_pdfGenerating') : t('dreamCard.shareModal_pdf')}</Text>
+                <Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{t('dreamCard.shareModal_pdfDesc')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]} onPress={() => setShowShareModal(false)}>
-              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>Annuler</Text>
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -598,21 +600,21 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowSecretModal(false)}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.cardBackground }]}>
             <View style={styles.secretModalHeader}><MaterialCommunityIcons name={dream.isSecret ? "lock-open-variant" : "lock"} size={48} color="#8B5CF6" /></View>
-            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>{dream.isSecret ? 'Retirer le secret ?' : 'Protéger ce rêve ?'}</Text>
-            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>{dream.isSecret ? 'Il sera de nouveau visible normalement.' : 'Certains rêves sont trop personnels pour être affichés ou partagés. Marquez-les comme secrets et gardez la clé ! 🔑'}</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>{dream.isSecret ? t('dreamCard.secretModal_titleRemove') : t('dreamCard.secretModal_titleAdd')}</Text>
+            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>{dream.isSecret ? t('dreamCard.secretModal_msgRemove') : t('dreamCard.secretModal_msgAdd')}</Text>
             {!dream.isSecret && (
               <View style={styles.secretFeatures}>
-                <View style={styles.secretFeature}><MaterialCommunityIcons name="eye-off" size={20} color="#8B5CF6" /><Text style={[styles.secretFeatureText, { color: theme.colors.textSecondary }]}>Contenu flouté dans la liste</Text></View>
-                <View style={styles.secretFeature}><MaterialCommunityIcons name="gesture-tap" size={20} color="#8B5CF6" /><Text style={[styles.secretFeatureText, { color: theme.colors.textSecondary }]}>Appuyer pour déverrouiller temporairement</Text></View>
-                <View style={styles.secretFeature}><MaterialCommunityIcons name="cog" size={20} color="#8B5CF6" /><Text style={[styles.secretFeatureText, { color: theme.colors.textSecondary }]}>Accès rapide dans Paramètres</Text></View>
+                <View style={styles.secretFeature}><MaterialCommunityIcons name="eye-off" size={20} color="#8B5CF6" /><Text style={[styles.secretFeatureText, { color: theme.colors.textSecondary }]}>{t('dreamCard.secretModal_feature1')}</Text></View>
+                <View style={styles.secretFeature}><MaterialCommunityIcons name="gesture-tap" size={20} color="#8B5CF6" /><Text style={[styles.secretFeatureText, { color: theme.colors.textSecondary }]}>{t('dreamCard.secretModal_feature2')}</Text></View>
+                <View style={styles.secretFeature}><MaterialCommunityIcons name="cog" size={20} color="#8B5CF6" /><Text style={[styles.secretFeatureText, { color: theme.colors.textSecondary }]}>{t('dreamCard.secretModal_feature3')}</Text></View>
               </View>
             )}
             <TouchableOpacity style={[styles.secretActionButton, { backgroundColor: '#8B5CF6' }]} onPress={handleToggleSecret}>
               <MaterialCommunityIcons name={dream.isSecret ? "lock-open-variant" : "lock"} size={20} color="#FFFFFF" />
-              <Text style={styles.secretActionButtonText}>{dream.isSecret ? 'Retirer la protection' : 'Protéger ce rêve'}</Text>
+              <Text style={styles.secretActionButtonText}>{dream.isSecret ? t('dreamCard.secretModal_confirmRemove') : t('dreamCard.secretModal_confirmAdd')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]} onPress={() => setShowSecretModal(false)}>
-              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>Annuler</Text>
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -626,31 +628,31 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
             <Text style={[styles.modalTitle, { color: theme.colors.textPrimary, marginBottom: 16 }]}>{getDynamicTitle()}</Text>
             <TouchableOpacity style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]} onPress={() => { setShowOptionsModal(false); setTimeout(() => setShowShareModal(true), 300); }}>
               <View style={[styles.shareOptionIcon, { backgroundColor: '#00FFB0' }]}><MaterialIcons name="share" size={24} color="#0c0e27" /></View>
-              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>Partager</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>Friendly ou rapport professionnel</Text></View>
+              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{t('dreamCard.optionsModal_share')}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{t('dreamCard.optionsModal_shareDesc')}</Text></View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]} onPress={async () => { setShowOptionsModal(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); if (onFirstArchive) { const isFirst = await onFirstArchive(); if (isFirst) { setShowArchiveModal(true); return; } } if (onArchive) onArchive(dream.id); }}>
               <View style={[styles.shareOptionIcon, { backgroundColor: '#FF9966' }]}><MaterialIcons name="archive" size={24} color="#FFFFFF" /></View>
-              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>Archiver</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>Déplacer dans les archives</Text></View>
+              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{t('dreamCard.optionsModal_archive')}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{t('dreamCard.optionsModal_archiveDesc')}</Text></View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]} onPress={() => { setShowOptionsModal(false); if (onFavoriteToggle) onFavoriteToggle(dream.id); }}>
               <View style={[styles.shareOptionIcon, { backgroundColor: '#D2B14C' }]}><MaterialIcons name={dream.isFavorite ? 'star' : 'star-outline'} size={24} color="#0c0e27" /></View>
-              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{dream.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{dream.isFavorite ? 'Ne plus marquer ce rêve' : 'Retrouver facilement ce rêve'}</Text></View>
+              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{dream.isFavorite ? t('dreamCard.optionsModal_removeFav') : t('dreamCard.optionsModal_addFav')}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{dream.isFavorite ? t('dreamCard.optionsModal_removeFavDesc') : t('dreamCard.optionsModal_addFavDesc')}</Text></View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]} onPress={() => { setShowOptionsModal(false); if (onPinToggle) onPinToggle(dream.id); }}>
               <View style={[styles.shareOptionIcon, { backgroundColor: '#4F8DFF' }]}><MaterialCommunityIcons name={dream.isPinned ? 'pin-off' : 'pin'} size={24} color="#FFFFFF" /></View>
-              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{dream.isPinned ? 'Désépingler' : 'Épingler en haut'}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{dream.isPinned ? 'Retirer du haut de la liste' : 'Afficher en permanence en tête'}</Text></View>
+              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{dream.isPinned ? t('dreamCard.optionsModal_unpin') : t('dreamCard.optionsModal_pin')}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{dream.isPinned ? t('dreamCard.optionsModal_unpinDesc') : t('dreamCard.optionsModal_pinDesc')}</Text></View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.shareOptionRow, { backgroundColor: theme.colors.backgroundElevated }]} onPress={() => { setShowOptionsModal(false); setTimeout(() => setShowSecretModal(true), 300); }}>
               <View style={[styles.shareOptionIcon, { backgroundColor: '#8B5CF6' }]}><MaterialCommunityIcons name={dream.isSecret ? 'lock-open-variant' : 'lock'} size={24} color="#FFFFFF" /></View>
-              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{dream.isSecret ? 'Retirer la protection' : 'Protéger ce rêve'}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{dream.isSecret ? 'Rendre visible normalement' : 'Masquer et protéger par bio'}</Text></View>
+              <View style={styles.shareOptionText}><Text style={[styles.shareOptionTitle, { color: theme.colors.textPrimary }]}>{dream.isSecret ? t('dreamCard.optionsModal_unprotect') : t('dreamCard.optionsModal_protect')}</Text><Text style={[styles.shareOptionDesc, { color: theme.colors.textSecondary }]}>{dream.isSecret ? t('dreamCard.optionsModal_unprotectDesc') : t('dreamCard.optionsModal_protectDesc')}</Text></View>
               <MaterialIcons name="chevron-right" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]} onPress={() => setShowOptionsModal(false)}>
-              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>Annuler</Text>
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -661,18 +663,18 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.cardBackground }]}>
             <View style={styles.archiveModalHeader}><MaterialIcons name="archive" size={48} color={theme.colors.warmGold || '#D2B14C'} /></View>
-            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Rêve archivé !</Text>
-            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>Ce rêve sera déplacé dans tes archives. Tu pourras le retrouver dans l'onglet Archives accessible depuis les Paramètres.</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>{t('dreamCard.archiveModal_title')}</Text>
+            <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>{t('dreamCard.archiveModal_msg')}</Text>
             <View style={styles.archiveFeatures}>
-              <View style={styles.archiveFeature}><MaterialIcons name="folder" size={20} color={theme.colors.warmGold || '#D2B14C'} /><Text style={[styles.archiveFeatureText, { color: theme.colors.textSecondary }]}>Accès : Paramètres → Archives</Text></View>
-              <View style={styles.archiveFeature}><MaterialIcons name="restore" size={20} color={theme.colors.warmGold || '#D2B14C'} /><Text style={[styles.archiveFeatureText, { color: theme.colors.textSecondary }]}>Tu peux restaurer à tout moment</Text></View>
+              <View style={styles.archiveFeature}><MaterialIcons name="folder" size={20} color={theme.colors.warmGold || '#D2B14C'} /><Text style={[styles.archiveFeatureText, { color: theme.colors.textSecondary }]}>{t('dreamCard.archiveModal_feature1')}</Text></View>
+              <View style={styles.archiveFeature}><MaterialIcons name="restore" size={20} color={theme.colors.warmGold || '#D2B14C'} /><Text style={[styles.archiveFeatureText, { color: theme.colors.textSecondary }]}>{t('dreamCard.archiveModal_feature2')}</Text></View>
             </View>
             <TouchableOpacity style={[styles.archiveActionButton, { backgroundColor: theme.colors.warmGold || '#D2B14C' }]} onPress={handleConfirmArchive}>
               <MaterialIcons name="check" size={20} color="#0c0e27" />
-              <Text style={styles.archiveActionButtonText}>Compris !</Text>
+              <Text style={styles.archiveActionButtonText}>{t('dreamCard.archiveModal_confirm')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalCancel, { borderTopColor: theme.colors.cardBorder }]} onPress={() => setShowArchiveModal(false)}>
-              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>Annuler</Text>
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

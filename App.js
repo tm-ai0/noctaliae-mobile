@@ -80,6 +80,7 @@ import { UpdateToast } from './src/components/UpdateToast'
 import { freeTierService } from './src/services/freeTierService'
 import { premiumService } from './src/services/premiumService'
 import { ActivateDeepDreamModal } from './src/modals/ActivateDeepDreamModal'
+import { initI18n } from './src/i18n'
 
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed'
 
@@ -1106,6 +1107,7 @@ export default function App() {
     } catch (e) {
       console.warn('RevenueCat configure skipped (Expo Go?):', e.message)
     }
+    initI18n() // 🌍 i18n (FR/EN/ES)
     initSentry() // 🛡️ Crash reporting
     secureStorageService.migrateFromAsyncStorage()
     sendInstallPing() // Track les installations

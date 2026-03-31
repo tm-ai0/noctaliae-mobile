@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGlow } from '../../contexts/GlowContext';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
@@ -87,28 +88,28 @@ function ProgressDots({ current, total }) {
 // ============================================
 // 🏷️ CATÉGORIES DE TAGS
 // ============================================
-const TAG_CATEGORIES = [
+const TAG_CATEGORIES_BASE = [
   {
     id: 'personality',
-    label: 'Personnalité',
+    labelKey: 'onboarding.fingerprints.catPersonality',
     icon: '🧠',
     tags: ['Introverti', 'Extraverti', 'Analytique', 'Empathique', 'Créatif', 'Intuitif', 'Rationnel', 'Sensible'],
   },
   {
     id: 'life',
-    label: 'Contexte de vie',
+    labelKey: 'onboarding.fingerprints.catLife',
     icon: '🌱',
     tags: ['Parent', 'Étudiant', 'Artiste', 'Entrepreneur', 'Soignant', 'En transition', 'Voyageur', 'Télétravaill.'],
   },
   {
     id: 'inner',
-    label: 'États intérieurs',
+    labelKey: 'onboarding.fingerprints.catInner',
     icon: '🌊',
     tags: ['Anxiété', 'Nostalgie', 'Ambition', 'Deuil', 'Transformation', 'Sérénité', 'Doute', 'Curiosité'],
   },
   {
     id: 'habits',
-    label: 'Habitudes',
+    labelKey: 'onboarding.fingerprints.catHabits',
     icon: '⚡',
     tags: ['Méditation', 'Sport intense', 'Travail de nuit', 'Voyage fréquent', 'Lecture', 'Musique', 'Nature', 'Tech'],
   },
@@ -206,7 +207,10 @@ function hasValidUserData(markers, selectedTags, customTags) {
 export default function OnboardingFingerprints({ route, navigation }) {
   const { triggerCelebration } = useGlow();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const TAG_CATEGORIES = TAG_CATEGORIES_BASE.map(cat => ({ ...cat, label: t(cat.labelKey) }));
   const { markers } = route.params || {};
 
   const [selectedTags, setSelectedTags] = useState([]);
@@ -311,7 +315,7 @@ export default function OnboardingFingerprints({ route, navigation }) {
         </TouchableOpacity>
         <ProgressDots current={2} total={3} />
         <TouchableOpacity onPress={() => completeOnboarding([])} style={styles.skipBtn}>
-          <Text style={styles.skipBtnText}>Passer</Text>
+          <Text style={styles.skipBtnText}>{t('onboarding.fingerprints.skip')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -321,10 +325,10 @@ export default function OnboardingFingerprints({ route, navigation }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Vos empreintes</Text>
+        <Text style={styles.title}>{t('onboarding.fingerprints.title')}</Text>
         <Text style={styles.subtitle}>
-          Plus vous partagez, plus les analyses vous ressemblent.{'\n'}
-          <Text style={{ color: OB.textMuted }}>Tout reste sur votre téléphone.</Text>
+          {t('onboarding.fingerprints.subtitle')}{'\n'}
+          <Text style={{ color: OB.textMuted }}>{t('onboarding.fingerprints.subtitleSub')}</Text>
         </Text>
 
         {/* Catégories de tags */}
@@ -341,14 +345,14 @@ export default function OnboardingFingerprints({ route, navigation }) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionIcon}>✏️</Text>
-            <Text style={styles.sectionTitle}>Mes propres mots</Text>
+            <Text style={styles.sectionTitle}>{t('onboarding.fingerprints.custom')}</Text>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={() => setShowAddModal(true)}
               activeOpacity={0.8}
             >
               <MaterialIcons name="add" size={16} color={OB.bg} />
-              <Text style={styles.addBtnText}>Ajouter</Text>
+              <Text style={styles.addBtnText}>{t('onboarding.fingerprints.addBtn')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -367,7 +371,7 @@ export default function OnboardingFingerprints({ route, navigation }) {
               ))}
             </View>
           ) : (
-            <Text style={styles.emptyCustom}>Ajoutez vos propres mots-clés</Text>
+            <Text style={styles.emptyCustom}>{t('onboarding.fingerprints.emptyCustom')}</Text>
           )}
         </View>
 
@@ -376,7 +380,7 @@ export default function OnboardingFingerprints({ route, navigation }) {
           <View style={styles.noteRow}>
             <MaterialCommunityIcons name="check-circle-outline" size={16} color={OB.accent} />
             <Text style={styles.noteText}>
-              {totalSelected} empreinte{totalSelected > 1 ? 's' : ''} sélectionnée{totalSelected > 1 ? 's' : ''} — vos analyses seront personnalisées dès le premier rêve.
+              {t('onboarding.fingerprints.note', { count: totalSelected })}
             </Text>
           </View>
         )}
@@ -393,11 +397,11 @@ export default function OnboardingFingerprints({ route, navigation }) {
           activeOpacity={0.85}
         >
           {isSaving ? (
-            <Text style={styles.primaryButtonText}>Enregistrement...</Text>
+            <Text style={styles.primaryButtonText}>{t('onboarding.fingerprints.saving')}</Text>
           ) : (
             <>
               <MaterialCommunityIcons name="check" size={22} color={OB.bg} />
-              <Text style={styles.primaryButtonText}>Terminer</Text>
+              <Text style={styles.primaryButtonText}>{t('onboarding.fingerprints.finish')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -408,11 +412,11 @@ export default function OnboardingFingerprints({ route, navigation }) {
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Ajouter un mot-clé</Text>
-              <Text style={styles.modalSub}>Un trait, une passion, une situation de vie…</Text>
+              <Text style={styles.modalTitle}>{t('onboarding.fingerprints.modalAdd_title')}</Text>
+              <Text style={styles.modalSub}>{t('onboarding.fingerprints.modalAdd_subtitle')}</Text>
               <TextInput
                 style={styles.modalInput}
-                placeholder="Ex: Musicien amateur, Noctambule..."
+                placeholder={t('onboarding.fingerprints.modalAdd_placeholder')}
                 placeholderTextColor={OB.textMuted}
                 value={newTagText}
                 onChangeText={setNewTagText}
@@ -426,14 +430,14 @@ export default function OnboardingFingerprints({ route, navigation }) {
                   style={[styles.modalBtn, { borderColor: OB.cardBorder }]}
                   onPress={() => { setShowAddModal(false); setNewTagText(''); }}
                 >
-                  <Text style={[styles.modalBtnText, { color: OB.textSub }]}>Annuler</Text>
+                  <Text style={[styles.modalBtnText, { color: OB.textSub }]}>{t('onboarding.fingerprints.modalAdd_cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, { backgroundColor: newTagText.trim() ? OB.accent : OB.card, borderColor: 'transparent' }]}
                   onPress={handleAddCustomTag}
                   disabled={!newTagText.trim()}
                 >
-                  <Text style={[styles.modalBtnText, { color: newTagText.trim() ? OB.bg : OB.textMuted }]}>Ajouter</Text>
+                  <Text style={[styles.modalBtnText, { color: newTagText.trim() ? OB.bg : OB.textMuted }]}>{t('onboarding.fingerprints.modalAdd_confirm')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -445,22 +449,22 @@ export default function OnboardingFingerprints({ route, navigation }) {
       <Modal visible={showConfirmModal} transparent animationType="fade" onRequestClose={() => setShowConfirmModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Continuer sans empreintes ?</Text>
+            <Text style={styles.modalTitle}>{t('onboarding.fingerprints.modalConfirm_title')}</Text>
             <Text style={styles.modalSub}>
-              Pas de souci ! Vous pourrez toujours les ajouter plus tard dans Paramètres → Persona pour des analyses plus personnalisées.
+              {t('onboarding.fingerprints.modalConfirm_subtitle')}
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalBtn, { borderColor: OB.cardBorder }]}
                 onPress={() => setShowConfirmModal(false)}
               >
-                <Text style={[styles.modalBtnText, { color: OB.textSub }]}>Retour</Text>
+                <Text style={[styles.modalBtnText, { color: OB.textSub }]}>{t('onboarding.fingerprints.modalConfirm_back')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: OB.accent, borderColor: 'transparent' }]}
                 onPress={() => { setShowConfirmModal(false); completeOnboarding([]); }}
               >
-                <Text style={[styles.modalBtnText, { color: OB.bg }]}>Terminer</Text>
+                <Text style={[styles.modalBtnText, { color: OB.bg }]}>{t('onboarding.fingerprints.modalConfirm_finish')}</Text>
               </TouchableOpacity>
             </View>
           </View>

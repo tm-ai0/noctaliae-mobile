@@ -15,12 +15,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../config/ThemeContext';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 const MEMORIES_KEY = '@noctaliae_user_memories';
 
 export default function ProfileScreen({ navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   
   const [memories, setMemories] = useState([]);
   const [newMemory, setNewMemory] = useState('');
@@ -47,7 +49,7 @@ export default function ProfileScreen({ navigation }) {
       setMemories(updatedMemories);
     } catch (error) {
       console.error('❌ Erreur sauvegarde mémories:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      Alert.alert(t('profile.errSave_title'), t('profile.errSave_msg'), [{text: t('common.ok')}], {userInterfaceStyle: 'dark'});
     }
   }
 
@@ -55,12 +57,12 @@ export default function ProfileScreen({ navigation }) {
     const trimmed = newMemory.trim();
     
     if (!trimmed) {
-      Alert.alert('Champ vide', 'Écris quelque chose sur toi', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      Alert.alert(t('profile.validEmpty_title'), t('profile.validEmpty_msg'), [{text: t('common.ok')}], {userInterfaceStyle: 'dark'});
       return;
     }
 
     if (trimmed.length < 5) {
-      Alert.alert('Trop court', 'Minimum 5 caractères', [{text: 'OK'}], {userInterfaceStyle: 'dark'});
+      Alert.alert(t('profile.validShort_title'), t('profile.validShort_msg'), [{text: t('common.ok')}], {userInterfaceStyle: 'dark'});
       return;
     }
 
@@ -78,12 +80,12 @@ export default function ProfileScreen({ navigation }) {
 
   function handleDeleteMemory(id) {
     Alert.alert(
-      'Supprimer',
-      'Cette mémoire sera effacée définitivement',
+      t('profile.deleteAlert_title'),
+      t('profile.deleteAlert_msg'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('profile.deleteAlert_cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('profile.deleteAlert_confirm'),
           style: 'destructive',
           onPress: () => {
             const updated = memories.filter(m => m.id !== id);
@@ -157,7 +159,7 @@ export default function ProfileScreen({ navigation }) {
             color={theme.colors.primary} 
           />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-            Mon Profil
+            {t('profile.title')}
           </Text>
         </View>
       </View>
@@ -167,7 +169,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.infoCard, { backgroundColor: theme.colors.primaryGlow }]}>
           <MaterialCommunityIcons name="information" size={20} color={theme.colors.primary} />
           <Text style={[styles.infoText, { color: theme.colors.text }]}>
-            Ces mémories aident Noctaliæ à personnaliser ses analyses et conversations
+            {t('profile.info')}
           </Text>
         </View>
       </View>
@@ -186,10 +188,10 @@ export default function ProfileScreen({ navigation }) {
               color={theme.colors.textSecondary} 
             />
             <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-              Aucune mémoire
+              {t('profile.emptyTitle')}
             </Text>
             <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-              Ajoute des infos sur toi pour des analyses plus personnalisées
+              {t('profile.emptySub')}
             </Text>
           </View>
         ) : (
@@ -216,7 +218,7 @@ export default function ProfileScreen({ navigation }) {
                 color: theme.colors.text
               }
             ]}
-            placeholder="Ex: Je suis architecte, j'aime la randonnée..."
+            placeholder={t('profile.placeholder')}
             placeholderTextColor={theme.colors.textSecondary}
             value={newMemory}
             onChangeText={setNewMemory}
@@ -233,7 +235,7 @@ export default function ProfileScreen({ navigation }) {
               style={[styles.cancelButton, { backgroundColor: theme.colors.cardBackground }]}
             >
               <Text style={[styles.cancelButtonText, { color: theme.colors.textSecondary }]}>
-                Annuler
+                {t('profile.cancel')}
               </Text>
             </TouchableOpacity>
             
@@ -247,7 +249,7 @@ export default function ProfileScreen({ navigation }) {
             >
               <MaterialIcons name="check" size={20} color={theme.colors.background} />
               <Text style={[styles.saveButtonText, { color: theme.colors.background }]}>
-                Ajouter
+                {t('profile.add')}
               </Text>
             </TouchableOpacity>
           </View>

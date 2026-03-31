@@ -20,29 +20,31 @@ import { MarkdownText } from '../components/MarkdownText';
 import { useTheme } from '../config/ThemeContext';
 import { saveConversation, loadConversation, clearConversation } from '../services/conversationService';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 export default function MetaAnalysisScreen({ route, navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { dreams, totalCount } = route.params;
-  
+
   // Préparer le contexte global de tous les rêves
   const allDreamsAnalysis = dreams.map(d => `${d.title}: ${d.analysis}`).join('\n\n');
   const allDreamsTranscription = dreams.map(d => d.transcription).join('\n\n');
-  
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
-  
+
   const scrollViewRef = useRef();
 
   // Suggestions spécifiques meta-analyse
   const suggestions = [
-    "Quels symboles reviennent le plus souvent dans mes rêves ?",
-    "Comment mes émotions évoluent-elles au fil du temps ?",
-    "Y a-t-il des patterns récurrents que je devrais noter ?",
-    "Quels sont mes thèmes de rêves dominants ?"
+    t('metaAnalysis.suggestion1'),
+    t('metaAnalysis.suggestion2'),
+    t('metaAnalysis.suggestion3'),
+    t('metaAnalysis.suggestion4'),
   ];
 
   // Charger la conversation sauvegardée
@@ -126,7 +128,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
 
     } catch (error) {
       console.error('❌ Erreur meta-analyse:', error);
-      alert(error.message || 'Impossible de communiquer avec le serveur');
+      alert(error.message || t('metaAnalysis.errSend_msg'));
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -139,12 +141,12 @@ export default function MetaAnalysisScreen({ route, navigation }) {
 
   async function handleRestart() {
     Alert.alert(
-      'Nouvelle conversation ?',
-      'Tous les messages seront effacés.',
+      t('metaAnalysis.restartAlert_title'),
+      t('metaAnalysis.restartAlert_msg'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Effacer',
+          text: t('metaAnalysis.restartAlert_confirm'),
           style: 'destructive',
           onPress: async () => {
             await clearConversation('meta-analysis');
@@ -217,7 +219,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
         <View style={styles.headerContent}>
           <View style={styles.headerTitleRow}>
             <MaterialCommunityIcons name="lightbulb-on" size={22} color={theme.colors.primary} />
-            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Mes rêves</Text>
+            <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('metaAnalysis.headerTitle')}</Text>
           </View>
         </View>
 
@@ -245,20 +247,20 @@ export default function MetaAnalysisScreen({ route, navigation }) {
         }]}>
           <Text style={styles.welcomeIcon}>👋</Text>
           <Text style={[styles.welcomeTitle, { color: theme.colors.primary }]}>
-            Bienvenue dans Mes rêves !
+            {t('metaAnalysis.welcomeTitle')}
           </Text>
           <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
-            Je vais analyser <Text style={{ fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: theme.colors.text }}>{totalCount} de vos rêves</Text> pour détecter des patterns, symboles récurrents et évolutions émotionnelles.
+            {t('metaAnalysis.welcomeText1', { count: totalCount })}
           </Text>
           <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
-            Pose-moi une question ou choisis une suggestion ci-dessous.
+            {t('metaAnalysis.welcomeText2')}
           </Text>
         </View>
 
         {/* Suggestions - TOUJOURS AFFICHÉES */}
         <View style={styles.suggestionsSection}>
           <Text style={[styles.suggestionsTitle, { color: theme.colors.textSecondary }]}>
-            QUESTIONS SUGGÉRÉES
+            {t('metaAnalysis.suggestionsTitle')}
           </Text>
           
           {suggestions.map((suggestion, index) => (
@@ -289,7 +291,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={theme.colors.primary} size="small" />
             <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
-              Analyse en cours...
+              {t('metaAnalysis.loading')}
             </Text>
           </View>
         )}
@@ -307,7 +309,7 @@ export default function MetaAnalysisScreen({ route, navigation }) {
             color: theme.colors.text,
             borderColor: theme.colors.cardBorder
           }]}
-          placeholder="Posez votre question..."
+          placeholder={t('metaAnalysis.placeholder')}
           placeholderTextColor={theme.colors.textSecondary}
           value={inputText}
           onChangeText={setInputText}

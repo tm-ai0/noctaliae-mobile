@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -69,6 +70,7 @@ function Phosphene({ x, y, size, dur, delay }) {
 // ============================================
 export default function OnboardingWelcome({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   // Animations séquencées
   const fadeLogo    = useRef(new Animated.Value(0)).current;
@@ -138,7 +140,7 @@ export default function OnboardingWelcome({ navigation }) {
             transform: [{ translateY: slideTitle }],
             alignItems: 'center',
           }}>
-            <Text style={styles.welcomeText}>Bienvenue dans</Text>
+            <Text style={styles.welcomeText}>{t('onboarding.welcome.intro')}</Text>
             <Svg height="62" width="300">
               <Defs>
                 <LinearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="0.3">
@@ -165,17 +167,17 @@ export default function OnboardingWelcome({ navigation }) {
 
           {/* Phrase forte */}
           <Animated.Text style={[styles.tagline, { opacity: fadeSub }]}>
-            Ce que vous rêvez vous appartient.{'\n'}
-            <Text style={styles.taglineSub}>La science vous aide à le comprendre.</Text>
+            {t('onboarding.welcome.tagline')}{'\n'}
+            <Text style={styles.taglineSub}>{t('onboarding.welcome.taglineSub')}</Text>
           </Animated.Text>
         </View>
 
         {/* ── ZONE MILIEU : 3 piliers compacts ── */}
         <Animated.View style={[styles.pillars, { opacity: fadePillars }]}>
           {[
-            { icon: 'head-snowflake-outline', label: 'Neurosciences, pas de mystique' },
-            { icon: 'fingerprint',            label: 'Analyses personnalisées' },
-            { icon: 'shield-lock-outline',    label: '100% local, jamais partagé' },
+            { icon: 'head-snowflake-outline', label: t('onboarding.welcome.pillar1') },
+            { icon: 'fingerprint',            label: t('onboarding.welcome.pillar2') },
+            { icon: 'shield-lock-outline',    label: t('onboarding.welcome.pillar3') },
           ].map((p, i) => (
             <View key={i} style={styles.pillarChip}>
               <MaterialCommunityIcons name={p.icon} size={15} color={OB.accent} />
@@ -191,7 +193,7 @@ export default function OnboardingWelcome({ navigation }) {
             onPress={() => navigation.navigate('OnboardingMarkers')}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryButtonText}>Commencer</Text>
+            <Text style={styles.primaryButtonText}>{t('onboarding.welcome.cta')}</Text>
             <MaterialCommunityIcons name="arrow-right" size={20} color={OB.bg} />
           </TouchableOpacity>
 
@@ -205,7 +207,7 @@ export default function OnboardingWelcome({ navigation }) {
             }}
             activeOpacity={0.6}
           >
-            <Text style={styles.skipButtonText}>Passer</Text>
+            <Text style={styles.skipButtonText}>{t('onboarding.welcome.skip')}</Text>
           </TouchableOpacity>
         </Animated.View>
 

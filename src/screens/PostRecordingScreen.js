@@ -22,6 +22,7 @@ import { freeTierService } from '../services/freeTierService';
 import * as FileSystem from 'expo-file-system/legacy';
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 // 🏷️ Fonction pour extraire un titre intelligent depuis l'analyse
 function extractDreamTitle(analysis, transcription) {
@@ -74,6 +75,7 @@ export default function PostRecordingScreen({ route, navigation }) {
   const { dreamId, audioUri, transcription, duration, source } = route.params;
 
   const { showAlert, AlertComponent } = useNoctaliaeAlert();
+  const { t } = useTranslation();
 
   const [editableTranscript, setEditableTranscript] = useState(transcription || '');
 
@@ -98,21 +100,21 @@ export default function PostRecordingScreen({ route, navigation }) {
   const hasMetadata = dreamMetadata.lucidity || dreamMetadata.sleepQuality || dreamMetadata.emotions.length || dreamMetadata.themes.length;
 
   const LOADING_MESSAGES = [
-    'Exploration de votre inconscient...',
-    'Décodage des symboles oniriques...',
-    'Cartographie des émotions nocturnes...',
-    'Analyse des patterns neuronaux...',
-    'Connexion aux réseaux de mémoire...',
-    'Identification des résidus diurnes...',
-    'Lecture des couches de sommeil...',
-    'Synchronisation des ondes cérébrales...',
-    'Décryptage du langage onirique...',
-    'Exploration des métaphores visuelles...',
-    'Activation du cortex préfrontal...',
-    'Compilation des thèmes récurrents...',
-    'Tissage des connexions émotionnelles...',
-    'Calibration de l\'analyse scientifique...',
-    'Votre rêve prend forme...',
+    t('postRecording.loading.msg1'),
+    t('postRecording.loading.msg2'),
+    t('postRecording.loading.msg3'),
+    t('postRecording.loading.msg4'),
+    t('postRecording.loading.msg5'),
+    t('postRecording.loading.msg6'),
+    t('postRecording.loading.msg7'),
+    t('postRecording.loading.msg8'),
+    t('postRecording.loading.msg9'),
+    t('postRecording.loading.msg10'),
+    t('postRecording.loading.msg11'),
+    t('postRecording.loading.msg12'),
+    t('postRecording.loading.msg13'),
+    t('postRecording.loading.msg14'),
+    t('postRecording.loading.msg15'),
   ];
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
@@ -160,9 +162,9 @@ export default function PostRecordingScreen({ route, navigation }) {
       if (!editableTranscript || editableTranscript.trim().length < MIN_TEXT_LENGTH) {
         showAlert({
           type: 'warning',
-          title: isPhotoSource ? '📷 Contenu trop court' : '✏️ Texte trop court',
-          message: `Votre rêve doit contenir au moins ${MIN_TEXT_LENGTH} caractères pour une analyse fiable.`,
-          confirmText: 'Compris'
+          title: isPhotoSource ? t('postRecording.alertShortPhoto_title') : t('postRecording.alertShortWrite_title'),
+          message: t('postRecording.alertShortContent_msg', { min: MIN_TEXT_LENGTH }),
+          confirmText: t('postRecording.alertShortContent_confirm')
         });
         return;
       }
@@ -170,9 +172,9 @@ export default function PostRecordingScreen({ route, navigation }) {
       if (duration < MIN_DURATION_SECONDS) {
         showAlert({
           type: 'warning',
-          title: '⏱️ Enregistrement trop court',
-          message: `Votre enregistrement fait ${duration} seconde${duration > 1 ? 's' : ''}. Minimum requis : ${MIN_DURATION_SECONDS} secondes.\n\nAppuyez sur ← pour revenir et réenregistrer votre rêve, ou utilisez le mode écriture ✏️ depuis l'écran principal.`,
-          confirmText: 'Compris'
+          title: t('postRecording.alertShortRec_title'),
+          message: t('postRecording.alertShortRec_msg', { duration, plural: duration > 1 ? 's' : '', min: MIN_DURATION_SECONDS }),
+          confirmText: t('postRecording.alertShortRec_confirm')
         });
         return;
       }
@@ -181,9 +183,9 @@ export default function PostRecordingScreen({ route, navigation }) {
     if (!editableTranscript || editableTranscript.trim().length === 0) {
       showAlert({
         type: 'error',
-        title: '❌ Aucun contenu',
-        message: 'Impossible d\'analyser le rêve sans contenu.',
-        confirmText: 'OK'
+        title: t('postRecording.alertNoContent_title'),
+        message: t('postRecording.alertNoContent_msg'),
+        confirmText: t('common.ok')
       });
       return;
     }
@@ -274,28 +276,28 @@ export default function PostRecordingScreen({ route, navigation }) {
       } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network') || error.message?.includes('fetch')) {
         showAlert({
           type: 'error',
-          title: 'Connexion impossible',
-          message: 'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.',
-          confirmText: 'Réessayer',
-          cancelText: 'Annuler',
+          title: t('postRecording.alertNetwork_title'),
+          message: t('postRecording.alertNetwork_msg'),
+          confirmText: t('postRecording.alertNetwork_retry'),
+          cancelText: t('common.cancel'),
           onConfirm: () => handleAnalyze(),
         });
       } else if (error.code === 'TIMEOUT' || error.message?.includes('timeout')) {
         showAlert({
           type: 'warning',
-          title: 'Délai dépassé',
-          message: 'L\'analyse a pris trop de temps. Votre connexion est peut-être lente — réessayez.',
-          confirmText: 'Réessayer',
-          cancelText: 'Annuler',
+          title: t('postRecording.alertTimeout_title'),
+          message: t('postRecording.alertTimeout_msg'),
+          confirmText: t('postRecording.alertTimeout_retry'),
+          cancelText: t('common.cancel'),
           onConfirm: () => handleAnalyze(),
         });
       } else {
         showAlert({
           type: 'error',
-          title: 'Analyse échouée',
-          message: 'Le serveur n\'a pas pu traiter votre rêve. Réessayez dans quelques instants.',
-          confirmText: 'Réessayer',
-          cancelText: 'Annuler',
+          title: t('postRecording.alertFailed_title'),
+          message: t('postRecording.alertFailed_msg'),
+          confirmText: t('postRecording.alertFailed_retry'),
+          cancelText: t('common.cancel'),
           onConfirm: () => handleAnalyze(),
         });
       }
@@ -306,9 +308,9 @@ export default function PostRecordingScreen({ route, navigation }) {
 
   // Tooltip contextuel selon la source
   const getTooltipText = () => {
-    if (source === 'write') return "Relisez votre rêve avant l'analyse.";
-    if (source?.startsWith('photo-')) return "Vérifiez la transcription de votre image.";
-    return "La transcription peut contenir des erreurs. Modifiez si nécessaire.";
+    if (source === 'write') return t('postRecording.tooltipWrite');
+    if (source?.startsWith('photo-')) return t('postRecording.tooltipPhoto');
+    return t('postRecording.tooltipDefault');
   };
 
 
@@ -324,7 +326,7 @@ export default function PostRecordingScreen({ route, navigation }) {
         >
           <MaterialIcons name="arrow-back" size={24} color={THEME.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Analyse du rêve</Text>
+        <Text style={styles.headerTitle}>{t('postRecording.header')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -343,7 +345,7 @@ export default function PostRecordingScreen({ route, navigation }) {
             onChangeText={setEditableTranscript}
             multiline
             textAlignVertical="top"
-            placeholder="Décris ton rêve ici..."
+            placeholder={t('postRecording.placeholder')}
             placeholderTextColor={THEME.colors.textSecondary}
           />
         </View>
@@ -358,8 +360,8 @@ export default function PostRecordingScreen({ route, navigation }) {
             <MaterialCommunityIcons name="tune-variant" size={18} color={hasMetadata ? THEME.colors.primary : THEME.colors.textSecondary} />
             <Text style={[styles.metaToggleText, hasMetadata && { color: THEME.colors.primary }]}>
               {hasMetadata
-                ? `🎯 Enrichir l'analyse · ${[dreamMetadata.lucidity && 'lucidité', dreamMetadata.sleepQuality && 'sommeil', dreamMetadata.emotions.length && `${dreamMetadata.emotions.length} émotion${dreamMetadata.emotions.length > 1 ? 's' : ''}`, dreamMetadata.themes.length && `${dreamMetadata.themes.length} thème${dreamMetadata.themes.length > 1 ? 's' : ''}`].filter(Boolean).join(', ')}`
-                : "🎯 Enrichir l'analyse · optionnel"}
+                ? `${t('postRecording.enrichPrefix')}${[dreamMetadata.lucidity && t('postRecording.meta.lucidityTag'), dreamMetadata.sleepQuality && t('postRecording.meta.sleepTag'), dreamMetadata.emotions.length && t('postRecording.meta.emotionsCount', {count: dreamMetadata.emotions.length}), dreamMetadata.themes.length && t('postRecording.meta.themesCount', {count: dreamMetadata.themes.length})].filter(Boolean).join(', ')}`
+                : t('postRecording.enrichTitle')}
             </Text>
           </View>
           <MaterialIcons name={showMetadata ? 'expand-less' : 'expand-more'} size={20} color={THEME.colors.textSecondary} />
@@ -368,7 +370,7 @@ export default function PostRecordingScreen({ route, navigation }) {
         {showMetadata && (
           <View style={styles.metaPanel}>
             {/* LUCIDITÉ */}
-            <Text style={styles.metaLabel}>Niveau de lucidité</Text>
+            <Text style={styles.metaLabel}>{t('postRecording.meta.lucidityLabel')}</Text>
             <View style={styles.metaRating}>
               {[1,2,3,4,5].map(n => (
                 <TouchableOpacity key={n} onPress={() => setDreamMetadata(p => ({ ...p, lucidity: p.lucidity === n ? null : n }))} style={[styles.metaDot, dreamMetadata.lucidity >= n && styles.metaDotActive]} activeOpacity={0.7}>
@@ -376,12 +378,12 @@ export default function PostRecordingScreen({ route, navigation }) {
                 </TouchableOpacity>
               ))}
               <Text style={styles.metaRatingLabel}>
-                {dreamMetadata.lucidity ? ['','Inconscient','Peu lucide','Partiel','Presque lucide','Lucide'][dreamMetadata.lucidity] : ''}
+                {dreamMetadata.lucidity ? t('postRecording.meta.lucidity_' + dreamMetadata.lucidity) : ''}
               </Text>
             </View>
 
             {/* QUALITÉ SOMMEIL */}
-            <Text style={styles.metaLabel}>Qualité du sommeil</Text>
+            <Text style={styles.metaLabel}>{t('postRecording.meta.sleepLabel')}</Text>
             <View style={styles.metaRating}>
               {[1,2,3,4,5].map(n => (
                 <TouchableOpacity key={n} onPress={() => setDreamMetadata(p => ({ ...p, sleepQuality: p.sleepQuality === n ? null : n }))} style={[styles.metaDot, styles.metaDotSleep, dreamMetadata.sleepQuality >= n && styles.metaDotSleepActive]} activeOpacity={0.7}>
@@ -389,12 +391,12 @@ export default function PostRecordingScreen({ route, navigation }) {
                 </TouchableOpacity>
               ))}
               <Text style={styles.metaRatingLabel}>
-                {dreamMetadata.sleepQuality ? ['','Très mauvaise','Mauvaise','Moyenne','Bonne','Excellente'][dreamMetadata.sleepQuality] : ''}
+                {dreamMetadata.sleepQuality ? t('postRecording.meta.sleep_' + dreamMetadata.sleepQuality) : ''}
               </Text>
             </View>
 
             {/* ÉMOTIONS */}
-            <Text style={styles.metaLabel}>Émotions ressenties</Text>
+            <Text style={styles.metaLabel}>{t('postRecording.meta.emotionsLabel')}</Text>
             <View style={styles.metaChips}>
               {EMOTIONS_LIST.map(e => (
                 <TouchableOpacity key={e} onPress={() => toggleMeta('emotions', e)} style={[styles.metaChip, dreamMetadata.emotions.includes(e) && styles.metaChipActive]} activeOpacity={0.7}>
@@ -404,16 +406,16 @@ export default function PostRecordingScreen({ route, navigation }) {
             </View>
 
             {/* THÈMES */}
-            <Text style={styles.metaLabel}>Thèmes du rêve</Text>
+            <Text style={styles.metaLabel}>{t('postRecording.meta.themesLabel')}</Text>
             <View style={styles.metaChips}>
-              {THEMES_LIST.map(t => (
-                <TouchableOpacity key={t} onPress={() => toggleMeta('themes', t)} style={[styles.metaChip, dreamMetadata.themes.includes(t) && styles.metaChipActive]} activeOpacity={0.7}>
-                  <Text style={[styles.metaChipText, dreamMetadata.themes.includes(t) && styles.metaChipTextActive]}>{t}</Text>
+              {THEMES_LIST.map(theme => (
+                <TouchableOpacity key={theme} onPress={() => toggleMeta('themes', theme)} style={[styles.metaChip, dreamMetadata.themes.includes(theme) && styles.metaChipActive]} activeOpacity={0.7}>
+                  <Text style={[styles.metaChipText, dreamMetadata.themes.includes(theme) && styles.metaChipTextActive]}>{theme}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.metaHint}>Ces informations enrichissent l'analyse mais ne sont jamais partagées.</Text>
+            <Text style={styles.metaHint}>{t('postRecording.meta.hint')}</Text>
           </View>
         )}
 
@@ -442,7 +444,7 @@ export default function PostRecordingScreen({ route, navigation }) {
                 <Text style={[styles.engineOptionTitle, { color: selectedEngine === 'quick' ? '#00FFB0' : THEME.colors.textSecondary }]}>
                   ⚡ QuickDream
                 </Text>
-                <Text style={styles.engineOptionDesc}>Gratuit · illimité</Text>
+                <Text style={styles.engineOptionDesc}>{t('postRecording.engine.freeLabel')}</Text>
               </View>
             </TouchableOpacity>
 
@@ -464,8 +466,8 @@ export default function PostRecordingScreen({ route, navigation }) {
                 </Text>
                 <Text style={styles.engineOptionDesc}>
                   {deepDreamRemaining !== null && deepDreamRemaining > 0
-                    ? `${deepDreamRemaining} analyse${deepDreamRemaining > 1 ? 's' : ''} offerte${deepDreamRemaining > 1 ? 's' : ''}`
-                    : 'Débloquer →'}
+                    ? t('postRecording.engine.tastesLeft', { count: deepDreamRemaining })
+                    : t('postRecording.engine.unlockCta')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -489,7 +491,7 @@ export default function PostRecordingScreen({ route, navigation }) {
           ) : (
             <>
               <MaterialCommunityIcons name="brain" size={22} color="#0c0e27" />
-              <Text style={styles.floatingAnalyzeButtonText}>Analyser mon rêve</Text>
+              <Text style={styles.floatingAnalyzeButtonText}>{t('postRecording.analyzeCta')}</Text>
             </>
           )}
         </TouchableOpacity>

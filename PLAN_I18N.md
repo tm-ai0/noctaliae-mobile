@@ -153,6 +153,7 @@ Structure hiérarchique basée sur l'écran/composant :
 | Fichier | Priorité | Volume estimé |
 |---------|----------|---------------|
 | ActivateDeepDreamModal.js | P1 | ~25 clés (paywall) |
+| DeepDreamInfoModal.js | P1 | ~20 clés (comparaison moteurs) |
 | RateLimitModal.js | P2 | ~10 clés |
 | UpdateAvailableModal.js | P3 | ~5 clés |
 
@@ -213,6 +214,20 @@ const { t } = useTranslation();
 
 ---
 
+## Status i18n (31/03/2026)
+
+### ✅ DONE
+- **Phase 1** : Setup i18next + expo-localization + src/i18n/index.js, branché dans App.js
+- **Phase 2** : fr.json complet (~600 clés), en.json + es.json générés
+- **Phase 4 P1** : ConversationScreen, PostRecordingScreen, AnalysisScreen, SettingsScreen, ActivateDeepDreamModal, DeepDreamInfoModal, DreamCard, CustomTabBar, DreamShareTemplate (9 fichiers)
+- **Phase 4 P2** : ArchivesScreen, DeepChatScreen, ProfileScreen, PersonaScreen, ChatScreen, QuickRecordScreen, MetaAnalysisScreen, ResearchOptInModal (screens), VoiceAssistantScreen (9 fichiers)
+- **Phase 5** : Sélecteur langue (3 chips 🇫🇷/🇬🇧/🌎) dans SettingsScreen entre APPARENCE et AIDE
+
+### TODO
+- **Phase 6** : QA + grep textes FR résiduels + test layouts ES (TrendsScreen, InsightsScreen, AtlasScreen, ExplorerScreen, PlaygroundScreen, GeminiLiveScreen, components/ResearchOptInModal)
+
+---
+
 ## Phase 5 : Sélecteur de langue dans Settings (30 min)
 
 ### UX proposée
@@ -220,7 +235,7 @@ const { t } = useTranslation();
 - 3 options avec drapeaux :
   - 🇫🇷 Français
   - 🇬🇧 English  
-  - 🇲🇽 Español
+  - 🌎 Español
 - Changement immédiat (pas besoin de restart)
 - Persisté dans AsyncStorage (`@noctaliae_language`)
 
@@ -289,4 +304,4 @@ import { Trans } from 'react-i18next';
 ```
 
 ### Backend / Prompts IA
-Les system prompts backend n'ont PAS besoin de traduction. Les LLM détectent la langue de l'input et répondent dans cette langue. Vérifier quand même que les prompts ne contiennent pas de "Réponds en français" hardcodé.
+Les system prompts backend n'ont PAS besoin de traduction. Les LLM détectent la langue de l'input et répondent dans cette langue. Aucune action requise côté backend.

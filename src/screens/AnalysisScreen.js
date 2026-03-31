@@ -23,9 +23,11 @@ const MENU_HINT_KEY = '@noctaliae_menu_hint_shown';
 const FIRST_ARCHIVE_KEY = '@noctaliae_first_archive_shown';
 
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 export default function AnalysisScreen({ navigation, route }) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [dreams, setDreams] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -197,12 +199,12 @@ export default function AnalysisScreen({ navigation, route }) {
     if (selectedDreams.size === 0) return;
     
     Alert.alert(
-      `🗑️ Supprimer ${selectedDreams.size} rêve${selectedDreams.size > 1 ? 's' : ''} ?`,
-      'Cette action est irréversible.',
+      t('analysis.deleteAlert_title'),
+      t('analysis.deleteAlert_msg'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('analysis.deleteAlert_cancel'), style: 'cancel' },
         { 
-          text: 'Supprimer', 
+          text: t('analysis.deleteAlert_confirm'), 
           style: 'destructive', 
           onPress: async () => {
             try {
@@ -329,7 +331,7 @@ export default function AnalysisScreen({ navigation, route }) {
             
             <View style={styles.selectionInfo}>
               <Text style={[styles.selectionText, { color: theme.colors.textPrimary }]}>
-                {selectedDreams.size} sélectionné{selectedDreams.size > 1 ? 's' : ''}
+                {t('analysis.selectionMode', { count: selectedDreams.size })}
               </Text>
             </View>
             
@@ -366,7 +368,7 @@ export default function AnalysisScreen({ navigation, route }) {
             <View style={styles.secretsHeaderCenter}>
               <MaterialCommunityIcons name="lock" size={22} color="#8B5CF6" />
               <Text style={[styles.secretsHeaderTitle, { color: theme.colors.textPrimary }]}>
-                Rêves protégés
+                {t('analysis.secretsTitle')}
               </Text>
             </View>
             
@@ -377,7 +379,7 @@ export default function AnalysisScreen({ navigation, route }) {
           <>
             <View style={styles.headerTitleGroup}>
               <Text style={[styles.screenTitle, { color: theme.colors.textPrimary }]}>
-                Mes rêves
+                {t('analysis.title')}
               </Text>
               {dreams.length > 0 && (
                 <Text style={[styles.dreamCount, { color: theme.colors.textSecondary }]}>
@@ -416,9 +418,9 @@ export default function AnalysisScreen({ navigation, route }) {
                     />
                     <View style={[styles.filterPopover, { backgroundColor: theme.colors.cardBackground, borderColor: theme.colors.cardBorder }]}>
                       {[
-                        { key: null, label: 'Tous les r\u00eaves', icon: 'moon-waning-crescent', lib: 'mci' },
-                        { key: 'favorites', label: 'Favoris', icon: 'star', lib: 'mi' },
-                        { key: 'secrets', label: 'Secrets', icon: 'lock', lib: 'mi' },
+                        { key: null, label: t('analysis.filter_all'), icon: 'moon-waning-crescent', lib: 'mci' },
+                        { key: 'favorites', label: t('analysis.filter_favorites'), icon: 'star', lib: 'mi' },
+                        { key: 'secrets', label: t('analysis.filter_secrets'), icon: 'lock', lib: 'mi' },
                       ].map((opt, i, arr) => {
                         const isActive = activeFilter === opt.key;
                         return (
@@ -491,7 +493,7 @@ export default function AnalysisScreen({ navigation, route }) {
           <MaterialIcons name="search" size={22} color={theme.colors.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.textPrimary }]}
-            placeholder="Rechercher un rêve..."
+            placeholder={t('analysis.searchPlaceholder')}
             placeholderTextColor={theme.colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -522,7 +524,7 @@ export default function AnalysisScreen({ navigation, route }) {
         <View style={[styles.pinnedSection, { paddingHorizontal: 20 }]}>
           <View style={styles.pinnedHeader}>
             <MaterialCommunityIcons name="pin" size={14} color="#4F8DFF" />
-            <Text style={[styles.pinnedLabel, { color: '#4F8DFF' }]}>ÉPINGLÉ</Text>
+            <Text style={[styles.pinnedLabel, { color: '#4F8DFF' }]}>{t('analysis.pinned')}</Text>
           </View>
           {renderDreamCard({ item: pinnedDream, index: 0, isFirstOverall: false })}
         </View>
@@ -541,10 +543,10 @@ export default function AnalysisScreen({ navigation, route }) {
                 style={{ marginBottom: 20, opacity: 0.5 }}
               />
               <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
-                Aucun rêve protégé
+                {t('analysis.emptySecrets')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-                Pour protéger un rêve, appuyez sur ⋮ puis « Protéger ce rêve »
+                {t('analysis.emptySecretsSub')}
               </Text>
             </>
           ) : (
@@ -557,10 +559,10 @@ export default function AnalysisScreen({ navigation, route }) {
                 style={{ marginBottom: 20 }}
               />
               <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
-                Aucune analyse
+                {t('analysis.emptyAll')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-                Enregistrez un rêve et analysez-le pour qu'il apparaisse ici
+                {t('analysis.emptyAllSub')}
               </Text>
             </>
           )}
@@ -587,7 +589,7 @@ export default function AnalysisScreen({ navigation, route }) {
           >
             <MaterialIcons name="delete" size={22} color="#FFFFFF" />
             <Text style={styles.deleteButtonText}>
-              Supprimer ({selectedDreams.size})
+              {t('analysis.selectionDelete')}
             </Text>
           </TouchableOpacity>
         </View>

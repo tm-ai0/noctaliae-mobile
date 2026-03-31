@@ -20,6 +20,7 @@ import {
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { notificationService } from '../../services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
@@ -89,6 +90,7 @@ function BenefitRow({ icon, text, sub }) {
 
 export default function OnboardingNotifications({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bellAnim = useRef(new Animated.Value(0)).current;
   const [isRequesting, setIsRequesting] = useState(false);
@@ -163,31 +165,31 @@ export default function OnboardingNotifications({ navigation }) {
         </View>
 
         {/* Headline */}
-        <Text style={styles.title}>Ne laissez pas{'\n'}vos rêves s'effacer.</Text>
+        <Text style={styles.title}>{t('onboarding.notifications.title')}</Text>
         <Text style={styles.subtitle}>
-          La fenêtre hypnopompique dure{' '}
-          <Text style={{ color: OB.neon }}>moins de 30 minutes</Text>
-          {' '}après le réveil. Une notification au bon moment change tout.
+          {t('onboarding.notifications.subtitle_pre')}{' '}
+          <Text style={{ color: OB.neon }}>{t('onboarding.notifications.subtitle_accent')}</Text>
+          {' '}{t('onboarding.notifications.subtitle_post')}
         </Text>
 
         {/* Bénéfices */}
         <View style={styles.benefitsCard}>
           <BenefitRow
             icon="weather-sunset-up"
-            text="Rappel au réveil"
-            sub="Configurable dans les Paramètres"
+            text={t('onboarding.notifications.benefit1_title')}
+            sub={t('onboarding.notifications.benefit1_sub')}
           />
           <View style={styles.benefitDivider} />
           <BenefitRow
             icon="fire"
-            text="Rappel de série le soir"
-            sub="Ne cassez pas votre streak"
+            text={t('onboarding.notifications.benefit2_title')}
+            sub={t('onboarding.notifications.benefit2_sub')}
           />
           <View style={styles.benefitDivider} />
           <BenefitRow
             icon="microphone-outline"
-            text="Bouton direct dans la notif"
-            sub="Enregistrez en une touche, sans ouvrir l'app"
+            text={t('onboarding.notifications.benefit3_title')}
+            sub={t('onboarding.notifications.benefit3_sub')}
           />
         </View>
 
@@ -195,7 +197,7 @@ export default function OnboardingNotifications({ navigation }) {
         <View style={styles.privacyNote}>
           <MaterialIcons name="lock-outline" size={14} color={OB.textMuted} />
           <Text style={styles.privacyText}>
-            Aucune donnée envoyée. Notifications entièrement locales.
+            {t('onboarding.notifications.privacy')}
           </Text>
         </View>
       </Animated.View>
@@ -210,12 +212,12 @@ export default function OnboardingNotifications({ navigation }) {
         >
           <MaterialCommunityIcons name="bell-ring" size={20} color={OB.bg} />
           <Text style={styles.primaryButtonText}>
-            {isRequesting ? 'Demande en cours…' : 'Activer les rappels'}
+            {isRequesting ? t('onboarding.notifications.ctaRequesting') : t('onboarding.notifications.ctaActivate')}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={handleSkip} activeOpacity={0.7}>
-          <Text style={styles.secondaryButtonText}>Pas maintenant</Text>
+          <Text style={styles.secondaryButtonText}>{t('onboarding.notifications.skipBtn')}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -12,6 +12,7 @@ import {
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
+import { useTranslation } from 'react-i18next'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 
@@ -83,6 +84,7 @@ function Phosphene({ x, y, size, dur, delay }) {
 // ─── Main screen ──────────────────────────────────────────────────────────
 export default function OnboardingDeepDream({ navigation }) {
   const insets = useSafeAreaInsets()
+  const { t } = useTranslation()
   const fadeAnim = useRef(new Animated.Value(0)).current
   const cardScale = useRef(new Animated.Value(0.94)).current
 
@@ -134,11 +136,11 @@ export default function OnboardingDeepDream({ navigation }) {
           </View>
 
           {/* Headline */}
-          <Text style={styles.title}>Vous êtes prêt.</Text>
+          <Text style={styles.title}>{t('onboarding.deepdream.title')}</Text>
           <Text style={styles.subtitle}>
-            Votre journal de rêves est prêt.{' '}
+            {t('onboarding.deepdream.subtitle')}{' '}
             <Text style={{ color: OB.textSub }}>
-              La première analyse est offerte avec notre moteur le plus avancé.
+              {t('onboarding.deepdream.subtitleAccent')}
             </Text>
           </Text>
 
@@ -153,20 +155,20 @@ export default function OnboardingDeepDream({ navigation }) {
               <View>
                 <Text style={styles.quickTitle}>QuickDream</Text>
                 <Text style={styles.quickSub}>
-                  Gratuit · Illimité · Instantané
+                  {t('onboarding.deepdream.quickSub')}
                 </Text>
               </View>
             </View>
             <View style={styles.activeBadge}>
               <MaterialIcons name="check" size={13} color={OB.neon} />
-              <Text style={styles.activeBadgeText}>Actif</Text>
+              <Text style={styles.activeBadgeText}>{t('onboarding.deepdream.activeBadge')}</Text>
             </View>
           </View>
 
           {/* Séparateur */}
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Voyez la différence</Text>
+            <Text style={styles.dividerText}>{t('onboarding.deepdream.divider')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -192,7 +194,7 @@ export default function OnboardingDeepDream({ navigation }) {
               <View style={styles.comparisonQuick}>
                 <Text style={styles.comparisonLabel}>⚡ QuickDream</Text>
                 <Text style={styles.comparisonPreview}>
-                  "Votre rêve contient des thèmes de peur et de changement. Cela peut refléter une période de transition."
+                  {t('onboarding.deepdream.comparisonQuickPreview')}
                 </Text>
               </View>
 
@@ -205,16 +207,16 @@ export default function OnboardingDeepDream({ navigation }) {
               <View style={styles.comparisonDeep}>
                 <Text style={[styles.comparisonLabel, { color: OB.blue }]}>✨ DeepDream</Text>
                 <Text style={styles.comparisonPreviewDeep}>
-                  "Le corridor sombre de votre rêve évoque ce que Revonsuo appelle une simulation de menace — votre cerveau répète un scénario anxiogène pour mieux vous y préparer..."
+                  {t('onboarding.deepdream.comparisonDeepPreview')}
                 </Text>
                 <View style={styles.comparisonExtras}>
                   <View style={styles.comparisonExtraItem}>
                     <Text style={styles.comparisonExtraIcon}>🎨</Text>
-                    <Text style={styles.comparisonExtraText}>Image IA unique</Text>
+                    <Text style={styles.comparisonExtraText}>{t('onboarding.deepdream.extraImage')}</Text>
                   </View>
                   <View style={styles.comparisonExtraItem}>
                     <Text style={styles.comparisonExtraIcon}>💬</Text>
-                    <Text style={styles.comparisonExtraText}>Conversation</Text>
+                    <Text style={styles.comparisonExtraText}>{t('onboarding.deepdream.extraConversation')}</Text>
                   </View>
                 </View>
               </View>
@@ -222,7 +224,7 @@ export default function OnboardingDeepDream({ navigation }) {
 
             {/* Ligne unique sous la comparaison */}
             <Text style={styles.freeTrialLine}>
-              Votre première analyse DeepDream est offerte.
+              {t('onboarding.deepdream.freeTrial')}
             </Text>
           </Animated.View>
 
@@ -248,7 +250,7 @@ export default function OnboardingDeepDream({ navigation }) {
             size={20}
             color="#FFFFFF"
           />
-          <Text style={styles.primaryButtonText}>Commencer mon premier rêve</Text>
+          <Text style={styles.primaryButtonText}>{t('onboarding.deepdream.cta')}</Text>
         </TouchableOpacity>
       </View>
     </View>

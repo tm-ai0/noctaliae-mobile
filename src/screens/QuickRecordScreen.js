@@ -26,6 +26,7 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '../config/theme';
+import { useTranslation } from 'react-i18next';
 import { saveDream } from '../services/storageService';
 import { transcribeAudio, analyzeImageDream } from '../services/apiService';
 
@@ -74,6 +75,7 @@ const STARS = Array.from({ length: 40 }, (_, i) => ({
 
 export default function QuickRecordScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   // États enregistrement
   const [phase, setPhase] = useState('idle'); // idle | recording | transcribing | writing
@@ -326,10 +328,10 @@ export default function QuickRecordScreen({ navigation }) {
         <Text style={styles.time}>{currentTime}</Text>
         <Text style={styles.label}>
           {phase === 'idle'
-            ? 'Capturer votre rêve'
+            ? t('quickRecord.label_idle')
             : phase === 'recording'
-            ? 'Racontez...'
-            : 'Transcription...'}
+            ? t('quickRecord.label_recording')
+            : t('quickRecord.label_transcribing')}
         </Text>
 
         {/* Timer enregistrement */}
@@ -383,9 +385,9 @@ export default function QuickRecordScreen({ navigation }) {
         {/* Sous-label */}
         <Text style={styles.hint}>
           {phase === 'idle'
-            ? 'Appuyez pour commencer'
+            ? t('quickRecord.hint_idle')
             : phase === 'recording'
-            ? 'Appuyez pour terminer et analyser'
+            ? t('quickRecord.hint_recording')
             : ' '}
         </Text>
 
@@ -394,11 +396,11 @@ export default function QuickRecordScreen({ navigation }) {
           <View style={styles.secondaryRow}>
             <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowPhotoModal(true)} activeOpacity={0.7}>
               <MaterialIcons name="photo-camera" size={22} color={THEME.colors.textSecondary} />
-              <Text style={styles.secondaryLabel}>Photo</Text>
+              <Text style={styles.secondaryLabel}>{t('quickRecord.tabPhoto')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowWriteModal(true)} activeOpacity={0.7}>
               <MaterialIcons name="edit" size={22} color={THEME.colors.textSecondary} />
-              <Text style={styles.secondaryLabel}>Écrire</Text>
+              <Text style={styles.secondaryLabel}>{t('quickRecord.tabWrite')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -409,25 +411,25 @@ export default function QuickRecordScreen({ navigation }) {
         <View style={styles.writeOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowPhotoModal(false)} />
           <View style={styles.writeContainer}>
-            <Text style={styles.writeTitle}>Choisir une source</Text>
+            <Text style={styles.writeTitle}>{t('quickRecord.sourceTitle')}</Text>
             <TouchableOpacity style={styles.photoChoiceBtn} onPress={handlePickFromCamera} activeOpacity={0.8}>
               <MaterialIcons name="photo-camera" size={24} color={THEME.colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.photoChoiceLabel}>Appareil photo</Text>
-                <Text style={styles.photoChoiceHint}>Prendre une photo maintenant</Text>
+                <Text style={styles.photoChoiceLabel}>{t('quickRecord.camera')}</Text>
+                <Text style={styles.photoChoiceHint}>{t('quickRecord.cameraDesc')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={20} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoChoiceBtn} onPress={handlePickFromGallery} activeOpacity={0.8}>
               <MaterialIcons name="photo-library" size={24} color={THEME.colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.photoChoiceLabel}>Galerie</Text>
-                <Text style={styles.photoChoiceHint}>Choisir dans vos photos</Text>
+                <Text style={styles.photoChoiceLabel}>{t('quickRecord.gallery')}</Text>
+                <Text style={styles.photoChoiceHint}>{t('quickRecord.galleryDesc')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={20} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.writeCancelBtn} onPress={() => setShowPhotoModal(false)}>
-              <Text style={styles.writeCancelText}>Annuler</Text>
+              <Text style={styles.writeCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -437,12 +439,12 @@ export default function QuickRecordScreen({ navigation }) {
       <Modal visible={showWriteModal} transparent animationType="slide" onRequestClose={() => setShowWriteModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.writeOverlay}>
           <View style={styles.writeContainer}>
-            <Text style={styles.writeTitle}>Racontez votre rêve</Text>
+            <Text style={styles.writeTitle}>{t('quickRecord.voiceTitle')}</Text>
             <TextInput
               style={styles.writeInput}
               multiline
               autoFocus
-              placeholder="Ce dont je me souviens..."
+              placeholder={t('quickRecord.placeholder')}
               placeholderTextColor="rgba(255,255,255,0.25)"
               value={writtenText}
               onChangeText={setWrittenText}
@@ -450,7 +452,7 @@ export default function QuickRecordScreen({ navigation }) {
             />
             <View style={styles.writeActions}>
               <TouchableOpacity style={styles.writeCancelBtn} onPress={() => { setShowWriteModal(false); setWrittenText(''); }}>
-                <Text style={styles.writeCancelText}>Annuler</Text>
+                <Text style={styles.writeCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.writeSubmitBtn, !writtenText.trim() && { opacity: 0.4 }]}
@@ -458,7 +460,7 @@ export default function QuickRecordScreen({ navigation }) {
                 disabled={!writtenText.trim()}
               >
                 <MaterialIcons name="arrow-forward" size={20} color="#0c0e27" />
-                <Text style={styles.writeSubmitText}>Analyser</Text>
+                <Text style={styles.writeSubmitText}>{t('quickRecord.analyzeCta')}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -32,6 +32,9 @@ import {
   DEFAULT_NOTIF_SETTINGS,
 } from '../services/notificationService'
 import { streakService } from '../services/streakService'
+import { useTranslation } from 'react-i18next'
+import i18next from 'i18next'
+import { changeLanguage } from '../i18n'
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints'
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed'
@@ -45,6 +48,7 @@ export default function SettingsScreen({ navigation }) {
   const { refreshGlowStates } = useGlow()
   const insets = useSafeAreaInsets()
   const { showAlert, AlertComponent } = useNoctaliaeAlert()
+  const { t } = useTranslation()
 
   const [isPremium, setIsPremium] = useState(false)
   const [tierInfo, setTierInfo] = useState(null)
@@ -182,11 +186,10 @@ export default function SettingsScreen({ navigation }) {
       if (!granted) {
         showAlert({
           type: 'info',
-          title: 'Notifications bloquées',
-          message:
-            'Autorisez les notifications dans les réglages de votre téléphone pour activer les rappels.',
-          confirmText: 'Ouvrir les réglages',
-          cancelText: 'Plus tard',
+          title: t('settings.notifBlockedAlert_title'),
+          message: t('settings.notifBlockedAlert_msg'),
+          confirmText: t('settings.notifBlockedAlert_confirm'),
+          cancelText: t('common.later'),
           onConfirm: () => Linking.openSettings(),
         })
         return
@@ -261,10 +264,9 @@ export default function SettingsScreen({ navigation }) {
       ])
       showAlert({
         type: 'success',
-        title: 'Reset effectué !',
-        message:
-          "Vous pouvez maintenant tester comme un nouveau utilisateur. Relancez l'app.",
-        confirmText: 'OK',
+        title: t('settings.resetDone_title'),
+        message: t('settings.resetDone_msg'),
+        confirmText: t('common.ok'),
       })
     } catch (error) {
       console.error('❌ Erreur reset:', error)
@@ -311,16 +313,16 @@ export default function SettingsScreen({ navigation }) {
       for (const dream of allDreams) await deleteDream(dream.id)
       showAlert({
         type: 'success',
-        title: 'Terminé',
-        message: 'Tous vos rêves ont été supprimés.',
-        confirmText: 'OK',
+        title: t('settings.deleteAllDone_title'),
+        message: t('settings.deleteAllDone_msg'),
+        confirmText: t('common.ok'),
       })
     } catch (error) {
       showAlert({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de supprimer les rêves',
-        confirmText: 'OK',
+        title: t('common.error'),
+        message: t('settings.deleteAllError_msg'),
+        confirmText: t('common.ok'),
       })
     }
   }
@@ -353,7 +355,7 @@ export default function SettingsScreen({ navigation }) {
             color={theme.colors.primary}
           />
           <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-            Paramètres
+            {t('settings.title')}
           </Text>
         </View>
 
@@ -378,7 +380,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Persona
+                {t('settings.section_persona')}
               </Text>
             </View>
             {fingerprintCount > 0 && (
@@ -402,7 +404,7 @@ export default function SettingsScreen({ navigation }) {
               { color: theme.colors.textSecondary },
             ]}
           >
-            Pour des analyses sur-mesure et rien qu'a vous.
+            {t('settings.persona_subtitle')}
           </Text>
           <TouchableOpacity
             style={[
@@ -427,7 +429,7 @@ export default function SettingsScreen({ navigation }) {
                   { color: theme.colors.text },
                 ]}
               >
-                Gérer mes empreintes
+                {t('settings.persona_manage')}
               </Text>
               <Text
                 style={[
@@ -436,8 +438,8 @@ export default function SettingsScreen({ navigation }) {
                 ]}
               >
                 {fingerprintCount === 0
-                  ? 'Aucune empreinte'
-                  : `${fingerprintCount} empreinte${fingerprintCount > 1 ? 's' : ''}`}
+                  ? t('settings.persona_noFingerprints')
+                  : t('settings.persona_fingerprintCount', { count: fingerprintCount })}
               </Text>
             </View>
             <MaterialIcons
@@ -473,7 +475,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Rappels & Habitudes
+                {t('settings.section_notifications')}
               </Text>
             </View>
             <MaterialIcons
@@ -490,8 +492,7 @@ export default function SettingsScreen({ navigation }) {
                   { color: theme.colors.textSecondary, marginBottom: 16 },
                 ]}
               >
-                Le rêve s'efface en moins de 10 minutes. Un rappel au réveil
-                change tout.
+                {t('settings.notif_subtitle')}
               </Text>
 
               {/* 🔥 Streak card */}
@@ -521,8 +522,8 @@ export default function SettingsScreen({ navigation }) {
                     ]}
                   >
                     {streak.current > 0
-                      ? `${streak.current} jour${streak.current > 1 ? 's' : ''} de suite`
-                      : 'Aucune série en cours'}
+                      ? t('settings.streak_current', { count: streak.current })
+                      : t('settings.streak_none')}
                   </Text>
                   <Text
                     style={[
@@ -531,8 +532,8 @@ export default function SettingsScreen({ navigation }) {
                     ]}
                   >
                     {streak.max > 0
-                      ? `Record : ${streak.max} j. · ${streak.totalDreams} rêve${streak.totalDreams > 1 ? 's' : ''} au total`
-                      : 'Enregistrez votre premier rêve pour commencer'}
+                      ? t('settings.streak_recordLine', { count: streak.totalDreams, max: streak.max })
+                      : t('settings.streak_noRecord')}
                   </Text>
                 </View>
               </View>
@@ -552,7 +553,7 @@ export default function SettingsScreen({ navigation }) {
                         { color: theme.colors.textPrimary },
                       ]}
                     >
-                      Rappel matinal
+                      {t('settings.notif_morning_label')}
                     </Text>
                     <Text
                       style={[
@@ -560,7 +561,7 @@ export default function SettingsScreen({ navigation }) {
                         { color: theme.colors.textSecondary },
                       ]}
                     >
-                      Avant que le rêve s'efface
+                      {t('settings.notif_morning_desc')}
                     </Text>
                   </View>
                 </View>
@@ -620,7 +621,7 @@ export default function SettingsScreen({ navigation }) {
                         { color: theme.colors.textPrimary },
                       ]}
                     >
-                      Rappel du soir
+                      {t('settings.notif_evening_label')}
                     </Text>
                     <Text
                       style={[
@@ -628,7 +629,7 @@ export default function SettingsScreen({ navigation }) {
                         { color: theme.colors.textSecondary },
                       ]}
                     >
-                      Pour ne pas briser votre série
+                      {t('settings.notif_evening_desc')}
                     </Text>
                   </View>
                 </View>
@@ -687,7 +688,7 @@ export default function SettingsScreen({ navigation }) {
                       color="#FF9966"
                     />
                     <Text style={notifStyles.permBannerText}>
-                      Autoriser les notifications pour activer les rappels
+                      {t('settings.notif_permBanner')}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -720,7 +721,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Modèle d'Analyse
+                {t('settings.section_analysis')}
               </Text>
             </View>
             <MaterialIcons
@@ -761,7 +762,7 @@ export default function SettingsScreen({ navigation }) {
                     </Text>
                     {isPremium && (
                       <View style={{ backgroundColor: '#4F8DFF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 10, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#FFFFFF' }}>Actif</Text>
+                        <Text style={{ fontSize: 10, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#FFFFFF' }}>{t('settings.analysis_statusPremium')}</Text>
                       </View>
                     )}
                   </View>
@@ -772,8 +773,8 @@ export default function SettingsScreen({ navigation }) {
                     ]}
                   >
                     {isPremium
-                      ? 'Analyses approfondies et sur-mesure pour explorer vos rêves en profondeur.'
-                      : 'Gratuit et illimité pour des analyses rapides et efficaces.'}
+                      ? t('settings.analysis_deepDesc')
+                      : t('settings.analysis_quickDesc')}
                   </Text>
                   {!isPremium && (
                     <TouchableOpacity
@@ -794,7 +795,7 @@ export default function SettingsScreen({ navigation }) {
                     >
                       <MaterialIcons name="favorite" size={16} color="#4F8DFF" />
                       <Text style={{ fontSize: 15, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#4F8DFF' }}>
-                        Débloquer DeepDream
+                        {t('settings.analysis_statusFree')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -819,7 +820,7 @@ export default function SettingsScreen({ navigation }) {
                     { color: theme.colors.primary },
                   ]}
                 >
-                  En savoir plus sur DeepDream Engine
+                  {t('settings.analysis_learnMore')}
                 </Text>
                 <MaterialIcons
                   name="chevron-right"
@@ -850,7 +851,7 @@ export default function SettingsScreen({ navigation }) {
                     { color: theme.colors.textPrimary, textAlign: 'left' },
                   ]}
                 >
-                  {tierInfo?.label || 'DeepDream activé'}
+                  {tierInfo?.label || t('settings.analysis_deepActivated')}
                 </Text>
                 <Text
                   style={[
@@ -858,7 +859,7 @@ export default function SettingsScreen({ navigation }) {
                     { color: theme.colors.textSecondary, textAlign: 'left' },
                   ]}
                 >
-                  Merci pour votre soutien, DeepDream est débloqué à vie.
+                  {t('settings.support_premiumActivated')}
                 </Text>
               </View>
             </View>
@@ -883,7 +884,7 @@ export default function SettingsScreen({ navigation }) {
                   letterSpacing: 0.3,
                 }}
               >
-                Soutenir davantage
+                {t('settings.support_upgradeLabel')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -914,7 +915,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Confidentialité
+                {t('settings.section_privacy')}
               </Text>
             </View>
             <MaterialIcons
@@ -933,8 +934,7 @@ export default function SettingsScreen({ navigation }) {
                   { color: theme.colors.textSecondary },
                 ]}
               >
-                Noctaliæ fonctionne comme un journal intime. Vos données restent
-                sur votre appareil.
+                {t('settings.privacy_journalText')}
               </Text>
               <TouchableOpacity
                 style={[
@@ -962,7 +962,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textPrimary },
                     ]}
                   >
-                    Rêves protégés
+                    {t('settings.privacy_secretsTitle')}
                   </Text>
                   <Text
                     style={[
@@ -970,7 +970,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textSecondary },
                     ]}
                   >
-                    Vos rêves les plus personnels
+                    {t('settings.privacy_secretsSubtitle')}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -1002,7 +1002,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textPrimary },
                     ]}
                   >
-                    Gérer mes rêves
+                    {t('settings.privacy_manageTitle')}
                   </Text>
                   <Text
                     style={[
@@ -1010,7 +1010,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textSecondary },
                     ]}
                   >
-                    Sélectionner, supprimer ou archiver
+                    {t('settings.privacy_manageDesc')}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -1031,7 +1031,7 @@ export default function SettingsScreen({ navigation }) {
                     { color: theme.colors.textSecondary },
                   ]}
                 >
-                  Stocké seulement sur votre appareil.
+                  {t('settings.privacy_storedOnly')}
                 </Text>
               </View>
             </View>
@@ -1063,7 +1063,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Recherche
+                {t('settings.section_research')}
               </Text>
             </View>
             <MaterialIcons
@@ -1094,7 +1094,7 @@ export default function SettingsScreen({ navigation }) {
             <View style={styles.sectionTitleRow}>
               <MaterialIcons name="favorite" size={20} color="#ff004cff" />
               <Text style={[styles.sectionTitle, { color: '#D2B14C' }]}>
-                Soutenir Noctaliæ
+                {t('settings.section_support')}
               </Text>
             </View>
             <MaterialIcons
@@ -1112,8 +1112,8 @@ export default function SettingsScreen({ navigation }) {
                 ]}
               >
                 {isPremium
-                  ? 'Merci pour ton soutien ! Tu peux offrir un café supplémentaire via Ko-fi pour encourager le projet.'
-                  : 'Noctaliæ est gratuit et le restera. Soutiens le projet à partir de 0,99€, tu choisis le montant, et obtiens l\'accès DeepDream à vie en retour.'
+                  ? t('settings.support_premiumSubtitle')
+                  : t('settings.support_freeSubtitle')
                 }
               </Text>
               <TouchableOpacity
@@ -1131,7 +1131,7 @@ export default function SettingsScreen({ navigation }) {
                     { color: theme.colors.textSecondary },
                   ]}
                 >
-                  En savoir plus sur la philosophie Noctaliæ
+                  {t('settings.support_philosophyLink')}
                 </Text>
                 <MaterialIcons
                   name="open-in-new"
@@ -1158,7 +1158,7 @@ export default function SettingsScreen({ navigation }) {
                           { color: theme.colors.textPrimary },
                         ]}
                       >
-                        {isPremium ? 'Offrir un café' : 'Un café'}
+                        {isPremium ? t('settings.support_kofiTitlePremium') : t('settings.support_kofiTitleFree')}
                       </Text>
                       <Text
                         style={[
@@ -1166,7 +1166,7 @@ export default function SettingsScreen({ navigation }) {
                           { color: theme.colors.textSecondary },
                         ]}
                       >
-                        {isPremium ? 'Soutien supplémentaire via Ko-fi' : 'Accès DeepDream à vie en retour'}
+                        {isPremium ? t('settings.support_kofiSubPremium') : t('settings.support_kofiSubFree')}
                       </Text>
                     </View>
                   </View>
@@ -1206,7 +1206,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Apparence
+                {t('settings.section_appearance')}
               </Text>
             </View>
             <MaterialIcons
@@ -1223,15 +1223,15 @@ export default function SettingsScreen({ navigation }) {
                   { color: theme.colors.textSecondary, marginBottom: 12 },
                 ]}
               >
-                Choisissez l'ambiance visuelle de votre journal.
+                {t('settings.appearance_subtitle')}
               </Text>
 
-              {availableThemes.map((t) => {
-                const isActive = currentThemeId === t.id
-                const isComingSoon = t.isAvailable === false
+              {availableThemes.map((thm) => {
+                const isActive = currentThemeId === thm.id
+                const isComingSoon = thm.isAvailable === false
                 return (
                   <TouchableOpacity
-                    key={t.id}
+                    key={thm.id}
                     style={[
                       styles.themeRow,
                       {
@@ -1244,23 +1244,23 @@ export default function SettingsScreen({ navigation }) {
                         opacity: isComingSoon ? 0.35 : 1,
                       },
                     ]}
-                    onPress={() => !isComingSoon && handleThemeChange(t.id)}
+                    onPress={() => !isComingSoon && handleThemeChange(thm.id)}
                     activeOpacity={isComingSoon ? 1 : 0.7}
                     disabled={isComingSoon}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                      <MaterialIcons name={t.icon} size={20} color={isActive ? theme.colors.primary : theme.colors.textSecondary} />
+                      <MaterialIcons name={thm.icon} size={20} color={isActive ? theme.colors.primary : theme.colors.textSecondary} />
                       <View>
                         <Text style={[styles.themeRowTitle, { color: isActive ? theme.colors.primary : theme.colors.textPrimary }]}>
-                          {t.name}
+                          {thm.name}
                         </Text>
                         <Text style={[styles.themeRowDesc, { color: theme.colors.textSecondary }]}>
-                          {t.description}
+                          {thm.description}
                         </Text>
                       </View>
                     </View>
                     {isComingSoon && (
-                      <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontFamily: 'AtkinsonHyperlegibleNext-Regular' }}>Bientôt</Text>
+                      <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontFamily: 'AtkinsonHyperlegibleNext-Regular' }}>{t('settings.appearance_comingSoon')}</Text>
                     )}
                     {isActive && !isComingSoon && (
                       <MaterialIcons name="check-circle" size={20} color={theme.colors.primary} />
@@ -1276,11 +1276,72 @@ export default function SettingsScreen({ navigation }) {
               ]}>
                 <MaterialCommunityIcons name="heart-outline" size={14} color="#D2B14C" />
                 <Text style={[styles.themeDisclaimerText, { color: theme.colors.textSecondary }]}>
-                  Les thèmes premium seront réservés aux soutiens à l'avenir.
+                  {t('settings.appearance_premiumDisclaimer')}
                 </Text>
               </View>
             </View>
           )}
+        </View>
+
+        {/* === SECTION LANGUE === */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.colors.cardBackground,
+              borderColor: theme.colors.cardBorder,
+              ...theme.shadow.md,
+            },
+          ]}
+        >
+          <View style={styles.sectionTitleRow}>
+            <MaterialCommunityIcons
+              name="translate"
+              size={24}
+              color={theme.colors.primary}
+            />
+            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+              {t('settings.language')}
+            </Text>
+          </View>
+          <View style={langStyles.row}>
+            {[
+              { code: 'fr', label: t('settings.language_fr'), flag: '🇫🇷' },
+              { code: 'en', label: t('settings.language_en'), flag: '🇬🇧' },
+              { code: 'es', label: t('settings.language_es'), flag: '🌎' },
+            ].map(({ code, label, flag }) => {
+              const isActive = i18next.language === code
+              return (
+                <TouchableOpacity
+                  key={code}
+                  style={[
+                    langStyles.chip,
+                    {
+                      backgroundColor: isActive
+                        ? 'rgba(210,177,76,0.12)'
+                        : 'rgba(255,255,255,0.04)',
+                      borderColor: isActive ? '#D2B14C' : theme.colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => changeLanguage(code)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={langStyles.chipFlag}>{flag}</Text>
+                  <Text
+                    style={[
+                      langStyles.chipLabel,
+                      { color: isActive ? '#D2B14C' : theme.colors.textSecondary },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                  {isActive && (
+                    <MaterialIcons name="check" size={14} color="#D2B14C" />
+                  )}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
         </View>
 
         {/* === SECTION AIDE === */}
@@ -1308,7 +1369,7 @@ export default function SettingsScreen({ navigation }) {
               <Text
                 style={[styles.sectionTitle, { color: theme.colors.primary }]}
               >
-                Aide
+                {t('settings.section_help')}
               </Text>
             </View>
             <MaterialIcons
@@ -1339,7 +1400,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.text },
                     ]}
                   >
-                    Refaire l'onboarding
+                    {t('settings.help_onboarding')}
                   </Text>
                   <Text
                     style={[
@@ -1347,7 +1408,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textSecondary },
                     ]}
                   >
-                    Recommencer la configuration initiale
+                    {t('settings.help_onboardingDesc')}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -1384,7 +1445,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.text },
                     ]}
                   >
-                    Noter Noctaliæ ⭐
+                    {t('settings.help_rate')}
                   </Text>
                   <Text
                     style={[
@@ -1392,7 +1453,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textSecondary },
                     ]}
                   >
-                    Un avis, ça change tout pour un projet solo
+                    {t('settings.help_rateDesc')}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -1421,7 +1482,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.text },
                     ]}
                   >
-                    Donner mon avis
+                    {t('settings.help_feedback')}
                   </Text>
                   <Text
                     style={[
@@ -1429,7 +1490,7 @@ export default function SettingsScreen({ navigation }) {
                       { color: theme.colors.textSecondary },
                     ]}
                   >
-                    Suggestions, bugs, idées — tout est utile
+                    {t('settings.help_feedbackSuggest')}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -1458,7 +1519,7 @@ export default function SettingsScreen({ navigation }) {
             <Text
               style={[styles.infoTitle, { color: theme.colors.textPrimary }]}
             >
-              À propos
+              {t('settings.section_about')}
             </Text>
           </View>
           <TouchableOpacity
@@ -1479,8 +1540,7 @@ export default function SettingsScreen({ navigation }) {
                 { color: theme.colors.textSecondary },
               ]}
             >
-              Noctaliæ - Analyse scientifique des rêves{'\n'}Version{' '}
-              {APP_VERSION}
+              {t('settings.about_versionLine', { version: APP_VERSION })}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1501,7 +1561,7 @@ export default function SettingsScreen({ navigation }) {
             <Text
               style={[styles.privacyLinkText, { color: theme.colors.primary }]}
             >
-              Politique de confidentialité
+              {t('settings.about_privacy')}
             </Text>
             <MaterialIcons
               name="open-in-new"
@@ -1520,7 +1580,7 @@ export default function SettingsScreen({ navigation }) {
                 { color: theme.colors.textSecondary },
               ]}
             >
-              Conçu par{' '}
+              {t('settings.about_createdBy')}
             </Text>
             <Text style={[styles.creatorName, { color: theme.colors.primary }]}>
               Thomas Maury
@@ -1626,6 +1686,28 @@ const notifStyles = StyleSheet.create({
     fontFamily: 'AtkinsonHyperlegibleNext-Regular',
     color: '#FF9966',
     lineHeight: 18,
+  },
+})
+
+// ─── STYLES LANGUE ────────────────────────────────────────────────────────────
+
+const langStyles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  chip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  chipFlag: { fontSize: 16 },
+  chipLabel: {
+    fontSize: 13,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
 })
 

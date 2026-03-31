@@ -23,15 +23,17 @@ import { premiumService } from '../services/premiumService';
 import { THEME } from '../config/theme';
 import { saveConversation, loadConversation, clearConversation } from '../services/conversationService';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatScreen({ route, navigation }) {
   const { dreamId, dreamAnalysis, dreamTranscription, dreamTitle } = route.params;
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Je suis là pour approfondir l\'analyse de ton rêve. Pose-moi toutes tes questions ! 💬',
+      content: t('chat.initialMessage'),
       timestamp: Date.now()
     }
   ]);
@@ -94,7 +96,7 @@ export default function ChatScreen({ route, navigation }) {
       const { granted } = await Audio.requestPermissionsAsync();
       
       if (!granted) {
-        Alert.alert('Permission refusée', 'Accès microphone requis');
+        Alert.alert(t('chat.permMic_title'), t('chat.permMic_msg'));
         return;
       }
 
@@ -112,7 +114,7 @@ export default function ChatScreen({ route, navigation }) {
       
     } catch (error) {
       console.error('❌ Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de démarrer l\'enregistrement');
+      Alert.alert(t('common.error'), t('chat.errRecording_msg'));
     }
   }
 
@@ -135,7 +137,7 @@ export default function ChatScreen({ route, navigation }) {
 
     } catch (error) {
       console.error('❌ Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de traiter la question vocale');
+      Alert.alert(t('common.error'), t('chat.errVoice_msg'));
     } finally {
       setIsTranscribing(false);
       recordingRef.current = null;
@@ -187,7 +189,7 @@ export default function ChatScreen({ route, navigation }) {
 
     } catch (error) {
       console.error('❌ Erreur chat:', error);
-      Alert.alert('Erreur', error.message || 'Impossible de communiquer avec le serveur');
+      Alert.alert(t('common.error'), error.message || t('chat.errChat_fallback'));
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -201,7 +203,7 @@ export default function ChatScreen({ route, navigation }) {
   async function copyToClipboard(text) {
     try {
       await Clipboard.setStringAsync(text);
-      Alert.alert('✅ Copié', 'Message copié');
+      Alert.alert(t('chat.copied_title'), t('chat.copied_msg'));
     } catch (error) {
       console.error('❌ Erreur copie:', error);
     }
@@ -209,19 +211,19 @@ export default function ChatScreen({ route, navigation }) {
 
   async function handleRestart() {
     Alert.alert(
-      'Recommencer ?',
-      'Tous les messages seront effacés.',
+      t('chat.restartAlert_title'),
+      t('chat.restartAlert_msg'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('chat.restartAlert_cancel'), style: 'cancel' },
         {
-          text: 'Recommencer',
+          text: t('chat.restartAlert_confirm'),
           style: 'destructive',
           onPress: async () => {
             await clearConversation(dreamId);
             setMessages([
               {
                 role: 'assistant',
-                content: 'Je suis là pour approfondir l\'analyse de ton rêve. Pose-moi toutes tes questions ! 💬',
+                content: t('chat.initialMessage'),
                 timestamp: Date.now()
               }
             ]);
@@ -260,7 +262,7 @@ export default function ChatScreen({ route, navigation }) {
           
           {message.model && (
             <Text style={styles.modelBadge}>
-              {message.model === 'claude' ? '⭐ Mode Profond' : '🧠 Mode Léger'}
+              {message.model === 'claude' ? t('chat.badge_deep') : t('chat.badge_quick')}
             </Text>
           )}
         </TouchableOpacity>
@@ -329,7 +331,7 @@ export default function ChatScreen({ route, navigation }) {
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="brain" size={20} color={THEME.colors.primary} />
-            <Text style={styles.analysisTitle}>Analyse complète</Text>
+            <Text style={styles.analysisTitle}>{t('chat.fullAnalysis')}</Text>
             <MaterialIcons 
               name={showAnalysis ? "expand-less" : "expand-more"} 
               size={24} 
@@ -359,14 +361,14 @@ export default function ChatScreen({ route, navigation }) {
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color="#9B59B6" size="small" />
-            <Text style={styles.loadingText}>Réflexion...</Text>
+            <Text style={styles.loadingText}>{t('chat.loading')}</Text>
           </View>
         )}
 
         {isTranscribing && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color="#E67E22" size="small" />
-            <Text style={styles.loadingText}>Transcription...</Text>
+            <Text style={styles.loadingText}>{t('chat.transcribing')}</Text>
           </View>
         )}
       </ScrollView>
@@ -375,23 +377,23 @@ export default function ChatScreen({ route, navigation }) {
       <View style={styles.optionsContainer}>
         <TouchableOpacity style={styles.optionButton}>
           <MaterialCommunityIcons name="text" size={20} color={THEME.colors.primary} />
-          <Text style={styles.optionText}>Texte</Text>
+          <Text style={styles.optionText}>{t('chat.option_text')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.optionButton}
-          onPress={() => Alert.alert('🎤 Vocal', 'Mode vocal activé - Utilisez le micro ci-dessous')}
+          onPress={() => Alert.alert(t('chat.vocalAlert_title'), t('chat.vocalAlert_msg'))}
         >
           <MaterialIcons name="mic" size={20} color={THEME.colors.primary} />
-          <Text style={styles.optionText}>Vocal</Text>
+          <Text style={styles.optionText}>{t('chat.option_voice')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.optionButton}
-          onPress={() => Alert.alert('🤖 NoctaliaeAI', 'Fonctionnalité multimodale à venir')}
+          onPress={() => Alert.alert(t('chat.aiAlert_title'), t('chat.aiAlert_msg'))}
         >
           <MaterialCommunityIcons name="robot" size={20} color={THEME.colors.primary} />
-          <Text style={styles.optionText}>NoctaliaeAI</Text>
+          <Text style={styles.optionText}>{t('chat.option_ai')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -415,7 +417,7 @@ export default function ChatScreen({ route, navigation }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Pose ta question..."
+          placeholder={t('chat.placeholder')}
           placeholderTextColor={THEME.colors.textSecondary}
           value={inputText}
           onChangeText={setInputText}

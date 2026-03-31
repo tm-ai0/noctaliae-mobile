@@ -9,6 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -24,12 +25,14 @@ const { width: SCREEN_W } = Dimensions.get('window');
  *  - oneLiner     : première phrase de l'analyse (pré-calculée par le hook)
  */
 export default function DreamShareTemplate({ captureRef, dream, oneLiner }) {
+  const { t } = useTranslation();
+
   if (!dream) return null;
 
   const title = (() => {
-    const t = dream.dreamTitle || dream.title;
-    return t && t !== 'Mon rêve' && t !== 'Rêve sans titre' && t.length > 3
-      ? t : 'Rêve sans titre';
+    const titleVal = dream.dreamTitle || dream.title;
+    return titleVal && titleVal !== 'Mon rêve' && titleVal !== 'Rêve sans titre' && titleVal.length > 3
+      ? titleVal : 'Rêve sans titre';
   })();
 
   const dateStr = (() => {
@@ -84,7 +87,7 @@ export default function DreamShareTemplate({ captureRef, dream, oneLiner }) {
                   ]}
                 />
               ))}
-              <Text style={styles.paletteLabel}>Palette générée</Text>
+              <Text style={styles.paletteLabel}>{t('dreamShareTemplate.paletteLabel')}</Text>
             </View>
           )}
 
@@ -117,7 +120,7 @@ export default function DreamShareTemplate({ captureRef, dream, oneLiner }) {
             <Text style={styles.brandingName}>Noctaliæ</Text>
             <View style={styles.brandingBadge}>
               <MaterialIcons name="android" size={10} color="rgba(255,255,255,0.55)" />
-              <Text style={styles.brandingBadgeText}>Disponible sur Google Play</Text>
+              <Text style={styles.brandingBadgeText}>{t('dreamShareTemplate.playStoreBadge')}</Text>
             </View>
           </View>
         </View>

@@ -18,6 +18,7 @@ import { transcribeAudio, synthesizeText, callNoctaliaeChat } from '../services/
 import { API_BASE_URL } from '../config/api';
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 /**
  * 🎙️ VoiceAssistantScreen
@@ -33,7 +34,8 @@ import DebugScreenLabel from '../components/DebugScreenLabel';
  */
 export default function VoiceAssistantScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  
+  const { t } = useTranslation();
+
   // ═══════════════════════════════════════════════════════
   // RÉCUPÉRATION DES PARAMÈTRES
   // ═══════════════════════════════════════════════════════
@@ -63,9 +65,9 @@ export default function VoiceAssistantScreen({ route, navigation }) {
   useEffect(() => {
     if (!dreamId || !dreamAnalysis) {
       Alert.alert(
-        'Erreur',
-        'Données manquantes pour démarrer la conversation',
-        [{ text: 'Retour', onPress: () => navigation.goBack() }]
+        t('voiceAssistant.errMissingData_title'),
+        t('voiceAssistant.errMissingData_msg'),
+        [{ text: t('voiceAssistant.errMissingData_btn'), onPress: () => navigation.goBack() }]
       );
     } else {
       loadConversationHistory();
@@ -107,9 +109,9 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       
       if (!granted) {
         Alert.alert(
-          'Permission refusée',
-          'Vous devez autoriser l\'accès au micro',
-          [{ text: 'OK' }]
+          t('voiceAssistant.permMic_title'),
+          t('voiceAssistant.permMic_msg'),
+          [{ text: t('common.ok') }]
         );
         return;
       }
@@ -129,13 +131,13 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       
       recordingRef.current = recording;
       setIsRecording(true);
-      setCurrentStatus('🎤 Enregistrement...');
+      setCurrentStatus(t('voiceAssistant.status_recording'));
       
       console.log('✅ Enregistrement en cours');
       
     } catch (error) {
       console.error('❌ Erreur démarrage enregistrement:', error);
-      Alert.alert('Erreur', 'Impossible de démarrer l\'enregistrement');
+      Alert.alert(t('common.error'), t('voiceAssistant.errStartRecording_msg'));
     }
   };
   
@@ -149,7 +151,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       console.log('⏹️ Arrêt enregistrement...');
       
       setIsRecording(false);
-      setCurrentStatus('📝 Traitement...');
+      setCurrentStatus(t('voiceAssistant.status_processing'));
       
       await recordingRef.current.stopAndUnloadAsync();
       const uri = recordingRef.current.getURI();
@@ -164,7 +166,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       
     } catch (error) {
       console.error('❌ Erreur arrêt enregistrement:', error);
-      Alert.alert('Erreur', 'Impossible d\'arrêter l\'enregistrement');
+      Alert.alert(t('common.error'), t('voiceAssistant.errStopRecording_msg'));
       setCurrentStatus('');
     } finally {
       recordingRef.current = null;
@@ -197,7 +199,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       // ══════════════════════════════════════════════════
       // ÉTAPE 1 : TRANSCRIPTION
       // ══════════════════════════════════════════════════
-      setCurrentStatus('📝 Transcription...');
+      setCurrentStatus(t('voiceAssistant.status_transcribing'));
       console.log('🎙️ [1/4] Transcription audio...');
       
       const userTranscription = await transcribeAudio(audioUri);
@@ -209,7 +211,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       // ══════════════════════════════════════════════════
       // ÉTAPE 2 : APPEL CLAUDE VIA /noctaliae-chat
       // ══════════════════════════════════════════════════
-      setCurrentStatus('🧠 Claude réfléchit...');
+      setCurrentStatus(t('voiceAssistant.status_thinking'));
       console.log('🎙️ [2/4] Génération réponse Claude...');
       
       const conversationHistory = conversation.map(msg => ({
@@ -232,7 +234,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       // ══════════════════════════════════════════════════
       // ÉTAPE 3 : SYNTHÈSE TTS
       // ══════════════════════════════════════════════════
-      setCurrentStatus('🔊 Synthèse audio...');
+      setCurrentStatus(t('voiceAssistant.status_synthesizing'));
       console.log('🎙️ [3/4] Synthèse vocale...');
       
       const audioBase64 = await synthesizeText(claudeResponse.response);
@@ -240,7 +242,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       // ══════════════════════════════════════════════════
       // ÉTAPE 4 : LECTURE AUDIO
       // ══════════════════════════════════════════════════
-      setCurrentStatus('🔊 Lecture...');
+      setCurrentStatus(t('voiceAssistant.status_playing'));
       console.log('🎙️ [4/4] Lecture audio...');
       
       await playAudioFromBase64(audioBase64);
@@ -250,7 +252,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
       
     } catch (error) {
       console.error('❌ Erreur handleSendVoiceMessage:', error);
-      Alert.alert('Erreur', error.message || 'Impossible de traiter votre message');
+      Alert.alert(t('common.error'), error.message || t('voiceAssistant.errVoiceMessage_msg'));
       setCurrentStatus('');
     } finally {
       setIsProcessing(false);
@@ -342,12 +344,12 @@ export default function VoiceAssistantScreen({ route, navigation }) {
   
   const handleClearConversation = () => {
     Alert.alert(
-      'Effacer la conversation ?',
-      'Tous les messages seront supprimés.',
+      t('voiceAssistant.clearAlert_title'),
+      t('voiceAssistant.clearAlert_msg'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Effacer',
+          text: t('voiceAssistant.clearAlert_confirm'),
           style: 'destructive',
           onPress: async () => {
             const key = `voice_conversation_${dreamId}`;
@@ -367,13 +369,13 @@ export default function VoiceAssistantScreen({ route, navigation }) {
     if (isPlaying || isProcessing) return;
     
     try {
-      setCurrentStatus('🔊 Lecture...');
+      setCurrentStatus(t('voiceAssistant.status_playing'));
       const audioBase64 = await synthesizeText(message.content);
       await playAudioFromBase64(audioBase64);
       setCurrentStatus('');
     } catch (error) {
       console.error('❌ Erreur replay:', error);
-      Alert.alert('Erreur', 'Impossible de lire ce message');
+      Alert.alert(t('common.error'), t('voiceAssistant.errReplay_msg'));
       setCurrentStatus('');
     }
   };
@@ -399,7 +401,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
         </TouchableOpacity>
         
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>🎙️ Assistant Vocal</Text>
+          <Text style={styles.headerTitle}>{t('voiceAssistant.headerTitle')}</Text>
           {dreamTitle && (
             <Text style={styles.headerSubtitle} numberOfLines={1}>
               {dreamTitle}
@@ -428,7 +430,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🌙</Text>
             <Text style={styles.emptyText}>
-              Appuyez sur le micro{'\n'}pour commencer la conversation
+              {t('voiceAssistant.emptyText')}
             </Text>
           </View>
         ) : (
@@ -443,7 +445,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
               ]}
             >
               <Text style={styles.messageRole}>
-                {message.role === 'user' ? '👤 Vous' : '🌙 Noctaliæ'}
+                {message.role === 'user' ? t('voiceAssistant.roleUser') : t('voiceAssistant.roleAssistant')}
               </Text>
               <Text style={styles.messageText}>
                 {message.content}
@@ -460,7 +462,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
                     size={16} 
                     color={THEME.colors.primary} 
                   />
-                  <Text style={styles.replayButtonText}>Ré-écouter</Text>
+                  <Text style={styles.replayButtonText}>{t('voiceAssistant.replay')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -480,7 +482,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
               <ActivityIndicator size="small" color={THEME.colors.primary} />
             )}
             <Text style={styles.statusText}>
-              {currentStatus || (isPlaying ? '🔊 Lecture...' : 'Traitement...')}
+              {currentStatus || (isPlaying ? t('voiceAssistant.status_playing') : t('voiceAssistant.status_processing'))}
             </Text>
           </View>
         )}
@@ -502,7 +504,7 @@ export default function VoiceAssistantScreen({ route, navigation }) {
         </TouchableOpacity>
         
         <Text style={styles.micLabel}>
-          {isRecording ? 'Arrêter' : 'Appuyer pour parler'}
+          {isRecording ? t('voiceAssistant.micLabel_recording') : t('voiceAssistant.micLabel_idle')}
         </Text>
       </View>
     </KeyboardAvoidingView>

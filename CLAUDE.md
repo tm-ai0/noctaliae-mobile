@@ -90,7 +90,7 @@ src/
 - **Éthique** — Pas de dark patterns, pas d'extraction commerciale
 
 ## État actuel (31 mars 2026)
-- **v1.3.1 Build 50 EN COURS** (31 mars 2026) — refonte DeepDreamInfoModal + fix RevenueCat
+- **v1.3.1 Build 50 SOUMIS** (31 mars 2026) — changes in review sur Play Console
 - **v1.3.0 Build 49** sur le Play Store (production, 28 mars 2026)
 - **25-28 users installés**, 5.000★ rating, 6€ gross revenue
 - **Backend** : v2.18 sur Infomaniak. Pas de process manager (PM2) en place.
@@ -100,7 +100,21 @@ src/
 - **Merchant payment** : compte bancaire vérifié, banner "removed April 26" disparu
 - **RevenueCat** : package name corrigé (`com.tmAi.noctaliae` → `com.noctaliae.mobile`), IAP fonctionnel
 
+### Build 50 changelog
+- Fix Unicode emojis/accents dans DeepDreamInfoModal et PostRecordingScreen
+- Badge palier dynamique dans Settings (emoji + label du tier RevenueCat)
+- CTA "Soutenir davantage" en gold pour upgrade de palier
+- Wording "Soutenir Noctaliæ" adapté selon statut premium/free
+- Try/catch sur Purchases.configure (compatibilité Expo Go)
+- Fallback dev tier dans premiumService pour tests Expo Go
+
 ### TODO
+0. **Paywall upgrade mode** (ActivateDeepDreamModal) : quand user est PREMIUM, la modale doit :
+   - Marquer le palier actuel "Votre palier" + grisé (non cliquable)
+   - Paliers inférieurs aussi grisés
+   - CTA : "Devenir [label] · [prix]" (ex: "Devenir Ambassadeur · 9,99€")
+   - Boutons bas : "Fermer" + "Contacter" (WhatsApp) — pas de "continuer gratuitement" ni "restaurer"
+   - Passer isPremium + tierInfo en props
 1. **Backend** : vérifier api.thomasmaury.fr, envisager PM2
 2. **Google developer notifications** : connecter RevenueCat Pub/Sub (non configuré)
 3. **i18n FR/EN/ES LATAM** : prochain chantier majeur (plan dans `PLAN_I18N.md`)
@@ -128,7 +142,7 @@ src/
 - **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions, features)
 - **Shake-to-feedback** : expo-sensors Accelerometer (prochain sprint)
 - **Item 5** : flow photo ne génère pas d'image (bypass PostRecordingScreen où generateDreamImage est appelé)
-- **i18n FR/EN/ES LATAM** : prochain chantier majeur, utiliser i18next + fichiers de traduction
+- **i18n FR/EN/ES LATAM** : Phases 1-4 DONE (31/03/2026). i18next+react-i18next+expo-localization installés, src/i18n/index.js configuré, initI18n() branché dans App.js. fr.json/en.json/es.json complets (~450 clés chacun) dans src/i18n/locales/. Phase 4 : tous les fichiers P1 patchés (14 fichiers : 5 onboarding, AnalysisScreen, ConversationScreen, PostRecordingScreen, SettingsScreen, ActivateDeepDreamModal, DeepDreamInfoModal, DreamCard, CustomTabBar, DreamShareTemplate). Tags fingerprints ("Introverti", etc.) laissés en FR volontairement (LLM gèrent). TODO Phase 5 : sélecteur langue dans Settings (🇫🇷/🇬🇧/🌎). TODO Phase 6 : QA + grep textes FR résiduels + test layouts ES
 
 ### CE QU'IL NE FAUT PAS CASSER
 - PostRecordingScreen : la section "Enrichir l'analyse" (métadonnées lucidité/sommeil/émotions/thèmes) DOIT rester

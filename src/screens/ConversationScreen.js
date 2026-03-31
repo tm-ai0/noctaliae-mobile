@@ -39,10 +39,12 @@ import { useNoctaliaeAlert } from '../components/NoctaliaeAlert'
 import DreamImageViewer from '../components/DreamImageViewer'
 import DreamFallbackHero from '../components/DreamFallbackHero'
 import { useDreamShare } from '../hooks/useDreamShare'
+import { useTranslation } from 'react-i18next'
 
 
 export default function ConversationScreen({ route, navigation }) {
   const insets = useSafeAreaInsets()
+  const { t } = useTranslation()
   const {
     dreamId,
     dreamAnalysis,
@@ -207,11 +209,11 @@ export default function ConversationScreen({ route, navigation }) {
       setIsSecret(newStatus)
       showAlert({
         type: 'success',
-        title: newStatus ? '🔐 Rêve protégé' : '🔓 Rêve déverrouillé',
+        title: newStatus ? t('conversation.secret_protected_title') : t('conversation.secret_unlocked_title'),
         message: newStatus
-          ? 'Ce rêve est maintenant secret.'
-          : "Ce rêve n'est plus secret.",
-        confirmText: 'OK',
+          ? t('conversation.secret_protected_msg')
+          : t('conversation.secret_unlocked_msg'),
+        confirmText: t('common.ok'),
       })
     } catch (error) {
       console.error('❌ Erreur toggle secret:', error)
@@ -268,7 +270,7 @@ export default function ConversationScreen({ route, navigation }) {
       await saveAnalysis(dreamId, result, useClaude ? 'claude' : 'llama')
       setCurrentAnalysis(result.analysis)
       if (result.title && result.title !== 'Rêve sans titre') setCurrentDreamTitle(result.title)
-      showAlert({ type: 'success', title: 'Analyse mise à jour', message: 'Votre rêve a été ré-analysé avec succès.', confirmText: 'Super !' })
+      showAlert({ type: 'success', title: t('conversation.reanalyze_success_title'), message: t('conversation.reanalyze_success_msg'), confirmText: t('conversation.reanalyze_success_confirm') })
       if (result.imagePrompt) {
         setCurrentImageUrl(null)
         generateDreamImage(result.imagePrompt, dreamId, result.title || currentDreamTitle)
@@ -283,9 +285,9 @@ export default function ConversationScreen({ route, navigation }) {
     } catch (error) {
       console.error('❌ Erreur re-analyse:', error)
       if (error.code === 'DAILY_LIMIT') {
-        showAlert({ type: 'info', title: '🌙 Limite DeepDream atteinte', message: 'Tu as utilisé tes 10 analyses DeepDream du jour. Reviens demain — QuickDream reste disponible sans limite.', confirmText: 'Compris' })
+        showAlert({ type: 'info', title: t('conversation.limitReached_title'), message: t('conversation.limitReached_msg'), confirmText: t('conversation.limitReached_confirm') })
       } else {
-        showAlert({ type: 'error', title: 'Erreur', message: 'Impossible de re-analyser le rêve. Veuillez réessayer.', confirmText: 'Compris' })
+        showAlert({ type: 'error', title: t('common.error'), message: t('conversation.reanalyze_error_msg'), confirmText: t('conversation.limitReached_confirm') })
       }
     } finally {
       setIsReanalyzing(false)
@@ -332,7 +334,7 @@ export default function ConversationScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('❌ Erreur export PDF:', error)
-      showAlert({ type: 'error', title: 'Erreur', message: 'Impossible de générer le PDF', confirmText: 'OK' })
+      showAlert({ type: 'error', title: t('common.error'), message: t('conversation.pdf_error_msg'), confirmText: t('common.ok') })
     } finally {
       setIsExportingPdf(false)
     }
@@ -368,17 +370,17 @@ export default function ConversationScreen({ route, navigation }) {
   const handleArchive = () => {
     showAlert({
       type: 'confirm',
-      title: 'Archiver ce rêve ?',
-      message: 'Le rêve sera déplacé dans vos archives. Vous pourrez le restaurer à tout moment.',
-      confirmText: 'Archiver',
-      cancelText: 'Annuler',
+      title: t('conversation.archiveAlert_title'),
+      message: t('conversation.archiveAlert_msg_full'),
+      confirmText: t('conversation.archiveAlert_confirm'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         try {
           await archiveDream(dreamId)
           navigation.navigate('MainTabs', { screen: 'Analysis' })
         } catch (error) {
           console.error('❌ Erreur archivage:', error)
-          showAlert({ type: 'error', title: 'Erreur', message: "Impossible d'archiver le rêve", confirmText: 'OK' })
+          showAlert({ type: 'error', title: t('common.error'), message: t('conversation.archive_error_msg'), confirmText: t('common.ok') })
         }
       },
     })
@@ -407,7 +409,7 @@ export default function ConversationScreen({ route, navigation }) {
             }}
           >
             <MaterialIcons name="restore" size={16} color={THEME.colors.success} />
-            <Text style={styles.restoreHeaderText}>Restaurer</Text>
+            <Text style={styles.restoreHeaderText}>{t('conversation.restoreBtn')}</Text>
           </TouchableOpacity>
         ) : (
           <>
@@ -434,13 +436,13 @@ export default function ConversationScreen({ route, navigation }) {
           <TouchableOpacity style={styles.tab} onPress={() => setActiveTab('transcription')}>
             <View style={[styles.tabContent, activeTab === 'transcription' && styles.tabContentActive]}>
               <MaterialIcons name="text-fields" size={18} color={activeTab === 'transcription' ? THEME.colors.primary : THEME.colors.textSecondary} />
-              <Text style={[styles.tabText, activeTab === 'transcription' && styles.tabTextActive]}>Transcription</Text>
+              <Text style={[styles.tabText, activeTab === 'transcription' && styles.tabTextActive]}>{t('conversation.tabTranscription')}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tab} onPress={() => setActiveTab('analysis')}>
             <View style={[styles.tabContent, activeTab === 'analysis' && styles.tabContentActive]}>
               <MaterialCommunityIcons name="brain" size={18} color={activeTab === 'analysis' ? THEME.colors.primary : THEME.colors.textSecondary} />
-              <Text style={[styles.tabText, activeTab === 'analysis' && styles.tabTextActive]}>Analyse</Text>
+              <Text style={[styles.tabText, activeTab === 'analysis' && styles.tabTextActive]}>{t('conversation.tabAnalysis')}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -455,7 +457,7 @@ export default function ConversationScreen({ route, navigation }) {
               onPress={() => navigation.navigate('DeepChat', { dreamId, dreamAnalysis: currentAnalysis, dreamTranscription, dreamTitle, modelUsed, suggestedQuestions: parsedAnalysisQuestions, dreamImagePalette })}
             >
               <MaterialCommunityIcons name="chat-processing" size={16} color={THEME.colors.primary} />
-              <Text style={[styles.smallButtonText, { color: THEME.colors.primary }]}>Approfondir</Text>
+              <Text style={[styles.smallButtonText, { color: THEME.colors.primary }]}>{t('conversation.btnApprofondir')}</Text>
             </TouchableOpacity>
 
             <View style={{ flex: 1, position: 'relative' }}>
@@ -469,7 +471,7 @@ export default function ConversationScreen({ route, navigation }) {
                 ) : (
                   <>
                     <MaterialIcons name="refresh" size={16} color={THEME.colors.warmGold} />
-                    <Text style={[styles.smallButtonText, { color: THEME.colors.warmGold }]}>Re-analyser</Text>
+                    <Text style={[styles.smallButtonText, { color: THEME.colors.warmGold }]}>{t('conversation.btnReanalyse')}</Text>
                     <MaterialIcons name={reanalyzeDropdownOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={16} color={THEME.colors.warmGold} />
                   </>
                 )}
@@ -480,14 +482,14 @@ export default function ConversationScreen({ route, navigation }) {
                     <MaterialCommunityIcons name="electron-framework" size={24} color="#4F8DFF" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.dropdownOptionTitle}>DeepDream</Text>
-                      <Text style={styles.dropdownOptionDesc}>Analyse approfondie</Text>
+                      <Text style={styles.dropdownOptionDesc}>{t('conversation.dropdown_deepDesc')}</Text>
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.dropdownOption, styles.dropdownOptionBorder]} onPress={() => handleSelectReanalyzeModel(false)}>
                     <MaterialCommunityIcons name="flash" size={24} color="#00FFB0" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.dropdownOptionTitle}>QuickDream</Text>
-                      <Text style={styles.dropdownOptionDesc}>Analyse rapide</Text>
+                      <Text style={styles.dropdownOptionDesc}>{t('conversation.dropdown_quickDesc')}</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -538,7 +540,7 @@ export default function ConversationScreen({ route, navigation }) {
               style={{ marginLeft: 8 }}
             >
               <Text style={{ fontSize: 11, color: '#4F8DFF', fontFamily: 'AtkinsonHyperlegibleNext-Bold' }}>
-                Essayer DeepDream →
+                {t('conversation.tryDeepDream')}
               </Text>
             </TouchableOpacity>
           )}
@@ -565,13 +567,13 @@ export default function ConversationScreen({ route, navigation }) {
               <View style={styles.aiDisclaimer}>
                 <MaterialCommunityIcons name="information-outline" size={13} color={THEME.colors.textTertiary} />
                 <Text style={styles.aiDisclaimerText}>
-                  Analyse générée par IA — à titre informatif uniquement. Ne remplace pas un avis médical ou psychologique professionnel.
+                  {t('conversation.disclaimer')}
                 </Text>
               </View>
 
               {parsedAnalysisQuestions.length > 0 && (
                 <View style={styles.tapQuestionsContainer}>
-                  <Text style={styles.tapQuestionsLabel}>Explorer ces questions →</Text>
+                  <Text style={styles.tapQuestionsLabel}>{t('conversation.exploreQuestions')}</Text>
                   {parsedAnalysisQuestions.map((q, i) => (
                     <TouchableOpacity
                       key={i}
@@ -587,12 +589,12 @@ export default function ConversationScreen({ route, navigation }) {
               )}
             </>
           ) : (
-            <Text style={styles.emptyText}>Aucune analyse disponible</Text>
+            <Text style={styles.emptyText}>{t('conversation.emptyAnalysis')}</Text>
           )
         ) : dreamTranscription ? (
           <Text style={styles.transcriptionText}>{dreamTranscription}</Text>
         ) : (
-          <Text style={styles.emptyText}>Aucune transcription disponible</Text>
+          <Text style={styles.emptyText}>{t('conversation.emptyTranscription')}</Text>
         )}
       </ScrollView>
 
@@ -605,7 +607,7 @@ export default function ConversationScreen({ route, navigation }) {
             onPress={() => navigation.navigate('DeepChat', { dreamId, dreamAnalysis: currentAnalysis, dreamTranscription, dreamTitle, modelUsed, suggestedQuestions: parsedAnalysisQuestions, dreamImagePalette, dreamImageUrl: currentImageUrl, dreamDate, dreamTags })}
           >
             <MaterialCommunityIcons name="chat-processing" size={20} color={THEME.colors.background} />
-            <Text style={styles.stickyCtaText}>Approfondir avec l'IA</Text>
+            <Text style={styles.stickyCtaText}>{t('conversation.stickyCtaApprofondir')}</Text>
             <MaterialIcons name="arrow-forward" size={18} color={THEME.colors.background} />
           </TouchableOpacity>
         </View>
@@ -618,15 +620,15 @@ export default function ConversationScreen({ route, navigation }) {
         <TouchableOpacity style={styles.shareMenuOverlay} activeOpacity={1} onPress={() => setShowShareMenu(false)}>
           <TouchableOpacity style={styles.shareActionSheet} activeOpacity={1} onPress={() => {}}>
             <View style={styles.shareSheetHandle} />
-            <Text style={styles.shareSheetTitle}>Partager ce rêve</Text>
+            <Text style={styles.shareSheetTitle}>{t('conversation.shareSheet_title')}</Text>
 
             <TouchableOpacity style={styles.shareSheetOption} activeOpacity={0.7} onPress={() => { setShowShareMenu(false); setTimeout(handleShareFriendlyDirect, 200) }}>
               <View style={[styles.shareSheetIconWrap, { backgroundColor: 'rgba(255,153,102,0.1)', borderColor: 'rgba(255,153,102,0.3)' }]}>
                 <MaterialCommunityIcons name="heart-outline" size={22} color="#FF9966" />
               </View>
               <View style={styles.shareSheetOptionText}>
-                <Text style={styles.shareSheetOptionTitle}>Partage Friendly</Text>
-                <Text style={styles.shareSheetOptionDesc}>Famille, amis, proches…</Text>
+                <Text style={styles.shareSheetOptionTitle}>{t('conversation.shareSheet_friendly')}</Text>
+                <Text style={styles.shareSheetOptionDesc}>{t('conversation.shareSheet_friendlyDescShort')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
@@ -636,14 +638,14 @@ export default function ConversationScreen({ route, navigation }) {
                 <MaterialIcons name="picture-as-pdf" size={22} color={THEME.colors.warmGold} />
               </View>
               <View style={styles.shareSheetOptionText}>
-                <Text style={styles.shareSheetOptionTitle}>Rapport PDF</Text>
-                <Text style={styles.shareSheetOptionDesc}>Analyse complète à conserver</Text>
+                <Text style={styles.shareSheetOptionTitle}>{t('conversation.shareSheet_pdfTitle')}</Text>
+                <Text style={styles.shareSheetOptionDesc}>{t('conversation.shareSheet_pdfDescShort')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.shareSheetCancel} onPress={() => setShowShareMenu(false)}>
-              <Text style={styles.shareSheetCancelText}>Annuler</Text>
+              <Text style={styles.shareSheetCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>

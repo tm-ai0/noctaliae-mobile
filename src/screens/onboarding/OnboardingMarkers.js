@@ -13,6 +13,7 @@ import {
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -87,7 +88,7 @@ function ProgressDots({ current, total }) {
 // ============================================
 // 📋 BOTTOM SHEET PICKER
 // ============================================
-function BottomSheetPicker({ visible, title, options, selected, onSelect, onClose }) {
+function BottomSheetPicker({ visible, title, options, selected, onSelect, onClose, notSureLabel }) {
   const slideAnim = useRef(new Animated.Value(400)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -154,7 +155,7 @@ function BottomSheetPicker({ visible, title, options, selected, onSelect, onClos
               { color: 'rgba(100, 180, 140, 0.5)', fontFamily: 'AtkinsonHyperlegibleNext-Regular' },
               selected === 'not_sure' && { color: 'rgba(100, 180, 140, 0.85)' }
             ]}>
-              {title === "Tranche d'âge" ? 'Préfère ne pas dire' : 'Pas trop sûr'}
+              {notSureLabel}
             </Text>
             {selected === 'not_sure' && (
               <MaterialCommunityIcons name="check" size={16} color="rgba(100, 180, 140, 0.85)" />
@@ -169,7 +170,7 @@ function BottomSheetPicker({ visible, title, options, selected, onSelect, onClos
 // ============================================
 // 🎚️ SELECTOR ROW (déclenche le bottom sheet)
 // ============================================
-function SelectorRow({ label, icon, options, value, onPress }) {
+function SelectorRow({ label, icon, options, value, onPress, placeholderText, notSureText }) {
   const selectedOption = options.find(o => o.id === value);
   const hasValue = value && value !== 'not_sure';
   const isNotSure = value === 'not_sure';
@@ -192,9 +193,9 @@ function SelectorRow({ label, icon, options, value, onPress }) {
               {selectedOption.emoji} {selectedOption.label}
             </Text>
           ) : isNotSure ? (
-            <Text style={[styles.selectorValue, { color: OB.textMuted }]}>Pas trop sûr</Text>
+            <Text style={[styles.selectorValue, { color: OB.textMuted }]}>{notSureText}</Text>
           ) : (
-            <Text style={styles.selectorPlaceholder}>Appuyez pour choisir</Text>
+            <Text style={styles.selectorPlaceholder}>{placeholderText}</Text>
           )}
         </View>
       </View>
@@ -212,6 +213,7 @@ function SelectorRow({ label, icon, options, value, onPress }) {
 // ============================================
 export default function OnboardingMarkers({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const [selectedMarkers, setSelectedMarkers] = useState({
@@ -227,24 +229,24 @@ export default function OnboardingMarkers({ navigation }) {
   }, []);
 
   const ageRanges = [
-    { id: '18-25', label: '18–25 ans', emoji: '🌱' },
-    { id: '26-35', label: '26–35 ans', emoji: '🌿' },
-    { id: '36-50', label: '36–50 ans', emoji: '🌳' },
-    { id: '50+',   label: '50+ ans',   emoji: '🌲' },
+    { id: '18-25', label: t('onboarding.markers.age_18_25'), emoji: '🌱' },
+    { id: '26-35', label: t('onboarding.markers.age_26_35'), emoji: '🌿' },
+    { id: '36-50', label: t('onboarding.markers.age_36_50'), emoji: '🌳' },
+    { id: '50+',   label: t('onboarding.markers.age_50plus'), emoji: '🌲' },
   ];
 
   const rhythms = [
-    { id: 'calm',     label: 'Calme',     emoji: '🧘' },
-    { id: 'balanced', label: 'Équilibré', emoji: '⚖️' },
-    { id: 'dynamic',  label: 'Dynamique', emoji: '⚡' },
-    { id: 'intense',  label: 'Intense',   emoji: '🔥' },
+    { id: 'calm',     label: t('onboarding.markers.rhythm_calm'),     emoji: '🧘' },
+    { id: 'balanced', label: t('onboarding.markers.rhythm_balanced'), emoji: '⚖️' },
+    { id: 'dynamic',  label: t('onboarding.markers.rhythm_dynamic'),  emoji: '⚡' },
+    { id: 'intense',  label: t('onboarding.markers.rhythm_intense'),  emoji: '🔥' },
   ];
 
   const moods = [
-    { id: 'serene',  label: 'Serein',  emoji: '😌' },
-    { id: 'curious', label: 'Curieux', emoji: '🤔' },
-    { id: 'anxious', label: 'Anxieux', emoji: '😰' },
-    { id: 'joyful',  label: 'Joyeux',  emoji: '😊' },
+    { id: 'serene',  label: t('onboarding.markers.mood_serene'),  emoji: '😌' },
+    { id: 'curious', label: t('onboarding.markers.mood_curious'), emoji: '🤔' },
+    { id: 'anxious', label: t('onboarding.markers.mood_anxious'), emoji: '😰' },
+    { id: 'joyful',  label: t('onboarding.markers.mood_joyful'),  emoji: '😊' },
   ];
 
   const hasSelection = selectedMarkers.ageRange || selectedMarkers.rhythm || selectedMarkers.mood;
@@ -269,35 +271,41 @@ export default function OnboardingMarkers({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Quelques repères</Text>
+        <Text style={styles.title}>{t('onboarding.markers.title')}</Text>
         <Text style={styles.subtitle}>
-          Tout est facultatif. Ce que vous partagez reste sur votre téléphone — et enrichit les analyses qui vous sont destinées.
+          {t('onboarding.markers.subtitle')}
         </Text>
 
         {/* Sélecteurs */}
         <View style={styles.selectorsCard}>
           <SelectorRow
-            label="Tranche d'âge"
+            label={t('onboarding.markers.ageRange')}
             icon="🌱"
             options={ageRanges}
             value={selectedMarkers.ageRange}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOpenSheet('age'); }}
+            placeholderText={t('onboarding.markers.placeholder')}
+            notSureText={t('onboarding.markers.notSureAge')}
           />
           <View style={styles.selectorDivider} />
           <SelectorRow
-            label="Rythme de vie"
+            label={t('onboarding.markers.rhythm')}
             icon="⚡"
             options={rhythms}
             value={selectedMarkers.rhythm}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOpenSheet('rhythm'); }}
+            placeholderText={t('onboarding.markers.placeholder')}
+            notSureText={t('onboarding.markers.notSureOther')}
           />
           <View style={styles.selectorDivider} />
           <SelectorRow
-            label="État d'esprit"
+            label={t('onboarding.markers.mood')}
             icon="🧠"
             options={moods}
             value={selectedMarkers.mood}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOpenSheet('mood'); }}
+            placeholderText={t('onboarding.markers.placeholder')}
+            notSureText={t('onboarding.markers.notSureOther')}
           />
         </View>
 
@@ -305,7 +313,7 @@ export default function OnboardingMarkers({ navigation }) {
         <View style={styles.noteRow}>
           <MaterialCommunityIcons name="shield-lock-outline" size={16} color={OB.accent} />
           <Text style={styles.noteText}>
-            Ces informations restent uniquement sur votre téléphone et ne sont jamais partagées.
+            {t('onboarding.markers.privacy')}
           </Text>
         </View>
 
@@ -319,38 +327,41 @@ export default function OnboardingMarkers({ navigation }) {
           onPress={() => navigation.navigate('OnboardingFingerprints', { markers: selectedMarkers })}
           activeOpacity={0.85}
         >
-          <Text style={styles.primaryButtonText}>{hasSelection ? 'Continuer' : 'Passer'}</Text>
+          <Text style={styles.primaryButtonText}>{hasSelection ? t('onboarding.markers.continue') : t('onboarding.markers.skip')}</Text>
           <MaterialCommunityIcons name="arrow-right" size={22} color={OB.bg} />
         </TouchableOpacity>
         {!hasSelection && (
-          <Text style={styles.skipHint}>Vous pourrez compléter dans Persona à tout moment</Text>
+          <Text style={styles.skipHint}>{t('onboarding.markers.skipHint')}</Text>
         )}
       </View>
 
       {/* Bottom Sheets */}
       <BottomSheetPicker
         visible={openSheet === 'age'}
-        title="Tranche d'âge"
+        title={t('onboarding.markers.ageRange')}
         options={ageRanges}
         selected={selectedMarkers.ageRange}
         onSelect={v => setSelectedMarkers(m => ({ ...m, ageRange: v }))}
         onClose={() => setOpenSheet(null)}
+        notSureLabel={t('onboarding.markers.notSureAge')}
       />
       <BottomSheetPicker
         visible={openSheet === 'rhythm'}
-        title="Rythme de vie"
+        title={t('onboarding.markers.rhythm')}
         options={rhythms}
         selected={selectedMarkers.rhythm}
         onSelect={v => setSelectedMarkers(m => ({ ...m, rhythm: v }))}
         onClose={() => setOpenSheet(null)}
+        notSureLabel={t('onboarding.markers.notSureOther')}
       />
       <BottomSheetPicker
         visible={openSheet === 'mood'}
-        title="État d'esprit"
+        title={t('onboarding.markers.mood')}
         options={moods}
         selected={selectedMarkers.mood}
         onSelect={v => setSelectedMarkers(m => ({ ...m, mood: v }))}
         onClose={() => setOpenSheet(null)}
+        notSureLabel={t('onboarding.markers.notSureOther')}
       />
     </View>
   );

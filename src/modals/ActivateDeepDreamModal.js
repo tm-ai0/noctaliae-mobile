@@ -18,17 +18,20 @@ import {
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { THEME } from '../config/theme';
 import { premiumService } from '../services/premiumService';
+import { useTranslation } from 'react-i18next';
 
-const FALLBACK_TIERS = [
-  { emoji: '☕', price: '1,99\u00a0€', name: 'Un café pour le projet' },
-  { emoji: '🌙', price: '4,99\u00a0€', name: 'Soutenir Noctaliæ' },
-  { emoji: '✨', price: '9,99\u00a0€', name: 'Encourager la recherche' },
-  { emoji: '🔮', price: '19,99\u00a0€', name: 'Mécène du rêve' },
+const FALLBACK_TIERS_BASE = [
+  { emoji: '☕', price: '1,99\u00a0€', nameKey: 'activateDeepDreamModal.tier1_name' },
+  { emoji: '🌙', price: '4,99\u00a0€', nameKey: 'activateDeepDreamModal.tier2_name' },
+  { emoji: '✨', price: '9,99\u00a0€', nameKey: 'activateDeepDreamModal.tier3_name' },
+  { emoji: '🔮', price: '19,99\u00a0€', nameKey: 'activateDeepDreamModal.tier4_name' },
 ];
 // Note : ces prix sont les fallback TTC affichés si RevenueCat est offline.
 // Les vrais prix viennent de RevenueCat/Google Play (dynamiques).
 
 export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, hasFreeTrials, freeTrialsRemaining }) {
+  const { t } = useTranslation();
+  const FALLBACK_TIERS = FALLBACK_TIERS_BASE.map(ft => ({ ...ft, name: t(ft.nameKey) }));
   const [packages, setPackages] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -57,7 +60,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
 
   async function handlePurchase() {
     if (packages.length === 0) {
-      Alert.alert('Erreur', 'La facturation n\'est pas disponible pour le moment. Réessayez plus tard.');
+      Alert.alert(t('common.error'), t('activateDeepDreamModal.errorBilling'));
       return;
     }
     setPurchasing(true);
@@ -68,7 +71,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
       }
     } catch (error) {
       if (!error.userCancelled) {
-        Alert.alert('Erreur', 'L\'achat n\'a pas pu être finalisé.');
+        Alert.alert(t('common.error'), t('activateDeepDreamModal.errorPurchase'));
       }
     }
     setPurchasing(false);
@@ -79,13 +82,13 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
     try {
       const result = await premiumService.restorePurchases();
       if (result.isPremium) {
-        Alert.alert('Restauré !', 'DeepDream a été restauré avec succès.');
+        Alert.alert(t('activateDeepDreamModal.restoredTitle'), t('activateDeepDreamModal.restoredMsg'));
         onPurchaseSuccess();
       } else {
-        Alert.alert('Aucun achat trouvé', 'Aucun achat précédent n\'a été trouvé pour ce compte Google.');
+        Alert.alert(t('activateDeepDreamModal.notFoundTitle'), t('activateDeepDreamModal.notFoundMsg'));
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible de restaurer les achats.');
+      Alert.alert(t('common.error'), t('activateDeepDreamModal.errorRestore'));
     }
     setRestoring(false);
   }
@@ -117,35 +120,34 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
             {/* Header */}
             <View style={styles.header}>
               <MaterialCommunityIcons name="electron-framework" size={40} color="#4F8DFF" />
-              <Text style={styles.title}>Soutenir Noctaliæ</Text>
+              <Text style={styles.title}>{t('activateDeepDreamModal.title')}</Text>
               <Text style={styles.subtitle}>
-                Soutenez le projet et débloquez DeepDream à vie.{' '}
-                QuickDream reste gratuit et illimité, toujours.
+                {t('activateDeepDreamModal.subtitle')}
               </Text>
             </View>
 
             {/* Comparaison Quick vs Deep */}
             <View style={styles.comparisonCard}>
-              <Text style={styles.comparisonTitle}>ÇA CHANGE QUOI ?</Text>
+              <Text style={styles.comparisonTitle}>{t('activateDeepDreamModal.compareTitle')}</Text>
 
               {/* QuickDream */}
               <View style={styles.comparisonSection}>
                 <Text style={styles.comparisonEngine}>⚡ QuickDream</Text>
-                <Text style={styles.comparisonItem}>✓  Gratuit · illimité</Text>
-                <Text style={styles.comparisonItem}>✓  Analyse rapide</Text>
-                <Text style={styles.comparisonItem}>✓  Résumé + thèmes</Text>
+                <Text style={styles.comparisonItem}>✓  {t('activateDeepDreamModal.quick_free')}</Text>
+                <Text style={styles.comparisonItem}>✓  {t('activateDeepDreamModal.quick_feature1')}</Text>
+                <Text style={styles.comparisonItem}>✓  {t('activateDeepDreamModal.quick_feature2')}</Text>
               </View>
 
               {/* DeepDream */}
               <View style={[styles.comparisonSection, styles.comparisonSectionDeep]}>
                 <Text style={[styles.comparisonEngine, { color: '#4F8DFF' }]}>🧠 DeepDream</Text>
-                <Text style={styles.comparisonItemDeep}>✦  6 grilles scientifiques</Text>
-                <Text style={styles.comparisonItemDeep}>✦  Capture photo / OCR</Text>
-                <Text style={styles.comparisonItemDeep}>✦  Génération d'image du rêve</Text>
-                <Text style={styles.comparisonItemDeep}>✦  Thèmes exclusifs</Text>
+                <Text style={styles.comparisonItemDeep}>✦  {t('activateDeepDreamModal.deep_feature1')}</Text>
+                <Text style={styles.comparisonItemDeep}>✦  {t('activateDeepDreamModal.deep_feature2')}</Text>
+                <Text style={styles.comparisonItemDeep}>✦  {t('activateDeepDreamModal.deep_feature3')}</Text>
+                <Text style={styles.comparisonItemDeep}>✦  {t('activateDeepDreamModal.deep_feature4')}</Text>
                 <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(79, 141, 255, 0.15)' }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#D2B14C', lineHeight: 20 }}>❤️  Soutenir un projet indépendant</Text>
-                  <Text style={{ fontSize: 11, fontFamily: 'AtkinsonHyperlegibleNext-Regular', color: THEME.colors.textSecondary, marginTop: 2 }}>Pas de pubs, pas de tracking, science first.</Text>
+                  <Text style={{ fontSize: 13, fontFamily: 'AtkinsonHyperlegibleNext-Bold', color: '#D2B14C', lineHeight: 20 }}>❤️  {t('activateDeepDreamModal.deep_support')}</Text>
+                  <Text style={{ fontSize: 11, fontFamily: 'AtkinsonHyperlegibleNext-Regular', color: THEME.colors.textSecondary, marginTop: 2 }}>{t('activateDeepDreamModal.deep_supportSub')}</Text>
                 </View>
               </View>
             </View>
@@ -154,7 +156,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color="#4F8DFF" size="small" />
-                <Text style={styles.loadingText}>Chargement des formules...</Text>
+                <Text style={styles.loadingText}>{t('activateDeepDreamModal.loading')}</Text>
               </View>
             ) : (
               <View style={styles.tiersContainer}>
@@ -173,7 +175,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
                     >
                       {isPopular && (
                         <View style={styles.popularBadge}>
-                          <Text style={styles.popularBadgeText}>Le plus choisi</Text>
+                          <Text style={styles.popularBadgeText}>{t('activateDeepDreamModal.popularBadge')}</Text>
                         </View>
                       )}
                       <View style={styles.tierRow}>
@@ -197,8 +199,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
 
             {/* Disclaimer */}
             <Text style={styles.disclaimer}>
-              Chaque formule débloque DeepDream à vie.{' '}
-              La différence, c'est la valeur de votre soutien.
+              {t('activateDeepDreamModal.disclaimer')}
             </Text>
 
             {/* CTA Soutenir */}
@@ -213,7 +214,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
               ) : (
                 <>
                   <MaterialIcons name="favorite" size={18} color="#FFFFFF" />
-                  <Text style={styles.purchaseButtonText}>Soutenir · {selectedPrice}</Text>
+                  <Text style={styles.purchaseButtonText}>{t('activateDeepDreamModal.purchaseCta', { price: selectedPrice })}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -224,7 +225,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
               onPress={onClose}
               activeOpacity={0.8}
             >
-              <Text style={styles.skipButtonText}>Pas maintenant, continuer gratuitement</Text>
+              <Text style={styles.skipButtonText}>{t('activateDeepDreamModal.skipBtn')}</Text>
             </TouchableOpacity>
 
             {/* Restaurer */}
@@ -235,7 +236,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
               activeOpacity={0.7}
             >
               <Text style={styles.restoreText}>
-                {restoring ? 'Restauration...' : 'Déjà soutenu ? Restaurer mes achats'}
+                {restoring ? t('activateDeepDreamModal.restoring') : t('activateDeepDreamModal.restoreBtn')}
               </Text>
             </TouchableOpacity>
           </ScrollView>

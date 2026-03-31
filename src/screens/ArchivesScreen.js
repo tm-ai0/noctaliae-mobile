@@ -16,9 +16,11 @@ import { getAllDreams, deleteDream, restoreDream } from '../services/storageServ
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
+import { useTranslation } from 'react-i18next';
 
 export default function ArchivesScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [archivedDreams, setArchivedDreams] = useState([]);
   const { showAlert, AlertComponent } = useNoctaliaeAlert();
 
@@ -42,10 +44,10 @@ export default function ArchivesScreen({ navigation }) {
   async function handleDeleteDream(dreamId) {
     showAlert({
       type: 'confirm',
-      title: 'Supprimer définitivement',
-      message: 'Cette action est irréversible.',
-      confirmText: 'Supprimer',
-      cancelText: 'Annuler',
+      title: t('archives.deleteAlert_title'),
+      message: t('archives.deleteAlert_msg'),
+      confirmText: t('archives.deleteAlert_confirm'),
+      cancelText: t('archives.deleteAlert_cancel'),
       onConfirm: async () => {
         await deleteDream(dreamId);
         loadArchivedDreams();
@@ -62,10 +64,10 @@ export default function ArchivesScreen({ navigation }) {
     if (archivedDreams.length === 0) return;
     showAlert({
       type: 'warning',
-      title: 'Tout supprimer',
-      message: `Voulez-vous supprimer définitivement les ${archivedDreams.length} rêve(s) archivé(s) ?`,
-      confirmText: 'Tout supprimer',
-      cancelText: 'Annuler',
+      title: t('archives.deleteAllAlert_title'),
+      message: t('archives.deleteAllAlert_msg', { count: archivedDreams.length }),
+      confirmText: t('archives.deleteAllAlert_confirm'),
+      cancelText: t('archives.deleteAllAlert_cancel'),
       onConfirm: async () => {
         for (const dream of archivedDreams) {
           await deleteDream(dream.id);
@@ -89,7 +91,7 @@ export default function ArchivesScreen({ navigation }) {
       dreamId: dream.id,
       dreamAnalysis: dream.analysis || '',
       dreamTranscription: dream.transcription || '',
-      dreamTitle: dream.dreamTitle || dream.title || 'Rêve archivé',
+      dreamTitle: dream.dreamTitle || dream.title || t('archives.dreamFallback'),
       dreamDate: dream.date,
       modelUsed: dream.modelUsed || 'llama',
       dreamTags: dream.tags || [],
@@ -146,7 +148,7 @@ export default function ArchivesScreen({ navigation }) {
           <View style={styles.cardHeader}>
             <View style={[styles.daysLeftBadge, isExpiringSoon && styles.daysLeftBadgeUrgent]}>
               <MaterialIcons name="schedule" size={13} color="#FFF" />
-              <Text style={styles.daysLeftText}>{daysLeft}j restants</Text>
+              <Text style={styles.daysLeftText}>{t('archives.daysLeft', { count: daysLeft })}</Text>
             </View>
             <View style={styles.cardHeaderRight}>
               {hasImage && (
@@ -158,12 +160,12 @@ export default function ArchivesScreen({ navigation }) {
 
           {/* Titre */}
           <Text style={styles.cardTitle} numberOfLines={2}>
-            {dream.dreamTitle || dream.title || 'Rêve archivé'}
+            {dream.dreamTitle || dream.title || t('archives.dreamFallback')}
           </Text>
 
           {/* Date archivage */}
           <Text style={styles.cardInfo}>
-            Archivé le {new Date(dream.archivedAt).toLocaleDateString('fr-FR')}
+            {t('archives.archivedOn', { date: new Date(dream.archivedAt).toLocaleDateString('fr-FR') })}
           </Text>
 
           {/* Actions */}
@@ -174,7 +176,7 @@ export default function ArchivesScreen({ navigation }) {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <MaterialIcons name="restore" size={15} color={THEME.colors.success} />
-              <Text style={[styles.actionBtnText, { color: THEME.colors.success }]}>Restaurer</Text>
+              <Text style={[styles.actionBtnText, { color: THEME.colors.success }]}>{t('archives.restoreBtn')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -183,7 +185,7 @@ export default function ArchivesScreen({ navigation }) {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <MaterialIcons name="delete-forever" size={15} color={THEME.colors.error} />
-              <Text style={[styles.actionBtnText, { color: THEME.colors.error }]}>Supprimer</Text>
+              <Text style={[styles.actionBtnText, { color: THEME.colors.error }]}>{t('archives.deleteBtn')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -200,7 +202,7 @@ export default function ArchivesScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={24} color={THEME.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Archives</Text>
+        <Text style={styles.headerTitle}>{t('archives.title')}</Text>
         <TouchableOpacity style={styles.iconButton} onPress={handleDeleteAll}>
           <MaterialIcons name="delete-sweep" size={24} color={THEME.colors.text} />
         </TouchableOpacity>
@@ -209,17 +211,15 @@ export default function ArchivesScreen({ navigation }) {
       {/* Info */}
       <View style={styles.infoBox}>
         <MaterialIcons name="info-outline" size={18} color={THEME.colors.primary} />
-        <Text style={styles.infoText}>
-          Les rêves archivés sont supprimés après 30 jours. Tapez une carte pour la lire.
-        </Text>
+        <Text style={styles.infoText}>{t('archives.info')}</Text>
       </View>
 
       {/* Liste */}
       {archivedDreams.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MaterialIcons name="inventory-2" size={72} color={THEME.colors.textSecondary} style={{ marginBottom: 20 }} />
-          <Text style={styles.emptyTitle}>Aucune archive</Text>
-          <Text style={styles.emptySubtitle}>Les rêves archivés apparaîtront ici</Text>
+          <Text style={styles.emptyTitle}>{t('archives.emptyTitle')}</Text>
+          <Text style={styles.emptySubtitle}>{t('archives.emptySub')}</Text>
         </View>
       ) : (
         <FlatList

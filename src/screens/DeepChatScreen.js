@@ -34,6 +34,7 @@ import { premiumService } from '../services/premiumService';
 import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
+import { useTranslation } from 'react-i18next';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -134,7 +135,8 @@ export default function DeepChatScreen({ route, navigation }) {
   const ambientSecondary = palette[1] || ambientColor; // Couleur secondaire
   const hasAmbient = ambientColor !== null;
   const { showAlert, AlertComponent } = useNoctaliaeAlert();
-  
+  const { t } = useTranslation();
+
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -204,9 +206,9 @@ export default function DeepChatScreen({ route, navigation }) {
       setIsSecret(newStatus);
       showAlert({
         type: 'success',
-        title: newStatus ? '🔐 Rêve protégé' : '🔓 Rêve déverrouillé',
-        message: newStatus ? 'Ce rêve est maintenant secret.' : 'Ce rêve n\'est plus secret.',
-        confirmText: 'OK'
+        title: newStatus ? t('deepChat.secretOn_title') : t('deepChat.secretOff_title'),
+        message: newStatus ? t('deepChat.secretOn_msg') : t('deepChat.secretOff_msg'),
+        confirmText: t('common.ok')
       });
     } catch (error) {
       console.error('❌ Erreur toggle secret:', error);
@@ -298,13 +300,13 @@ export default function DeepChatScreen({ route, navigation }) {
     if (status !== 'granted') {
       showAlert({
         type: 'error',
-        title: 'Permission refusée',
-        message: 'Autorisez l\'accès à la caméra dans les paramètres.',
-        confirmText: 'OK'
+        title: t('deepChat.permCamera_title'),
+        message: t('deepChat.permCamera_msg'),
+        confirmText: t('common.ok')
       });
       return;
     }
-    
+
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
@@ -329,9 +331,9 @@ export default function DeepChatScreen({ route, navigation }) {
     if (status !== 'granted') {
       showAlert({
         type: 'error',
-        title: 'Permission refusée',
-        message: 'Autorisez l\'accès à la galerie dans les paramètres.',
-        confirmText: 'OK'
+        title: t('deepChat.permGallery_title'),
+        message: t('deepChat.permGallery_msg'),
+        confirmText: t('common.ok')
       });
       return;
     }
@@ -363,9 +365,9 @@ export default function DeepChatScreen({ route, navigation }) {
       if (!granted) {
         showAlert({
           type: 'error',
-          title: 'Permission refusée',
-          message: 'Permission microphone refusée',
-          confirmText: 'OK'
+          title: t('deepChat.permMic_title'),
+          message: t('deepChat.permMic_msg'),
+          confirmText: t('common.ok')
         });
         return;
       }
@@ -385,9 +387,9 @@ export default function DeepChatScreen({ route, navigation }) {
       console.error('❌ Erreur:', error);
       showAlert({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de démarrer l\'enregistrement',
-        confirmText: 'OK'
+        title: t('common.error'),
+        message: t('deepChat.errRecording_msg'),
+        confirmText: t('common.ok')
       });
     }
   }
@@ -408,9 +410,9 @@ export default function DeepChatScreen({ route, navigation }) {
       console.error('❌ Erreur:', error);
       showAlert({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de traiter la question vocale',
-        confirmText: 'OK'
+        title: t('common.error'),
+        message: t('deepChat.errVoice_msg'),
+        confirmText: t('common.ok')
       });
     } finally {
       setIsTranscribing(false);
@@ -503,9 +505,9 @@ export default function DeepChatScreen({ route, navigation }) {
       console.error('❌ Erreur chat:', error);
       showAlert({
         type: 'error',
-        title: 'Erreur',
-        message: error.message || 'Impossible de communiquer avec le serveur',
-        confirmText: 'OK'
+        title: t('common.error'),
+        message: error.message || t('deepChat.errChat_fallback'),
+        confirmText: t('common.ok')
       });
       setMessages(prev => prev.slice(0, -1));
     } finally {
@@ -520,15 +522,15 @@ export default function DeepChatScreen({ route, navigation }) {
   async function handleRestart() {
     showAlert({
       type: 'confirm',
-      title: 'Nouvelle conversation ?',
-      message: 'Tous les messages seront effacés.',
-      confirmText: 'Effacer',
-      cancelText: 'Annuler',
+      title: t('deepChat.restartAlert_title'),
+      message: t('deepChat.restartAlert_msg'),
+      confirmText: t('deepChat.restartAlert_confirm'),
+      cancelText: t('deepChat.restartAlert_cancel'),
       onConfirm: async () => {
         await clearConversation(dreamId);
         setMessages([{
           role: 'assistant',
-          content: 'Explorons ensemble votre rêve en profondeur. Quelle dimension souhaitez-vous approfondir ?',
+          content: t('deepChat.initialMessage'),
           timestamp: Date.now()
         }]);
         const newSuggestions = generateSmartSuggestions(dreamAnalysis, dreamTranscription);
@@ -754,9 +756,9 @@ export default function DeepChatScreen({ route, navigation }) {
       console.error('❌ Erreur export PDF:', error);
       showAlert({
         type: 'error',
-        title: 'Erreur',
-        message: 'Impossible de générer le PDF',
-        confirmText: 'OK'
+        title: t('common.error'),
+        message: t('deepChat.errPdf_msg'),
+        confirmText: t('common.ok')
       });
     } finally {
       setIsExportingPdf(false);
@@ -769,7 +771,7 @@ export default function DeepChatScreen({ route, navigation }) {
   const handleShareFriendlyText = async () => {
     try {
       const tagsLine = dreamTags?.length
-        ? dreamTags.slice(0, 3).map(t => `#${t.toLowerCase().replace(/\s+/g, '')}`).join(' ')
+        ? dreamTags.slice(0, 3).map(tag => `#${tag.toLowerCase().replace(/\s+/g, '')}`).join(' ')
         : '';
       const lines = [
         `\ud83c\udf19 ${dreamTitle}`,
@@ -816,10 +818,10 @@ export default function DeepChatScreen({ route, navigation }) {
   const handleDelete = () => {
     showAlert({
       type: 'confirm',
-      title: 'Supprimer ce rêve ?',
-      message: 'Cette action est irréversible. Le rêve, son analyse et cette conversation seront définitivement supprimés.',
-      confirmText: 'Supprimer',
-      cancelText: 'Annuler',
+      title: t('deepChat.deleteAlert_title'),
+      message: t('deepChat.deleteAlert_msg'),
+      confirmText: t('deepChat.deleteAlert_confirm'),
+      cancelText: t('deepChat.deleteAlert_cancel'),
       onConfirm: async () => {
         try {
           await clearConversation(dreamId);
@@ -832,9 +834,9 @@ export default function DeepChatScreen({ route, navigation }) {
           console.error('❌ Erreur suppression:', error);
           showAlert({
             type: 'error',
-            title: 'Erreur',
-            message: 'Impossible de supprimer le rêve',
-            confirmText: 'OK'
+            title: t('common.error'),
+            message: t('deepChat.errDelete_msg'),
+            confirmText: t('common.ok')
           });
         }
       }
@@ -844,10 +846,10 @@ export default function DeepChatScreen({ route, navigation }) {
   const handleArchive = () => {
     showAlert({
       type: 'confirm',
-      title: 'Archiver ce rêve ?',
-      message: 'Le rêve sera masqué de la liste principale. Vous pourrez le retrouver dans Archives.',
-      confirmText: 'Archiver',
-      cancelText: 'Annuler',
+      title: t('deepChat.archiveAlert_title'),
+      message: t('deepChat.archiveAlert_msg'),
+      confirmText: t('deepChat.archiveAlert_confirm'),
+      cancelText: t('deepChat.archiveAlert_cancel'),
       onConfirm: async () => {
         try {
           await archiveDream(dreamId);
@@ -859,9 +861,9 @@ export default function DeepChatScreen({ route, navigation }) {
           console.error('❌ Erreur archivage:', error);
           showAlert({
             type: 'error',
-            title: 'Erreur',
-            message: 'Impossible d\'archiver le rêve',
-            confirmText: 'OK'
+            title: t('common.error'),
+            message: t('deepChat.errArchive_msg'),
+            confirmText: t('common.ok')
           });
         }
       }
@@ -961,7 +963,7 @@ export default function DeepChatScreen({ route, navigation }) {
         </TouchableOpacity>
         
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Approfondir</Text>
+          <Text style={styles.headerTitle}>{t('deepChat.title')}</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>{dreamTitle}</Text>
         </View>
 
@@ -1017,14 +1019,14 @@ export default function DeepChatScreen({ route, navigation }) {
           {isLoading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator color={THEME.colors.primary} size="small" />
-              <Text style={styles.loadingText}>Réflexion...</Text>
+              <Text style={styles.loadingText}>{t('deepChat.loading')}</Text>
             </View>
           )}
 
           {isTranscribing && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator color={THEME.colors.warmGold} size="small" />
-              <Text style={styles.loadingText}>Transcription...</Text>
+              <Text style={styles.loadingText}>{t('deepChat.transcribing')}</Text>
             </View>
           )}
         </ScrollView>
@@ -1169,7 +1171,7 @@ export default function DeepChatScreen({ route, navigation }) {
         {/* Input texte */}
         <TextInput
           style={styles.input}
-          placeholder={selectedImage ? "Ajoutez un commentaire..." : "Posez votre question..."}
+          placeholder={selectedImage ? t('deepChat.placeholder_image') : t('deepChat.placeholder')}
           placeholderTextColor={THEME.colors.textSecondary}
           value={inputText}
           onChangeText={setInputText}
@@ -1213,8 +1215,8 @@ export default function DeepChatScreen({ route, navigation }) {
         >
           <View style={styles.imagePickerSheet}>
             <View style={styles.imagePickerHandle} />
-            <Text style={styles.imagePickerTitle}>Ajouter une image</Text>
-            <Text style={styles.imagePickerSubtitle}>Photo ou dessin de votre rêve</Text>
+            <Text style={styles.imagePickerTitle}>{t('deepChat.imagePicker_title')}</Text>
+            <Text style={styles.imagePickerSubtitle}>{t('deepChat.imagePicker_subtitle')}</Text>
             
             <TouchableOpacity 
               style={styles.imagePickerOption}
@@ -1223,7 +1225,7 @@ export default function DeepChatScreen({ route, navigation }) {
               <View style={styles.imagePickerIconContainer}>
                 <MaterialIcons name="camera-alt" size={24} color={THEME.colors.primary} />
               </View>
-              <Text style={styles.imagePickerOptionText}>Prendre une photo</Text>
+              <Text style={styles.imagePickerOptionText}>{t('deepChat.imagePicker_camera')}</Text>
               <MaterialIcons name="chevron-right" size={24} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
             
@@ -1234,7 +1236,7 @@ export default function DeepChatScreen({ route, navigation }) {
               <View style={styles.imagePickerIconContainer}>
                 <MaterialIcons name="photo-library" size={24} color={THEME.colors.warmGold} />
               </View>
-              <Text style={styles.imagePickerOptionText}>Choisir depuis la galerie</Text>
+              <Text style={styles.imagePickerOptionText}>{t('deepChat.imagePicker_gallery')}</Text>
               <MaterialIcons name="chevron-right" size={24} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
             
@@ -1242,7 +1244,7 @@ export default function DeepChatScreen({ route, navigation }) {
               style={styles.imagePickerCancel}
               onPress={() => setShowImagePicker(false)}
             >
-              <Text style={styles.imagePickerCancelText}>Annuler</Text>
+              <Text style={styles.imagePickerCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -1269,7 +1271,7 @@ export default function DeepChatScreen({ route, navigation }) {
             onPress={() => {}}
           >
             <View style={styles.shareSheetHandle} />
-            <Text style={styles.shareSheetTitle}>Partager ce rêve</Text>
+            <Text style={styles.shareSheetTitle}>{t('deepChat.shareSheet_title')}</Text>
 
             <TouchableOpacity
               style={styles.shareSheetOption}
@@ -1283,8 +1285,8 @@ export default function DeepChatScreen({ route, navigation }) {
                 <MaterialIcons name="ios-share" size={22} color={THEME.colors.primary} />
               </View>
               <View style={styles.shareSheetOptionText}>
-                <Text style={styles.shareSheetOptionTitle}>Carte visuelle</Text>
-                <Text style={styles.shareSheetOptionDesc}>Image partageable pour les réseaux</Text>
+                <Text style={styles.shareSheetOptionTitle}>{t('deepChat.shareSheet_visual')}</Text>
+                <Text style={styles.shareSheetOptionDesc}>{t('deepChat.shareSheet_visualDesc')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
@@ -1301,14 +1303,14 @@ export default function DeepChatScreen({ route, navigation }) {
                 <MaterialIcons name="picture-as-pdf" size={22} color={THEME.colors.warmGold} />
               </View>
               <View style={styles.shareSheetOptionText}>
-                <Text style={styles.shareSheetOptionTitle}>Rapport PDF</Text>
-                <Text style={styles.shareSheetOptionDesc}>Analyse + conversation complète</Text>
+                <Text style={styles.shareSheetOptionTitle}>{t('deepChat.shareSheet_pdf')}</Text>
+                <Text style={styles.shareSheetOptionDesc}>{t('deepChat.shareSheet_pdfDesc')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={18} color={THEME.colors.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.shareSheetCancel} onPress={() => setShowShareMenu(false)}>
-              <Text style={styles.shareSheetCancelText}>Annuler</Text>
+              <Text style={styles.shareSheetCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
