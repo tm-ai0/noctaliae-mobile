@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   TextInput,
   FlatList,
   Alert,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -550,21 +551,20 @@ export default function AnalysisScreen({ navigation, route }) {
               </Text>
             </>
           ) : (
-            // Empty state normal
-            <>
-              <MaterialCommunityIcons 
-                name="brain" 
-                size={80} 
-                color={theme.colors.textSecondary} 
-                style={{ marginBottom: 20 }}
+            // Empty state normal — Nocty
+            <View style={styles.emptyCard}>
+              <Image
+                source={require('../../assets/nocty-welcome.png')}
+                style={styles.emptyNocty}
+                resizeMode="contain"
               />
               <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
-                {t('analysis.emptyAll')}
+                {t('analysis.emptyTitle')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
                 {t('analysis.emptyAllSub')}
               </Text>
-            </>
+            </View>
           )}
         </View>
       ) : (
@@ -698,8 +698,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
     paddingBottom: 100,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,255,176,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,176,0.15)',
+    borderRadius: 20,
+    padding: 32,
+  },
+  emptyNocty: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
   },
   emptyTitle: {
     fontSize: 26,

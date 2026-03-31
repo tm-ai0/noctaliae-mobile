@@ -74,6 +74,7 @@ export default function SettingsScreen({ navigation }) {
   const [secRecherche, setSecRecherche] = useState(false)
   const [secSoutenir, setSecSoutenir] = useState(false)
   const [secAide, setSecAide] = useState(false)
+  const [secLangue, setSecLangue] = useState(false)
 
   if (
     Platform.OS === 'android' &&
@@ -1294,54 +1295,74 @@ export default function SettingsScreen({ navigation }) {
             },
           ]}
         >
-          <View style={styles.sectionTitleRow}>
-            <MaterialCommunityIcons
-              name="translate"
-              size={24}
-              color={theme.colors.primary}
-            />
-            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
-              {t('settings.language')}
-            </Text>
-          </View>
-          <View style={langStyles.row}>
-            {[
-              { code: 'fr', label: t('settings.language_fr'), flag: '🇫🇷' },
-              { code: 'en', label: t('settings.language_en'), flag: '🇬🇧' },
-              { code: 'es', label: t('settings.language_es'), flag: '🌎' },
-            ].map(({ code, label, flag }) => {
-              const isActive = i18next.language === code
-              return (
-                <TouchableOpacity
-                  key={code}
-                  style={[
-                    langStyles.chip,
-                    {
-                      backgroundColor: isActive
-                        ? 'rgba(210,177,76,0.12)'
-                        : 'rgba(255,255,255,0.04)',
-                      borderColor: isActive ? '#D2B14C' : theme.colors.cardBorder,
-                    },
-                  ]}
-                  onPress={() => changeLanguage(code)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={langStyles.chipFlag}>{flag}</Text>
-                  <Text
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleSection(setSecLangue)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionTitleRow}>
+              <MaterialCommunityIcons
+                name="translate"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+                {t('settings.language')}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {!secLangue && (
+                <Text style={{ fontSize: 13, color: theme.colors.textSecondary, fontFamily: 'AtkinsonHyperlegibleNext-Regular' }}>
+                  {i18next.language === 'fr' ? '🇫🇷 Français' : i18next.language === 'es' ? '🌎 Español' : '🇬🇧 English'}
+                </Text>
+              )}
+              <MaterialIcons
+                name={secLangue ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                size={22}
+                color={theme.colors.textSecondary}
+              />
+            </View>
+          </TouchableOpacity>
+          {secLangue && (
+            <View style={{ marginTop: 12, gap: 8 }}>
+              {[
+                { code: 'fr', label: t('settings.language_fr'), flag: '🇫🇷' },
+                { code: 'en', label: t('settings.language_en'), flag: '🇬🇧' },
+                { code: 'es', label: t('settings.language_es'), flag: '🌎' },
+              ].map(({ code, label, flag }) => {
+                const isActive = i18next.language === code
+                return (
+                  <TouchableOpacity
+                    key={code}
                     style={[
-                      langStyles.chipLabel,
-                      { color: isActive ? '#D2B14C' : theme.colors.textSecondary },
+                      langStyles.option,
+                      {
+                        backgroundColor: isActive
+                          ? 'rgba(210,177,76,0.12)'
+                          : 'rgba(255,255,255,0.04)',
+                        borderColor: isActive ? '#D2B14C' : theme.colors.cardBorder,
+                      },
                     ]}
+                    onPress={() => changeLanguage(code)}
+                    activeOpacity={0.7}
                   >
-                    {label}
-                  </Text>
-                  {isActive && (
-                    <MaterialIcons name="check" size={14} color="#D2B14C" />
-                  )}
-                </TouchableOpacity>
-              )
-            })}
-          </View>
+                    <Text style={langStyles.optionFlag}>{flag}</Text>
+                    <Text
+                      style={[
+                        langStyles.optionLabel,
+                        { color: isActive ? '#D2B14C' : theme.colors.text },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                    {isActive && (
+                      <MaterialIcons name="check" size={18} color="#D2B14C" style={{ marginLeft: 'auto' }} />
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          )}
         </View>
 
         {/* === SECTION AIDE === */}
@@ -1692,22 +1713,20 @@ const notifStyles = StyleSheet.create({
 // ─── STYLES LANGUE ────────────────────────────────────────────────────────────
 
 const langStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  chip: {
-    flex: 1,
+  option: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1.5,
   },
-  chipFlag: { fontSize: 16 },
-  chipLabel: {
-    fontSize: 13,
+  optionFlag: { fontSize: 20 },
+  optionLabel: {
+    fontSize: 15,
     fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    flex: 1,
   },
 })
 

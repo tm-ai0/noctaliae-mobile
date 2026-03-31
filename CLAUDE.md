@@ -117,7 +117,7 @@ src/
    - Passer isPremium + tierInfo en props
 1. **Backend** : vérifier api.thomasmaury.fr, envisager PM2
 2. **Google developer notifications** : connecter RevenueCat Pub/Sub (non configuré)
-3. **i18n FR/EN/ES LATAM** : prochain chantier majeur (plan dans `PLAN_I18N.md`)
+3. **i18n FR/EN/ES LATAM** : ✅ Phases 1-5 DONE. TODO Phase 6 : QA + grep FR résiduels + test layouts ES
 4. **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions)
 5. **Shake-to-feedback** : expo-sensors Accelerometer
 
@@ -142,7 +142,7 @@ src/
 - **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions, features)
 - **Shake-to-feedback** : expo-sensors Accelerometer (prochain sprint)
 - **Item 5** : flow photo ne génère pas d'image (bypass PostRecordingScreen où generateDreamImage est appelé)
-- **i18n FR/EN/ES LATAM** : Phases 1-4 DONE (31/03/2026). i18next+react-i18next+expo-localization installés, src/i18n/index.js configuré, initI18n() branché dans App.js. fr.json/en.json/es.json complets (~450 clés chacun) dans src/i18n/locales/. Phase 4 : tous les fichiers P1 patchés (14 fichiers : 5 onboarding, AnalysisScreen, ConversationScreen, PostRecordingScreen, SettingsScreen, ActivateDeepDreamModal, DeepDreamInfoModal, DreamCard, CustomTabBar, DreamShareTemplate). Tags fingerprints ("Introverti", etc.) laissés en FR volontairement (LLM gèrent). TODO Phase 5 : sélecteur langue dans Settings (🇫🇷/🇬🇧/🌎). TODO Phase 6 : QA + grep textes FR résiduels + test layouts ES
+- **i18n FR/EN/ES LATAM** : Phases 1-5 DONE (01/04/2026). i18next+react-i18next+expo-localization installés, src/i18n/index.js configuré, initI18n() branché dans App.js. fr.json (714 clés) / en.json / es.json (785 clés chacun, 0 missing) dans src/i18n/locales/. Phase 4 P1 : 14 fichiers (5 onboarding + ConversationScreen, PostRecordingScreen, AnalysisScreen, SettingsScreen, ActivateDeepDreamModal, DeepDreamInfoModal, DreamCard, CustomTabBar, DreamShareTemplate). Phase 4 P2 : ArchivesScreen, DeepChatScreen, ProfileScreen, PersonaScreen, ChatScreen, QuickRecordScreen, MetaAnalysisScreen, ResearchOptInModal, VoiceAssistantScreen. Phase 5 : sélecteur langue (🇫🇷/🇬🇧/🌎) dans SettingsScreen. Tags fingerprints ("Introverti", etc.) laissés en FR volontairement (LLM gèrent). TODO Phase 6 : QA + grep textes FR résiduels + test layouts ES (TrendsScreen, InsightsScreen, AtlasScreen, ExplorerScreen, PlaygroundScreen, GeminiLiveScreen non encore i18n'd)
 
 ### CE QU'IL NE FAUT PAS CASSER
 - PostRecordingScreen : la section "Enrichir l'analyse" (métadonnées lucidité/sommeil/émotions/thèmes) DOIT rester

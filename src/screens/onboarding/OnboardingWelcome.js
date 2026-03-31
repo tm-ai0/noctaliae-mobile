@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +16,8 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
+import { changeLanguage } from '../../i18n';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -71,6 +74,7 @@ function Phosphene({ x, y, size, dur, delay }) {
 export default function OnboardingWelcome({ navigation }) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const [showLangModal, setShowLangModal] = useState(false);
 
   // Animations séquencées
   const fadeLogo    = useRef(new Animated.Value(0)).current;
@@ -111,6 +115,50 @@ export default function OnboardingWelcome({ navigation }) {
       <View style={styles.glowIndigo} />
       <View style={styles.glowGreen} />
       {PHOSPHENE_DATA.map((p, i) => <Phosphene key={i} {...p} />)}
+
+      {/* Globe langue */}
+      <TouchableOpacity
+        style={[styles.globeBtn, { top: Math.max(insets.top, 24) + 10 }]}
+        onPress={() => setShowLangModal(true)}
+        activeOpacity={0.7}
+      >
+        <MaterialCommunityIcons name="earth" size={22} color={OB.textSub} />
+      </TouchableOpacity>
+
+      {/* Modal sélecteur de langue */}
+      <Modal
+        visible={showLangModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLangModal(false)}
+      >
+        <View style={langModalStyles.overlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowLangModal(false)} />
+          <View style={langModalStyles.sheet}>
+            <View style={langModalStyles.handle} />
+            <Text style={langModalStyles.title}>LANGUE / LANGUAGE</Text>
+            {[
+              { code: 'fr', flag: '🇫🇷', label: 'Français' },
+              { code: 'en', flag: '🇬🇧', label: 'English' },
+              { code: 'es', flag: '🌎', label: 'Español' },
+            ].map(({ code, flag, label }, i, arr) => {
+              const isActive = i18next.language === code;
+              return (
+                <TouchableOpacity
+                  key={code}
+                  style={[langModalStyles.option, i < arr.length - 1 && langModalStyles.optionBorder]}
+                  onPress={() => { changeLanguage(code); setShowLangModal(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={langModalStyles.optionEmoji}>{flag}</Text>
+                  <Text style={[langModalStyles.optionLabel, isActive && { color: OB.accent }]}>{label}</Text>
+                  {isActive && <MaterialCommunityIcons name="check" size={18} color={OB.accent} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
 
       {/* Layout fixe — pas de ScrollView */}
       <View style={[styles.inner, {
@@ -345,5 +393,65 @@ const styles = StyleSheet.create({
     color: OB.textMuted,
     fontFamily: 'AtkinsonHyperlegibleNext-Regular',
     letterSpacing: 0.3,
+  },
+  globeBtn: {
+    position: 'absolute',
+    right: 24,
+    opacity: 0.5,
+    padding: 8,
+    zIndex: 10,
+  },
+});
+
+const langModalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#0D1220',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+    paddingTop: 12,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: OB.textMuted,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 13,
+    color: OB.accent,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    paddingHorizontal: 24,
+    marginBottom: 8,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  optionBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  optionEmoji: { fontSize: 22, width: 28, textAlign: 'center' },
+  optionLabel: {
+    flex: 1,
+    fontSize: 16,
+    color: OB.text,
+    fontFamily: 'AtkinsonHyperlegibleNext-Bold',
   },
 });

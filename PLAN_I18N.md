@@ -214,17 +214,18 @@ const { t } = useTranslation();
 
 ---
 
-## Status i18n (31/03/2026)
+## Status i18n (01/04/2026)
 
 ### ✅ DONE
 - **Phase 1** : Setup i18next + expo-localization + src/i18n/index.js, branché dans App.js
-- **Phase 2** : fr.json complet (~600 clés), en.json + es.json générés
+- **Phase 2** : fr.json complet (714 clés), en.json + es.json générés
+- **Phase 3** : en.json + es.json synchronisés — 785 clés chacun, 0 manquante vs fr.json (vérifié python3)
 - **Phase 4 P1** : ConversationScreen, PostRecordingScreen, AnalysisScreen, SettingsScreen, ActivateDeepDreamModal, DeepDreamInfoModal, DreamCard, CustomTabBar, DreamShareTemplate (9 fichiers)
 - **Phase 4 P2** : ArchivesScreen, DeepChatScreen, ProfileScreen, PersonaScreen, ChatScreen, QuickRecordScreen, MetaAnalysisScreen, ResearchOptInModal (screens), VoiceAssistantScreen (9 fichiers)
 - **Phase 5** : Sélecteur langue (3 chips 🇫🇷/🇬🇧/🌎) dans SettingsScreen entre APPARENCE et AIDE
 
 ### TODO
-- **Phase 6** : QA + grep textes FR résiduels + test layouts ES (TrendsScreen, InsightsScreen, AtlasScreen, ExplorerScreen, PlaygroundScreen, GeminiLiveScreen, components/ResearchOptInModal)
+- **Phase 6** : QA + grep textes FR résiduels + test layouts ES (TrendsScreen, InsightsScreen, AtlasScreen, ExplorerScreen, PlaygroundScreen, GeminiLiveScreen — pas encore i18n'd)
 
 ---
 
