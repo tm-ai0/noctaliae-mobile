@@ -6,6 +6,8 @@
 [![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61dafb)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-54-000020)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![Website](https://img.shields.io/badge/Website-nocty.thomasmaury.fr-00FFB0?logo=googlechrome&logoColor=white)](https://nocty.thomasmaury.fr/)
+[![Google Play](https://img.shields.io/badge/Google_Play-Download-414141?logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.noctaliae.mobile)
 
 
 ---
