@@ -21,9 +21,9 @@
     "confirm": "Confirm",
     "modify": "Edit",
     "copy": "Copy",
-    "apply": "Apply"
+    "apply": "Apply",
+    "defaultDreamTitle": "Dream of {{date}}"
   },
-
   "onboarding": {
     "welcome": {
       "intro": "Welcome to",
@@ -119,7 +119,6 @@
       "skipBtn": "Not now"
     }
   },
-
   "postRecording": {
     "header": "Dream analysis",
     "tooltipTranscript": "Voice transcription",
@@ -218,7 +217,6 @@
     "alertFailed_msg": "The server couldn't process your dream. Try again in a moment.",
     "alertFailed_retry": "Retry"
   },
-
   "analysis": {
     "title": "My dreams",
     "searchPlaceholder": "Search a dream...",
@@ -242,7 +240,6 @@
     "deleteAlert_confirm": "Delete",
     "deleteAlert_cancel": "Cancel"
   },
-
   "conversation": {
     "tabTranscription": "Transcription",
     "tabAnalysis": "Analysis",
@@ -300,7 +297,6 @@
     "limitReached_confirm": "Got it",
     "pdf_error_msg": "Unable to generate the PDF"
   },
-
   "settings": {
     "title": "Settings",
     "section_persona": "Persona",
@@ -412,7 +408,6 @@
     "language_en": "English",
     "language_es": "Español"
   },
-
   "archives": {
     "title": "Archives",
     "info": "Archived dreams are kept for {{days}} days before automatic deletion.",
@@ -434,7 +429,6 @@
     "deleteAllAlert_cancel": "Cancel",
     "deleteAllBtn": "Clear archives"
   },
-
   "trends": {
     "title": "Dream Profile",
     "sectionTimeline": "Chromatic Timeline",
@@ -446,24 +440,38 @@
     "noDataSub": "Record your dreams to see your profile",
     "perWeek": "/wk",
     "total": "total",
-    "day_mon": "Mon",
-    "day_tue": "Tue",
-    "day_wed": "Wed",
-    "day_thu": "Thu",
-    "day_fri": "Fri",
-    "day_sat": "Sat",
-    "day_sun": "Sun",
-    "insight1_title": "Threat simulation",
-    "insight1_text": "According to Revonsuo, the brain uses dreams to simulate threat scenarios and improve our survival.",
-    "insight1_source": "Revonsuo, 2000",
-    "insight2_title": "Memory consolidation",
-    "insight2_text": "REM sleep plays a crucial role in consolidating emotional memories.",
-    "insight2_source": "Walker, 2017",
-    "insight3_title": "Emotional regulation",
-    "insight3_text": "Dreams allow us to reprocess emotional experiences in a soothed neurochemical context.",
-    "insight3_source": "Hobson & Stickgold, 1995"
+    "streakDay_one": "{{count}} day",
+    "streakDay_other": "{{count}} days",
+    "timelineSubtitle": "Emotional palette of your recent dreams",
+    "emptyTags": "No themes detected yet",
+    "streakRestart": "Restart your streak!",
+    "insightStartJournal_title": "Start your journal",
+    "insightStartJournal_text": "Record your dreams to discover your dream patterns.",
+    "insightContinuity_title": "Thematic continuity",
+    "insightContinuity_text": "The theme \"{{tag}}\" appears in {{recentCount}} of your last {{totalRecent}} dreams. According to Domhoff, this recurrence reflects your current concerns.",
+    "insightContinuity_source": "Domhoff, 2003",
+    "insightHighRecall_title": "High recall",
+    "insightHighRecall_text": "{{count}} dreams in 14 days: your dream recall is excellent. REM sleep consolidates your emotional memories.",
+    "insightHighRecall_source": "Walker, 2017",
+    "insightLowRecall_title": "Quiet phase",
+    "insightLowRecall_text": "Your dream recall is low right now. This is normal: stress and fatigue can reduce dream memory.",
+    "insightLowRecall_source": "Schredl, 2010",
+    "insightDiversity_title": "Thematic diversity",
+    "insightDiversity_text": "{{count}} different themes detected. High thematic variety reflects rich brain activity during REM sleep.",
+    "insightDiversity_source": "Hobson, 2002",
+    "insightWarmTone_title": "Warm tonality",
+    "insightWarmTone_text": "Your recent dreams are dominated by warm colors, often associated with intense emotions and emotional activation.",
+    "insightWarmTone_source": "Schredl & Erlacher, 2008",
+    "insightCoolTone_title": "Cool tonality",
+    "insightCoolTone_text": "Your recent dreams lean towards cool tones, often linked to reflection, serenity, or emotional detachment.",
+    "insightCoolTone_source": "Schredl & Erlacher, 2008",
+    "insightConsolidation_title": "Active consolidation",
+    "insightConsolidation_text": "{{count}} consecutive days of recording! Regularity strengthens memory consolidation during REM sleep.",
+    "insightConsolidation_source": "Walker, 2017",
+    "insightKeepRecording_title": "Keep recording",
+    "insightKeepRecording_text": "The more you record your dreams, the more your dream patterns reveal themselves. Practice naturally improves recall.",
+    "insightKeepRecording_source": "Schredl, 2018"
   },
-
   "deepChat": {
     "title": "Explore further",
     "initialMessage": "I'm ready to explore your dream in depth. Which dimension would you like to explore?",
@@ -514,7 +522,6 @@
     "archiveAlert_cancel": "Cancel",
     "errArchive_msg": "Unable to archive the dream"
   },
-
   "chat": {
     "initialMessage": "I'm here to deepen the analysis of your dream. Ask me anything! 💬",
     "fullAnalysis": "Full analysis",
@@ -543,7 +550,6 @@
     "aiAlert_title": "🤖 NoctaliaeAI",
     "aiAlert_msg": "Multimodal feature coming soon"
   },
-
   "profile": {
     "title": "My Profile",
     "info": "Your fingerprints personalize the analyses. The more you add, the more precise the insights.",
@@ -564,7 +570,6 @@
     "deleteAlert_confirm": "Delete",
     "deleteAlert_cancel": "Cancel"
   },
-
   "persona": {
     "title": "Persona",
     "manageTitle": "My fingerprints",
@@ -592,7 +597,6 @@
     "redo": "Redo the introduction",
     "redoConfirm": "This will restart the welcome tutorial. Continue?"
   },
-
   "insights": {
     "title": "Insights",
     "comingSoon": "Coming soon",
@@ -603,13 +607,21 @@
     "preview_stats": "Statistics",
     "preview_stats_desc": "Key figures of your dream life"
   },
-
   "atlas": {
     "title": "Atlas",
+    "subtitle": "Explore the dimensions of your dreams",
     "feedback": "Give feedback",
-    "support": "Support"
+    "support": "Support",
+    "heroTitle": "Dream Atlas",
+    "heroDescription": "An advanced dream exploration space is coming soon. Four modules to deepen your understanding of your dream life.",
+    "moduleExplorer": "Explorer",
+    "moduleCartographie": "Cartography",
+    "moduleLaboratoire": "Laboratory",
+    "moduleDecrypter": "Decryptor",
+    "interestQuestion": "Interested?",
+    "interestSubtext": "Tell us what you'd like to see in the Atlas",
+    "infoText": "The Atlas is under development. Your feedback helps us prioritize the right features."
   },
-
   "explorer": {
     "finish": "Finish",
     "card1_title": "The science of dreams",
@@ -623,15 +635,14 @@
     "card5_title": "Memory and dreams",
     "card5_subtitle": "Nighttime consolidation",
     "card6_title": "Recurring dreams",
-    "card6_subtitle": "When the brain insists"
+    "card6_subtitle": "When the brain insists",
+    "tapToReveal": "Tap to reveal"
   },
-
   "decrypter": {
     "title": "Decrypt",
     "article_title": "Dream theories",
     "article_intro": "Modern science offers several frameworks for understanding our dreams."
   },
-
   "metaAnalysis": {
     "title": "My dreams",
     "headerTitle": "My dreams",
@@ -650,7 +661,6 @@
     "restartAlert_confirm": "Clear",
     "errSend_msg": "Unable to communicate with the server"
   },
-
   "quickRecord": {
     "tabPhoto": "Photo",
     "tabWrite": "Write",
@@ -669,7 +679,6 @@
     "placeholder": "What I remember...",
     "analyzeCta": "Analyze"
   },
-
   "voiceAssistant": {
     "title": "Voice conversation with your dream",
     "headerTitle": "🎙️ Voice Assistant",
@@ -703,21 +712,53 @@
     "micLabel_idle": "Press to speak",
     "micLabel_recording": "Stop"
   },
-
   "geminiLive": {
     "feature1_desc": "Talk naturally about your dream",
     "feature2_desc": "The AI remembers the context",
     "feature3_desc": "Real-time responses",
     "feature4_desc": "Image analysis in the conversation",
-    "back": "Back"
+    "back": "Back",
+    "errTitle": "Error",
+    "permissionDenied": "Microphone required",
+    "permissionDeniedDesc": "Allow microphone access in settings to use NoctaliaeAI+.",
+    "connectionError": "Unable to connect to server.",
+    "genericError": "An error occurred.",
+    "audioError": "Unable to access microphone.",
+    "contextTitle": "Dream context",
+    "contextTranscription": "Transcription",
+    "noTranscription": "No transcription available",
+    "contextAnalysis": "Analysis",
+    "noAnalysis": "No analysis available",
+    "comingSoonBadge": "Coming soon",
+    "title": "NoctaliaeAI+",
+    "subtitle": "Chat in real time with your dream AI",
+    "feature1_title": "Natural conversation",
+    "feature1_desc_full": "Talk about your dream like to a friend",
+    "feature2_title": "Contextual memory",
+    "feature2_desc_full": "The AI remembers your dream and its analysis",
+    "feature3_title": "Real-time responses",
+    "feature3_desc_full": "Ultra-low latency for a smooth experience",
+    "feature4_title": "Image analysis",
+    "feature4_desc_full": "Share an image in the conversation",
+    "waitingText": "Real-time voice chat is coming soon. Stay tuned!",
+    "helpTitle": "How to use NoctaliaeAI+",
+    "helpSection1": "Start a session",
+    "helpText1": "Tap the microphone button to connect. The AI automatically loads your dream context.",
+    "helpSection2": "Speak naturally",
+    "helpText2": "Talk freely about your dream. The AI understands the context and responds in real time.",
+    "helpSection3": "End the session",
+    "helpText3": "Tap the button again to disconnect cleanly.",
+    "transcriptionLabel": "You",
+    "responseLabel": "NoctaliaeAI+",
+    "photoComingSoon": "Photo — Coming soon",
+    "photoComingSoonDesc": "Image analysis in conversation is coming soon.",
+    "videoComingSoonDesc": "Video analysis in conversation is coming soon."
   },
-
   "researchOptIn": {
     "label": "Contribute to research",
     "desc": "Share my dream analyses with researchers",
     "anonymInfo": "Anonymized data. No personal information shared"
   },
-
   "researchOptInModal": {
     "title": "How to contribute to research 🔬",
     "intro": "By enabling this option, you contribute to research on sleep and dreams.",
@@ -737,12 +778,10 @@
     "cancel": "Cancel",
     "accept": "I agree"
   },
-
   "playground": {
     "copy": "Copy",
     "apply": "Apply"
   },
-
   "dreamCard": {
     "swipeArchive": "Archive",
     "swipeShare": "Share",
@@ -790,18 +829,15 @@
     "archiveModal_confirm": "Got it!",
     "archiveModal_cancel": "Cancel"
   },
-
   "rateLimitBanner": {
     "title": "Free mode active",
     "support": "Support Noctaliæ"
   },
-
   "updateToast": {
     "title": "Noctaliæ v{{version}} available",
     "subtitle": "New features are waiting for you",
     "updateBtn": "Update"
   },
-
   "rateLimitModal": {
     "title": "🌙 DeepDream limit reached",
     "subtitle": "DeepDream analyses are limited for free users. Support the project for unlimited access!",
@@ -818,7 +854,6 @@
     "alternative_post": "- free and unlimited!",
     "close": "Close"
   },
-
   "updateAvailableModal": {
     "title": "New version available!",
     "versionCurrent": "Current",
@@ -832,7 +867,6 @@
     "platformAndroid": "📱 The APK file will be downloaded",
     "platformIos": "📱 You will be redirected to the download"
   },
-
   "activateDeepDreamModal": {
     "title": "Support Noctaliæ",
     "subtitle": "Support the project and unlock DeepDream for life. QuickDream remains free and unlimited, always.",
@@ -865,12 +899,10 @@
     "notFoundMsg": "No previous purchase was found for this Google account.",
     "errorRestore": "Unable to restore purchases."
   },
-
   "dreamShareTemplate": {
     "paletteLabel": "Generated palette",
     "playStoreBadge": "Available on Google Play"
   },
-
   "deepDreamInfoModal": {
     "header": "Noctaliæ engines",
     "premium_label": "You are {{tier}}",
@@ -892,5 +924,42 @@
     "kofi_free": "Ko-fi",
     "kofi_premium": "Additional support",
     "contact": "Contact"
+  },
+  "whatsNew": {
+    "title": "Noctaliæ speaks your language",
+    "subtitle": "Update v1.4.0",
+    "bullet1": "🇫🇷 Français · 🇬🇧 English · 🌎 Español",
+    "bullet2": "The app automatically detects your language",
+    "bullet3": "Change language anytime in Settings",
+    "cta": "Continue"
+  },
+  "researchVip": {
+    "title": "Research Mode",
+    "descInactive": "Help improve Noctaliæ",
+    "descActive": "Your anonymized dream data contributes to sleep neuroscience research.",
+    "thankYou": "Thank you for your support! Your vote counts.",
+    "betaSoon": "Research beta coming soon",
+    "interested": "I'm interested",
+    "voted": "Vote recorded",
+    "support": "Support"
+  },
+  "contributeResearch": {
+    "title": "Contribute to research",
+    "switchLabel": "Enable anonymous contribution",
+    "paragraph1": "By enabling this option, you agree to share your dream data anonymously to support neuroscience research.",
+    "section1": "Data destination",
+    "paragraph2": "Your anonymized data may be shared with:",
+    "bullet_lab1": "• Sleep neuroscience laboratories",
+    "bullet_lab2": "• Cognitive psychology researchers",
+    "bullet_lab3": "• Open-source dream projects",
+    "section2": "Security & privacy",
+    "bullet_sec1": "• Full anonymization before any sharing",
+    "bullet_sec2": "• No personal identifiers transmitted",
+    "bullet_sec3": "• You can withdraw your consent at any time",
+    "bullet_sec4": "• Data stored in Europe (GDPR)",
+    "section3": "Important note",
+    "noteText": "This feature is under development. Your vote signals your interest and helps prioritize this feature.",
+    "close": "Close",
+    "ctaInterested": "I'm interested"
   }
 }

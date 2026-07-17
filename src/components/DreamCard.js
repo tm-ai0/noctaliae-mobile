@@ -11,6 +11,7 @@ import BiometricService from '../services/biometricService';
 import DreamFallbackHero from './DreamFallbackHero';
 import { useDreamShare } from '../hooks/useDreamShare';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 
 /**
@@ -146,7 +147,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
   // ============================================
   const getProShareContent = () => {
     const date = new Date(dream.date);
-    const formattedDate = date.toLocaleDateString('fr-FR', { 
+    const formattedDate = date.toLocaleDateString(i18next.language, { 
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
@@ -178,7 +179,7 @@ export default function DreamCard({ dream, onPress, onArchive, onShare, onSecret
   // ============================================
   const generatePdfHtml = () => {
     const date = new Date(dream.date);
-    const formattedDate = date.toLocaleDateString('fr-FR', { 
+    const formattedDate = date.toLocaleDateString(i18next.language, { 
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });

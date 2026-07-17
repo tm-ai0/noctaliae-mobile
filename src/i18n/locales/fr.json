@@ -21,9 +21,9 @@
     "confirm": "Confirmer",
     "modify": "Modifier",
     "copy": "Copier",
-    "apply": "Appliquer"
+    "apply": "Appliquer",
+    "defaultDreamTitle": "Rêve du {{date}}"
   },
-
   "onboarding": {
     "welcome": {
       "intro": "Bienvenue dans",
@@ -119,7 +119,6 @@
       "skipBtn": "Pas maintenant"
     }
   },
-
   "postRecording": {
     "header": "Analyse du rêve",
     "tooltipWrite": "Relisez votre rêve avant l'analyse.",
@@ -194,7 +193,6 @@
     "alertFailed_msg": "Le serveur n'a pas pu traiter votre rêve. Réessayez dans quelques instants.",
     "alertFailed_retry": "Réessayer"
   },
-
   "analysis": {
     "title": "Mes rêves",
     "searchPlaceholder": "Rechercher un rêve...",
@@ -218,7 +216,6 @@
     "deleteAlert_confirm": "Supprimer",
     "deleteAlert_cancel": "Annuler"
   },
-
   "conversation": {
     "tabTranscription": "Transcription",
     "tabAnalysis": "Analyse",
@@ -276,7 +273,6 @@
     "archiveAlert_msg_full": "Le rêve sera déplacé dans vos archives. Vous pourrez le restaurer à tout moment.",
     "archive_error_msg": "Impossible d'archiver le rêve"
   },
-
   "settings": {
     "title": "Paramètres",
     "section_persona": "Persona",
@@ -351,7 +347,6 @@
     "language_en": "English",
     "language_es": "Español"
   },
-
   "archives": {
     "title": "Archives",
     "info": "Les rêves archivés sont supprimés après 30 jours. Tapez une carte pour la lire.",
@@ -372,7 +367,6 @@
     "deleteAllAlert_confirm": "Tout supprimer",
     "deleteAllAlert_cancel": "Annuler"
   },
-
   "trends": {
     "title": "Profil Onirique",
     "sectionTimeline": "Timeline Chromatique",
@@ -384,24 +378,38 @@
     "noDataSub": "Enregistrez vos rêves pour voir votre profil",
     "perWeek": "/sem",
     "total": "total",
-    "day_mon": "Lun",
-    "day_tue": "Mar",
-    "day_wed": "Mer",
-    "day_thu": "Jeu",
-    "day_fri": "Ven",
-    "day_sat": "Sam",
-    "day_sun": "Dim",
-    "insight1_title": "Simulation de menace",
-    "insight1_text": "Selon Revonsuo, le cerveau utilise le rêve pour simuler des scénarios de danger et améliorer notre survie.",
-    "insight1_source": "Revonsuo, 2000",
-    "insight2_title": "Consolidation mémorielle",
-    "insight2_text": "Le sommeil REM joue un rôle crucial dans la consolidation des souvenirs émotionnels.",
-    "insight2_source": "Walker, 2017",
-    "insight3_title": "Régulation émotionnelle",
-    "insight3_text": "Les rêves permettent de retraiter les expériences émotionnelles dans un contexte neurochimique apaisé.",
-    "insight3_source": "Hobson & Stickgold, 1995"
+    "streakDay_one": "{{count}} jour",
+    "streakDay_other": "{{count}} jours",
+    "timelineSubtitle": "Palette émotionnelle de vos rêves récents",
+    "emptyTags": "Pas encore de thèmes détectés",
+    "streakRestart": "Reprenez votre série !",
+    "insightStartJournal_title": "Commencez votre journal",
+    "insightStartJournal_text": "Enregistrez vos rêves pour découvrir vos schémas oniriques.",
+    "insightContinuity_title": "Continuité thématique",
+    "insightContinuity_text": "Le thème « {{tag}} » apparaît dans {{recentCount}} de vos {{totalRecent}} derniers rêves. Selon Domhoff, cette récurrence reflète vos préoccupations actuelles.",
+    "insightContinuity_source": "Domhoff, 2003",
+    "insightHighRecall_title": "Rappel élevé",
+    "insightHighRecall_text": "{{count}} rêves en 14 jours : votre rappel onirique est excellent. Le sommeil paradoxal consolide vos souvenirs émotionnels.",
+    "insightHighRecall_source": "Walker, 2017",
+    "insightLowRecall_title": "Phase de calme",
+    "insightLowRecall_text": "Votre rappel onirique est bas en ce moment. C'est normal : le stress et la fatigue peuvent réduire le souvenir des rêves.",
+    "insightLowRecall_source": "Schredl, 2010",
+    "insightDiversity_title": "Diversité thématique",
+    "insightDiversity_text": "{{count}} thèmes différents détectés. Une grande variété thématique reflète une activité cérébrale riche pendant le sommeil paradoxal.",
+    "insightDiversity_source": "Hobson, 2002",
+    "insightWarmTone_title": "Tonalité chaleureuse",
+    "insightWarmTone_text": "Vos rêves récents sont dominés par des couleurs chaudes, souvent associées à des émotions intenses et à l'activation émotionnelle.",
+    "insightWarmTone_source": "Schredl & Erlacher, 2008",
+    "insightCoolTone_title": "Tonalité froide",
+    "insightCoolTone_text": "Vos rêves récents tendent vers des tons froids, souvent liés à la réflexion, la sérénité ou le détachement émotionnel.",
+    "insightCoolTone_source": "Schredl & Erlacher, 2008",
+    "insightConsolidation_title": "Consolidation active",
+    "insightConsolidation_text": "{{count}} jours consécutifs d'enregistrement ! La régularité renforce la consolidation mémorielle pendant le sommeil paradoxal.",
+    "insightConsolidation_source": "Walker, 2017",
+    "insightKeepRecording_title": "Continuez d'enregistrer",
+    "insightKeepRecording_text": "Plus vous enregistrez vos rêves, plus vos schémas oniriques se révèlent. La pratique améliore naturellement le rappel.",
+    "insightKeepRecording_source": "Schredl, 2018"
   },
-
   "deepChat": {
     "title": "Approfondir",
     "initialMessage": "Explorons ensemble votre rêve en profondeur. Quelle dimension souhaitez-vous approfondir ?",
@@ -448,7 +456,6 @@
     "archiveAlert_cancel": "Annuler",
     "errArchive_msg": "Impossible d'archiver le rêve"
   },
-
   "chat": {
     "initialMessage": "Je suis là pour approfondir l'analyse de ton rêve. Pose-moi toutes tes questions ! 💬",
     "fullAnalysis": "Analyse complète",
@@ -476,7 +483,6 @@
     "aiAlert_title": "🤖 NoctaliaeAI",
     "aiAlert_msg": "Fonctionnalité multimodale à venir"
   },
-
   "profile": {
     "title": "Mon Profil",
     "info": "Ces mémories aident Noctaliæ à personnaliser ses analyses et conversations",
@@ -496,7 +502,6 @@
     "deleteAlert_confirm": "Supprimer",
     "deleteAlert_cancel": "Annuler"
   },
-
   "persona": {
     "title": "Persona",
     "manageTitle": "Mes empreintes",
@@ -524,7 +529,6 @@
     "redo": "Refaire l'introduction",
     "redoConfirm": "Cela relancera le tutoriel de bienvenue. Continuer ?"
   },
-
   "insights": {
     "title": "Insights",
     "comingSoon": "Bientôt disponible",
@@ -535,13 +539,21 @@
     "preview_stats": "Statistiques",
     "preview_stats_desc": "Chiffres clés de votre vie onirique"
   },
-
   "atlas": {
     "title": "Atlas",
+    "subtitle": "Explorez les dimensions de vos rêves",
     "feedback": "Donnez votre avis",
-    "support": "Soutenir"
+    "support": "Soutenir",
+    "heroTitle": "Atlas Onirique",
+    "heroDescription": "Un espace d'exploration avancée arrive bientôt. Quatre modules pour aller plus loin dans la compréhension de votre vie onirique.",
+    "moduleExplorer": "Explorateur",
+    "moduleCartographie": "Cartographie",
+    "moduleLaboratoire": "Laboratoire",
+    "moduleDecrypter": "Décrypteur",
+    "interestQuestion": "Ça vous intéresse ?",
+    "interestSubtext": "Dites-nous ce que vous aimeriez voir dans l'Atlas",
+    "infoText": "L'Atlas est en cours de développement. Vos retours nous aident à prioriser les fonctionnalités."
   },
-
   "explorer": {
     "finish": "Terminer",
     "card1_title": "La science des rêves",
@@ -555,15 +567,14 @@
     "card5_title": "Mémoire et rêves",
     "card5_subtitle": "Consolidation nocturne",
     "card6_title": "Rêves récurrents",
-    "card6_subtitle": "Quand le cerveau insiste"
+    "card6_subtitle": "Quand le cerveau insiste",
+    "tapToReveal": "Appuyer pour révéler"
   },
-
   "decrypter": {
     "title": "Décrypter",
     "article_title": "Théories du rêve",
     "article_intro": "La science moderne propose plusieurs cadres pour comprendre nos rêves."
   },
-
   "metaAnalysis": {
     "title": "Mes rêves",
     "headerTitle": "Mes rêves",
@@ -582,7 +593,6 @@
     "restartAlert_confirm": "Effacer",
     "errSend_msg": "Impossible de communiquer avec le serveur"
   },
-
   "quickRecord": {
     "tabPhoto": "Photo",
     "tabWrite": "Écrire",
@@ -601,7 +611,6 @@
     "placeholder": "Ce dont je me souviens...",
     "analyzeCta": "Analyser"
   },
-
   "voiceAssistant": {
     "title": "Conversation vocale avec votre rêve",
     "headerTitle": "🎙️ Assistant Vocal",
@@ -635,21 +644,53 @@
     "micLabel_idle": "Appuyer pour parler",
     "micLabel_recording": "Arrêter"
   },
-
   "geminiLive": {
     "feature1_desc": "Parlez naturellement de votre rêve",
     "feature2_desc": "L'IA se souvient du contexte",
     "feature3_desc": "Réponses en temps réel",
     "feature4_desc": "Analyse d'images dans la conversation",
-    "back": "Retour"
+    "back": "Retour",
+    "errTitle": "Erreur",
+    "permissionDenied": "Microphone requis",
+    "permissionDeniedDesc": "Autorisez l'accès au microphone dans les réglages pour utiliser NoctaliaeAI+.",
+    "connectionError": "Impossible de se connecter au serveur.",
+    "genericError": "Une erreur est survenue.",
+    "audioError": "Impossible d'accéder au microphone.",
+    "contextTitle": "Contexte du rêve",
+    "contextTranscription": "Transcription",
+    "noTranscription": "Aucune transcription disponible",
+    "contextAnalysis": "Analyse",
+    "noAnalysis": "Aucune analyse disponible",
+    "comingSoonBadge": "Bientôt",
+    "title": "NoctaliaeAI+",
+    "subtitle": "Conversez en temps réel avec votre IA onirique",
+    "feature1_title": "Conversation naturelle",
+    "feature1_desc_full": "Parlez de votre rêve comme à un ami",
+    "feature2_title": "Mémoire contextuelle",
+    "feature2_desc_full": "L'IA se souvient de votre rêve et de son analyse",
+    "feature3_title": "Réponses en temps réel",
+    "feature3_desc_full": "Latence ultra-faible pour une expérience fluide",
+    "feature4_title": "Analyse d'images",
+    "feature4_desc_full": "Partagez une image dans la conversation",
+    "waitingText": "La conversation vocale en temps réel arrive prochainement. Restez connecté·e !",
+    "helpTitle": "Comment utiliser NoctaliaeAI+",
+    "helpSection1": "Démarrer une session",
+    "helpText1": "Appuyez sur le bouton microphone pour vous connecter. L'IA charge automatiquement le contexte de votre rêve.",
+    "helpSection2": "Parler naturellement",
+    "helpText2": "Parlez librement de votre rêve. L'IA comprend le contexte et répond en temps réel.",
+    "helpSection3": "Terminer la session",
+    "helpText3": "Appuyez à nouveau sur le bouton pour vous déconnecter proprement.",
+    "transcriptionLabel": "Vous",
+    "responseLabel": "NoctaliaeAI+",
+    "photoComingSoon": "Photo — Bientôt disponible",
+    "photoComingSoonDesc": "L'analyse d'images en conversation arrive prochainement.",
+    "videoComingSoonDesc": "L'analyse vidéo en conversation arrive prochainement."
   },
-
   "researchOptIn": {
     "label": "Contribuer à la recherche",
     "desc": "Partager les analyses de mes rêves avec des chercheurs",
     "anonymInfo": "Données anonymisées — aucune information personnelle partagée"
   },
-
   "researchOptInModal": {
     "title": "Comment contribuer à la recherche 🔬",
     "paragraph1_pre": "Vos rêves seront ",
@@ -666,12 +707,18 @@
     "thankYou": "Merci de faire avancer la science avec nous ! 🌙",
     "accept": "J'accepte"
   },
-
   "playground": {
     "copy": "Copier",
     "apply": "Appliquer"
   },
-
+  "whatsNew": {
+    "title": "Noctaliæ parle votre langue",
+    "subtitle": "Mise à jour v1.4.0",
+    "bullet1": "🇫🇷 Français · 🇬🇧 English · 🌎 Español",
+    "bullet2": "L'app détecte automatiquement votre langue",
+    "bullet3": "Changez la langue à tout moment dans Réglages",
+    "cta": "Continuer"
+  },
   "dreamCard": {
     "swipeArchive": "Archiver",
     "swipeShare": "Partager",
@@ -719,23 +766,19 @@
     "archiveModal_confirm": "Compris !",
     "archiveModal_cancel": "Annuler"
   },
-
   "dreamShareTemplate": {
     "paletteLabel": "Palette générée",
     "playStoreBadge": "Disponible sur Google Play"
   },
-
   "rateLimitBanner": {
     "title": "Mode gratuit activé",
     "support": "Soutenez Noctaliæ"
   },
-
   "updateToast": {
     "title": "Noctaliæ v{{version}} disponible",
     "subtitle": "De nouvelles fonctionnalités t'attendent",
     "updateBtn": "Mettre à jour"
   },
-
   "rateLimitModal": {
     "title": "🌙 Limite DeepDream atteinte",
     "subtitle": "Les analyses DeepDream sont limitées pour les utilisateurs gratuits. Soutenez le projet pour un accès illimité !",
@@ -752,7 +795,6 @@
     "alternative_post": "- gratuit et illimité !",
     "close": "Fermer"
   },
-
   "updateAvailableModal": {
     "title": "Nouvelle version disponible !",
     "versionCurrent": "Actuelle",
@@ -766,7 +808,6 @@
     "platformAndroid": "📱 Le fichier APK sera téléchargé",
     "platformIos": "📱 Vous serez redirigé vers le téléchargement"
   },
-
   "activateDeepDreamModal": {
     "title": "Soutenir Noctaliæ",
     "subtitle": "Soutenez le projet et débloquez DeepDream à vie. QuickDream reste gratuit et illimité, toujours.",
@@ -799,7 +840,6 @@
     "notFoundMsg": "Aucun achat précédent n'a été trouvé pour ce compte Google.",
     "errorRestore": "Impossible de restaurer les achats."
   },
-
   "deepDreamInfoModal": {
     "header": "Les moteurs Noctaliæ",
     "premium_label": "Vous êtes {{tier}}",
@@ -821,5 +861,34 @@
     "kofi_free": "Ko-fi",
     "kofi_premium": "Soutien supplémentaire",
     "contact": "Contacter"
+  },
+  "researchVip": {
+    "title": "Mode Recherche",
+    "descInactive": "Participez à l'amélioration de Noctaliæ",
+    "descActive": "Vos données de rêve anonymisées contribuent à la recherche en neurosciences du sommeil.",
+    "thankYou": "Merci pour votre soutien ! Votre vote compte.",
+    "betaSoon": "Bêta recherche bientôt disponible",
+    "interested": "Je suis intéressé·e",
+    "voted": "Vote enregistré",
+    "support": "Soutenir"
+  },
+  "contributeResearch": {
+    "title": "Contribuer à la recherche",
+    "switchLabel": "Activer la contribution anonyme",
+    "paragraph1": "En activant cette option, vous acceptez de partager vos données de rêves de façon anonyme pour soutenir la recherche en neurosciences.",
+    "section1": "Destination des données",
+    "paragraph2": "Vos données anonymisées pourront être partagées avec :",
+    "bullet_lab1": "• Laboratoires de neurosciences du sommeil",
+    "bullet_lab2": "• Chercheurs en psychologie cognitive",
+    "bullet_lab3": "• Projets open-source sur les rêves",
+    "section2": "Sécurité et confidentialité",
+    "bullet_sec1": "• Anonymisation complète avant tout partage",
+    "bullet_sec2": "• Aucun identifiant personnel transmis",
+    "bullet_sec3": "• Vous pouvez retirer votre accord à tout moment",
+    "bullet_sec4": "• Données stockées en Europe (RGPD)",
+    "section3": "Note importante",
+    "noteText": "Cette fonctionnalité est en cours de développement. Votre vote signale votre intérêt et aide à prioriser cette feature.",
+    "close": "Fermer",
+    "ctaInterested": "Je suis intéressé·e"
   }
 }

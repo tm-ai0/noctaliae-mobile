@@ -23,6 +23,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 // 🏷️ Fonction pour extraire un titre intelligent depuis l'analyse
 function extractDreamTitle(analysis, transcription) {
@@ -63,7 +64,7 @@ function extractDreamTitle(analysis, transcription) {
     return firstTranscript;
   }
 
-  return `Rêve du ${new Date().toLocaleDateString('fr-FR')}`;
+  return i18next.t('common.defaultDreamTitle', { date: new Date().toLocaleDateString(i18next.language) });
 }
 
 

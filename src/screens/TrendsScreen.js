@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   ScrollView,
   TouchableOpacity,
   FlatList,
@@ -13,6 +13,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../config/ThemeContext';
 import { getAllDreams } from '../services/storageService';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 // ============================================
 // 🧠 NEUROSCIENCE INSIGHTS ENGINE
@@ -21,9 +23,10 @@ function generateNeuroscienceInsight(dreams, tagFrequencies) {
   if (!dreams || dreams.length === 0) {
     return {
       icon: 'brain',
-      title: 'Commencez votre journal',
-      text: 'Enregistrez vos rêves pour débloquer des insights neuroscientifiques personnalisés.',
-      source: null,
+      titleKey: 'trends.insightStartJournal_title',
+      textKey: 'trends.insightStartJournal_text',
+      textParams: {},
+      sourceKey: null,
     };
   }
 
@@ -33,15 +36,16 @@ function generateNeuroscienceInsight(dreams, tagFrequencies) {
   // 1. Continuité thématique (Domhoff)
   if (tagFrequencies.length >= 2) {
     const topTag = tagFrequencies[0];
-    const recentWithTag = recentDreams.filter(d => 
+    const recentWithTag = recentDreams.filter(d =>
       d.tags && d.tags.some(t => t.toLowerCase() === topTag.tag.toLowerCase())
     );
     if (recentWithTag.length >= 2) {
       insights.push({
         icon: 'link-variant',
-        title: 'Continuité thématique détectée',
-        text: `« ${topTag.tag} » apparaît dans ${recentWithTag.length} de vos ${recentDreams.length} derniers rêves. Selon la théorie de la continuité de Domhoff, vos rêves reflètent vos préoccupations éveillées actuelles.`,
-        source: 'Domhoff, 2003',
+        titleKey: 'trends.insightContinuity_title',
+        textKey: 'trends.insightContinuity_text',
+        textParams: { tag: topTag.tag, recentCount: recentWithTag.length, totalRecent: recentDreams.length },
+        sourceKey: 'trends.insightContinuity_source',
       });
     }
   }
@@ -54,16 +58,18 @@ function generateNeuroscienceInsight(dreams, tagFrequencies) {
   if (last14.length >= 8) {
     insights.push({
       icon: 'flash',
-      title: 'Rappel onirique élevé',
-      text: `${last14.length} rêves en 14 jours — votre rappel onirique est nettement au-dessus de la moyenne. La recherche montre que les grands rêveurs ont une activité accrue du cortex préfrontal médian.`,
-      source: 'Eichenlaub et al., 2014',
+      titleKey: 'trends.insightHighRecall_title',
+      textKey: 'trends.insightHighRecall_text',
+      textParams: { count: last14.length },
+      sourceKey: 'trends.insightHighRecall_source',
     });
   } else if (dreams.length >= 3 && last14.length <= 2) {
     insights.push({
       icon: 'weather-night',
-      title: 'Phase de rappel faible',
-      text: 'Votre fréquence de rappel a diminué. C\'est normal — elle fluctue avec le stress, le sommeil et l\'attention portée aux rêves au réveil.',
-      source: 'Schredl, 2018',
+      titleKey: 'trends.insightLowRecall_title',
+      textKey: 'trends.insightLowRecall_text',
+      textParams: {},
+      sourceKey: 'trends.insightLowRecall_source',
     });
   }
 
@@ -75,9 +81,10 @@ function generateNeuroscienceInsight(dreams, tagFrequencies) {
     if (diversityRatio > 0.6) {
       insights.push({
         icon: 'scatter-plot',
-        title: 'Grande diversité onirique',
-        text: `Vos rêves couvrent ${uniqueTags} thèmes différents. Cette diversité est associée à une plus grande flexibilité cognitive et créativité selon la théorie de la simulation de Revonsuo.`,
-        source: 'Revonsuo, 2000',
+        titleKey: 'trends.insightDiversity_title',
+        textKey: 'trends.insightDiversity_text',
+        textParams: { count: uniqueTags },
+        sourceKey: 'trends.insightDiversity_source',
       });
     }
   }
@@ -92,16 +99,18 @@ function generateNeuroscienceInsight(dreams, tagFrequencies) {
     if (warmCount > coolCount * 1.5) {
       insights.push({
         icon: 'palette',
-        title: 'Tonalité émotionnelle chaude',
-        text: 'Vos rêves récents montrent une dominante chromatique chaude (rouges, oranges, dorés). Cela peut refléter un état émotionnel activé — énergie, passion ou tension.',
-        source: 'Schredl & Erlacher, 2008',
+        titleKey: 'trends.insightWarmTone_title',
+        textKey: 'trends.insightWarmTone_text',
+        textParams: {},
+        sourceKey: 'trends.insightWarmTone_source',
       });
     } else if (coolCount > warmCount * 1.5) {
       insights.push({
         icon: 'palette',
-        title: 'Tonalité émotionnelle froide',
-        text: 'Vos rêves récents présentent une dominante chromatique froide (bleus, verts, violets). Cela peut indiquer un état de calme, réflexion ou distance émotionnelle.',
-        source: 'Schredl & Erlacher, 2008',
+        titleKey: 'trends.insightCoolTone_title',
+        textKey: 'trends.insightCoolTone_text',
+        textParams: {},
+        sourceKey: 'trends.insightCoolTone_source',
       });
     }
   }
@@ -111,18 +120,20 @@ function generateNeuroscienceInsight(dreams, tagFrequencies) {
   if (streak >= 5) {
     insights.push({
       icon: 'trophy',
-      title: 'Consolidation mnésique active',
-      text: `${streak} jours consécutifs d'enregistrement ! La pratique régulière du journal de rêves renforce la mémoire prospective et améliore le rappel onirique à long terme.`,
-      source: 'Aspy et al., 2017',
+      titleKey: 'trends.insightConsolidation_title',
+      textKey: 'trends.insightConsolidation_text',
+      textParams: { count: streak },
+      sourceKey: 'trends.insightConsolidation_source',
     });
   }
 
   if (insights.length === 0) {
     return {
       icon: 'lightbulb-outline',
-      title: 'Continuez d\'enregistrer',
-      text: 'Plus vous enregistrez de rêves, plus les patterns émergent. La recherche montre qu\'il faut environ 2 semaines de journal pour voir des tendances significatives.',
-      source: 'Schredl, 2018',
+      titleKey: 'trends.insightKeepRecording_title',
+      textKey: 'trends.insightKeepRecording_text',
+      textParams: {},
+      sourceKey: 'trends.insightKeepRecording_source',
     };
   }
 
@@ -210,7 +221,7 @@ function buildStreakCalendar(dreams, days = 21) {
       date,
       count,
       isToday: i === 0,
-      dayLabel: date.toLocaleDateString('fr-FR', { weekday: 'narrow' }), // L, M, M, J, V, S, D
+      dayLabel: date.toLocaleDateString(i18next.language, { weekday: 'narrow' }),
     });
   }
   return calendar;
@@ -222,6 +233,12 @@ function buildStreakCalendar(dreams, days = 21) {
 export default function TrendsScreen({ navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+
+  // Narrow day labels (L, M, M... in FR) — auto-locale, no i18n keys needed
+  const narrowDayLabels = Array.from({ length: 7 }, (_, i) =>
+    new Date(2025, 0, 6 + i).toLocaleDateString(i18next.language || 'fr', { weekday: 'narrow' })
+  );
   const [stats, setStats] = useState({
     totalDreams: 0,
     streak: 0,
@@ -274,7 +291,7 @@ export default function TrendsScreen({ navigation }) {
           return dreamDate >= date && dreamDate < nextDate;
         });
         weeklyData.push({
-          day: date.toLocaleDateString('fr-FR', { weekday: 'short' }),
+          day: date.toLocaleDateString(i18next.language, { weekday: 'short' }),
           count: dayDreams.length,
           emoji: dayDreams.length > 0 ? (dayDreams[0].emoji || null) : null,
         });
@@ -298,6 +315,7 @@ export default function TrendsScreen({ navigation }) {
   }
 
   const maxCount = Math.max(...stats.weeklyTrend.map(d => d.count), 1);
+  const weekTotal = stats.weeklyTrend.reduce((s, d) => s + d.count, 0);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
@@ -312,7 +330,7 @@ export default function TrendsScreen({ navigation }) {
             color={theme.colors.primary} 
           />
           <Text style={[styles.headerTitle, { color: theme.colors.text, fontFamily: theme.fontFamily.display }]}>
-            Profil Onirique
+            {t('trends.title')}
           </Text>
         </View>
         <TouchableOpacity 
@@ -346,7 +364,7 @@ export default function TrendsScreen({ navigation }) {
                 {stats.streak}
               </Text>
               <Text style={[styles.streakMainLabel, { color: theme.colors.textSecondary, fontFamily: theme.fontFamily.body }]}>
-                {stats.streak <= 1 ? 'jour' : 'jours'}
+                {t('trends.streakDay', { count: stats.streak })}
               </Text>
             </View>
             <View style={[styles.streakStatsDivider, { backgroundColor: theme.colors.dividerStrong }]} />
@@ -356,7 +374,7 @@ export default function TrendsScreen({ navigation }) {
                   {stats.frequency}
                 </Text>
                 <Text style={[styles.streakMiniLabel, { color: theme.colors.textTertiary, fontFamily: theme.fontFamily.body }]}>
-                  /sem
+                  {t('trends.perWeek')}
                 </Text>
               </View>
               <View style={styles.streakMiniStat}>
@@ -364,7 +382,7 @@ export default function TrendsScreen({ navigation }) {
                   {stats.totalDreams}
                 </Text>
                 <Text style={[styles.streakMiniLabel, { color: theme.colors.textTertiary, fontFamily: theme.fontFamily.body }]}>
-                  total
+                  {t('trends.total')}
                 </Text>
               </View>
             </View>
@@ -401,7 +419,7 @@ export default function TrendsScreen({ navigation }) {
 
           {/* Day labels under grid */}
           <View style={styles.calendarLabels}>
-            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label, i) => (
+            {narrowDayLabels.map((label, i) => (
               <Text key={i} style={[styles.calendarLabel, { color: theme.colors.textMuted, fontFamily: theme.fontFamily.body }]}>
                 {label}
               </Text>
@@ -413,7 +431,7 @@ export default function TrendsScreen({ navigation }) {
             <View style={[styles.streakCta, { backgroundColor: theme.colors.primaryGlow }]}>
               <MaterialCommunityIcons name="alarm" size={14} color={theme.colors.primary} />
               <Text style={[styles.streakCtaText, { color: theme.colors.primary, fontFamily: theme.fontFamily.bodyMedium }]}>
-                Enregistrez un rêve pour relancer votre série !
+                {t('trends.streakRestart')}
               </Text>
             </View>
           )}
@@ -423,9 +441,9 @@ export default function TrendsScreen({ navigation }) {
             <View style={[styles.streakCta, { backgroundColor: theme.colors.primaryGlow }]}>
               <MaterialCommunityIcons name="star-four-points" size={14} color={theme.colors.primary} />
               <Text style={[styles.streakCtaText, { color: theme.colors.primary, fontFamily: theme.fontFamily.bodyMedium }]}>
-                {stats.streak >= 7 
-                  ? `${stats.streak} jours — votre rappel onirique se renforce !`
-                  : `${stats.streak} jours d'affilée — continuez !`
+                {stats.streak >= 7
+                  ? t('trends.streakMotivationStrong', { count: stats.streak })
+                  : t('trends.streakMotivation', { count: stats.streak })
                 }
               </Text>
             </View>
@@ -439,12 +457,12 @@ export default function TrendsScreen({ navigation }) {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary, fontFamily: theme.fontFamily.displayBold }]}>
-                Timeline Chromatique
+                {t('trends.sectionTimeline')}
               </Text>
               <MaterialCommunityIcons name="palette" size={18} color={theme.colors.warmGold} />
             </View>
             <Text style={[styles.sectionSubtitle, { color: theme.colors.textTertiary, fontFamily: theme.fontFamily.body }]}>
-              L'empreinte émotionnelle de chaque rêve
+              {t('trends.timelineSubtitle')}
             </Text>
 
             <FlatList
@@ -476,7 +494,7 @@ export default function TrendsScreen({ navigation }) {
                     <Text style={styles.chromaticEmoji}>{item.emoji}</Text>
                   )}
                   <Text style={[styles.chromaticDate, { color: theme.colors.textMuted, fontFamily: theme.fontFamily.body }]}>
-                    {new Date(item.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                    {new Date(item.date).toLocaleDateString(i18next.language, { day: '2-digit', month: 'short' })}
                   </Text>
                 </View>
               )}
@@ -493,7 +511,7 @@ export default function TrendsScreen({ navigation }) {
         ]}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: theme.colors.textPrimary, fontFamily: theme.fontFamily.displayBold }]}>
-              Univers Thématique
+              {t('trends.sectionUniverse')}
             </Text>
             <MaterialCommunityIcons name="tag-multiple" size={18} color={theme.colors.warmGold} />
           </View>
@@ -502,7 +520,7 @@ export default function TrendsScreen({ navigation }) {
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="tag-off-outline" size={32} color={theme.colors.textMuted} />
               <Text style={[styles.emptyText, { color: theme.colors.textSecondary, fontFamily: theme.fontFamily.body }]}>
-                Analysez des rêves pour voir vos thèmes émerger
+                {t('trends.emptyTags')}
               </Text>
             </View>
           ) : (
@@ -568,7 +586,7 @@ export default function TrendsScreen({ navigation }) {
         ]}>
           <View style={styles.cardHeader}>
             <Text style={[styles.cardTitle, { color: theme.colors.textPrimary, fontFamily: theme.fontFamily.displayBold }]}>
-              Rythme onirique
+              {t('trends.sectionRhythm')}
             </Text>
             <MaterialCommunityIcons name="pulse" size={18} color={theme.colors.primary} />
           </View>
@@ -655,7 +673,7 @@ export default function TrendsScreen({ navigation }) {
           {stats.weeklyTrend.some(d => d.count > 0) && (
             <View style={[styles.dotSummary, { borderTopColor: theme.colors.divider }]}>
               <Text style={[styles.dotSummaryText, { color: theme.colors.textTertiary, fontFamily: theme.fontFamily.body }]}>
-                {stats.weeklyTrend.reduce((s, d) => s + d.count, 0)} rêve{stats.weeklyTrend.reduce((s, d) => s + d.count, 0) > 1 ? 's' : ''} cette semaine
+                {t('trends.weekSummary', { count: weekTotal })}
               </Text>
             </View>
           )}
@@ -678,15 +696,15 @@ export default function TrendsScreen({ navigation }) {
                 />
               </View>
               <Text style={[styles.insightTitle, { color: theme.colors.primary, fontFamily: theme.fontFamily.displayBold }]}>
-                {stats.insight.title}
+                {t(stats.insight.titleKey)}
               </Text>
             </View>
             <Text style={[styles.insightText, { color: theme.colors.text, fontFamily: theme.fontFamily.body }]}>
-              {stats.insight.text}
+              {t(stats.insight.textKey, stats.insight.textParams)}
             </Text>
-            {stats.insight.source && (
+            {stats.insight.sourceKey && (
               <Text style={[styles.insightSource, { color: theme.colors.textTertiary, fontFamily: theme.fontFamily.body }]}>
-                📚 {stats.insight.source}
+                📚 {t(stats.insight.sourceKey)}
               </Text>
             )}
           </View>

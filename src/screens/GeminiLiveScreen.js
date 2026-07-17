@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import NoctaliaeGlassWave from '../components/NoctaliaeGlassWave';
 import { THEME } from '../config/theme';
 import { API_BASE_URL } from '../config/api';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ const { width, height } = Dimensions.get('window');
  */
 export default function GeminiLiveScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { dreamId, dreamAnalysis, dreamTranscription, dreamTitle } = route.params;
   
   // États principaux
@@ -73,7 +75,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
-        Alert.alert('Permission refusée', 'L\'accès au microphone est requis pour NoctaliaeAI+');
+        Alert.alert(t('geminiLive.permissionDenied'), t('geminiLive.permissionDeniedDesc'));
       }
     } catch (error) {
       console.error('❌ Erreur permissions:', error);
@@ -114,7 +116,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
           
           if (data.error) {
             console.error('❌ Erreur Live API:', data.error);
-            Alert.alert('Erreur', data.error);
+            Alert.alert(t('geminiLive.errTitle'), data.error);
           }
         } catch (error) {
           console.error('❌ Erreur parsing message:', error);
@@ -123,7 +125,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
       
       ws.onerror = (error) => {
         console.error('❌ Erreur WebSocket:', error);
-        Alert.alert('Erreur', 'Connexion au serveur échouée');
+        Alert.alert(t('geminiLive.errTitle'), t('geminiLive.connectionError'));
         setIsConnected(false);
       };
       
@@ -135,7 +137,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
       
     } catch (error) {
       console.error('❌ Erreur connexion:', error);
-      Alert.alert('Erreur', 'Impossible de se connecter');
+      Alert.alert(t('geminiLive.errTitle'), t('geminiLive.genericError'));
     }
   }
 
@@ -159,7 +161,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
       
     } catch (error) {
       console.error('❌ Erreur capture audio:', error);
-      Alert.alert('Erreur', 'Impossible de démarrer la capture audio');
+      Alert.alert(t('geminiLive.errTitle'), t('geminiLive.audioError'));
       setIsListening(false);
     }
   }
@@ -212,21 +214,21 @@ export default function GeminiLiveScreen({ route, navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.contextModal}>
             <View style={styles.contextHeader}>
-              <Text style={styles.contextTitle}>📖 Contexte du rêve</Text>
+              <Text style={styles.contextTitle}>{t('geminiLive.contextTitle')}</Text>
               <TouchableOpacity onPress={() => setShowContext(false)}>
                 <MaterialIcons name="close" size={24} color={THEME.colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.contextContent}>
-              <Text style={styles.contextSection}>🎤 Transcription</Text>
+              <Text style={styles.contextSection}>{t('geminiLive.contextTranscription')}</Text>
               <Text style={styles.contextText}>
-                {dreamTranscription || 'Aucune transcription disponible'}
+                {dreamTranscription || t('geminiLive.noTranscription')}
               </Text>
 
-              <Text style={styles.contextSection}>🧠 Analyse</Text>
+              <Text style={styles.contextSection}>{t('geminiLive.contextAnalysis')}</Text>
               <Text style={styles.contextText}>
-                {dreamAnalysis || 'Aucune analyse disponible'}
+                {dreamAnalysis || t('geminiLive.noAnalysis')}
               </Text>
             </ScrollView>
           </View>
@@ -251,43 +253,43 @@ export default function GeminiLiveScreen({ route, navigation }) {
             >
               {/* Badge "Bientôt" */}
               <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>🚀 BIENTÔT DISPONIBLE</Text>
+                <Text style={styles.comingSoonText}>{t('geminiLive.comingSoonBadge')}</Text>
               </View>
 
               <Text style={styles.onboardingEmoji}>✨</Text>
-              <Text style={styles.onboardingTitle}>NoctaliaeAI+ Live</Text>
-              <Text style={styles.onboardingSubtitle}>Conversation vocale avec votre rêve</Text>
+              <Text style={styles.onboardingTitle}>{t('geminiLive.title')}</Text>
+              <Text style={styles.onboardingSubtitle}>{t('geminiLive.subtitle')}</Text>
               
               <View style={styles.featuresList}>
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🎙️</Text>
                   <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Mode mains libres</Text>
-                    <Text style={styles.featureDesc}>Parlez naturellement, l'IA vous répond en temps réel</Text>
+                    <Text style={styles.featureTitle}>{t('geminiLive.feature1_title')}</Text>
+                    <Text style={styles.featureDesc}>{t('geminiLive.feature1_desc_full')}</Text>
                   </View>
                 </View>
 
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🧠</Text>
                   <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Contexte intelligent</Text>
-                    <Text style={styles.featureDesc}>L'IA connaît votre rêve et pose des questions pertinentes</Text>
+                    <Text style={styles.featureTitle}>{t('geminiLive.feature2_title')}</Text>
+                    <Text style={styles.featureDesc}>{t('geminiLive.feature2_desc_full')}</Text>
                   </View>
                 </View>
 
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>⚡</Text>
                   <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Streaming instantané</Text>
-                    <Text style={styles.featureDesc}>Powered by Gemini 2.5 Flash (1M context)</Text>
+                    <Text style={styles.featureTitle}>{t('geminiLive.feature3_title')}</Text>
+                    <Text style={styles.featureDesc}>{t('geminiLive.feature3_desc_full')}</Text>
                   </View>
                 </View>
 
                 <View style={styles.featureItem}>
                   <Text style={styles.featureIcon}>🎨</Text>
                   <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>Vision multimodale</Text>
-                    <Text style={styles.featureDesc}>Partagez photos et dessins de vos rêves</Text>
+                    <Text style={styles.featureTitle}>{t('geminiLive.feature4_title')}</Text>
+                    <Text style={styles.featureDesc}>{t('geminiLive.feature4_desc_full')}</Text>
                   </View>
                 </View>
               </View>
@@ -295,8 +297,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
               {/* Message d'attente */}
               <View style={styles.waitingMessage}>
                 <Text style={styles.waitingText}>
-                  Cette fonctionnalité est en cours de développement.{"\n"}
-                  Rejoignez la communauté pour être notifié du lancement !
+                  {t('geminiLive.waitingText')}
                 </Text>
               </View>
 
@@ -305,7 +306,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
                 onPress={() => navigation.goBack()}
               >
                 <MaterialIcons name="arrow-back" size={20} color={THEME.colors.warmGold} />
-                <Text style={styles.backButtonTeaserText}>Retour</Text>
+                <Text style={styles.backButtonTeaserText}>{t('geminiLive.back')}</Text>
               </TouchableOpacity>
             </LinearGradient>
           </View>
@@ -325,26 +326,26 @@ export default function GeminiLiveScreen({ route, navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.helpModal}>
             <View style={styles.helpHeader}>
-              <Text style={styles.helpTitle}>Guide NoctaliaeAI+</Text>
+              <Text style={styles.helpTitle}>{t('geminiLive.helpTitle')}</Text>
               <TouchableOpacity onPress={() => setShowHelp(false)}>
                 <MaterialIcons name="close" size={24} color={THEME.colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.helpContent}>
-              <Text style={styles.helpSection}>🎙️ Mode temps réel</Text>
+              <Text style={styles.helpSection}>{t('geminiLive.helpSection1')}</Text>
               <Text style={styles.helpText}>
-                Gemini 2.5 Flash vous écoute en streaming. Parlez librement de votre rêve.
+                {t('geminiLive.helpText1')}
               </Text>
 
-              <Text style={styles.helpSection}>🧠 Contexte intelligent</Text>
+              <Text style={styles.helpSection}>{t('geminiLive.helpSection2')}</Text>
               <Text style={styles.helpText}>
-                L'IA connaît déjà votre rêve et pose des questions d'approfondissement pertinentes.
+                {t('geminiLive.helpText2')}
               </Text>
 
-              <Text style={styles.helpSection}>📖 Voir le contexte</Text>
+              <Text style={styles.helpSection}>{t('geminiLive.helpSection3')}</Text>
               <Text style={styles.helpText}>
-                Cliquez sur l'icône livre pour voir la transcription et l'analyse de votre rêve.
+                {t('geminiLive.helpText3')}
               </Text>
             </ScrollView>
           </View>
@@ -410,7 +411,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
             style={styles.transcriptionScroll}
             contentContainerStyle={styles.transcriptionContent}
           >
-            <Text style={styles.transcriptionLabel}>🗣️ Vous</Text>
+            <Text style={styles.transcriptionLabel}>{t('geminiLive.transcriptionLabel')}</Text>
             <Text style={styles.transcriptionText}>{liveTranscript}</Text>
           </ScrollView>
         </Animated.View>
@@ -423,7 +424,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
             style={styles.responseScroll}
             contentContainerStyle={styles.responseContent}
           >
-            <Text style={styles.responseLabel}>🌙 NoctaliaeAI+</Text>
+            <Text style={styles.responseLabel}>{t('geminiLive.responseLabel')}</Text>
             <Text style={styles.responseText}>{assistantResponse}</Text>
           </ScrollView>
         </View>
@@ -438,7 +439,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
           {/* Photo - Désactivé */}
           <TouchableOpacity 
             style={[styles.toolButton, styles.toolButtonDisabled]}
-            onPress={() => Alert.alert('Bientôt disponible', 'La capture photo sera disponible dans une prochaine version')}
+            onPress={() => Alert.alert(t('geminiLive.photoComingSoon'), t('geminiLive.photoComingSoonDesc'))}
           >
             <MaterialIcons name="photo-library" size={28} color={THEME.colors.textSecondary} />
           </TouchableOpacity>
@@ -446,7 +447,7 @@ export default function GeminiLiveScreen({ route, navigation }) {
           {/* Vidéo - Désactivé */}
           <TouchableOpacity 
             style={[styles.toolButton, styles.toolButtonDisabled]}
-            onPress={() => Alert.alert('Bientôt disponible', 'La capture vidéo sera disponible dans une prochaine version')}
+            onPress={() => Alert.alert(t('geminiLive.photoComingSoon'), t('geminiLive.videoComingSoonDesc'))}
           >
             <MaterialIcons name="videocam" size={28} color={THEME.colors.textSecondary} />
           </TouchableOpacity>

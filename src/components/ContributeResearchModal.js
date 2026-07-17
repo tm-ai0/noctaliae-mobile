@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { THEME } from '../config/theme';
+import { useTranslation } from 'react-i18next';
 
 export function ContributeResearchModal({ visible, onClose, onActivate }) {
+  const { t } = useTranslation();
   return (
     <Modal
       visible={visible}
@@ -16,7 +18,7 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
           {/* Header */}
 <View style={styles.header}>
   <Text style={[styles.headerTitle, { color: THEME.colors.success }]}>
-    Faire avancer la recherche
+    {t('contributeResearch.title')}
   </Text>
   <TouchableOpacity style={styles.closeButton} onPress={onClose}>
     <MaterialIcons name="highlight-off" size={28} color={THEME.colors.text} />
@@ -33,60 +35,59 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
   <View style={styles.titleRow}>
     <MaterialCommunityIcons name="flask" size={32} color={THEME.colors.primary} />
     <Text style={[styles.title, { color: THEME.colors.textPrimary }]}>
-      Partager l’analyse de mes rêves pour faire avancer la science ✨
+      {t('contributeResearch.switchLabel')}
     </Text>
   </View>
 
   {/* Description */}
   <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-    Vous pouvez choisir de transmettre vos analyses <Text style={{ fontWeight: '700' }}>de façon totalement anonyme</Text>. 
-    Chaque partage contribue à enrichir la recherche sur le sommeil et les rêves.
+    {t('contributeResearch.paragraph1')}
   </Text>
 
   {/* Section Destination */}
   <Text style={[styles.sectionTitle, { color: THEME.colors.primary }]}>
-    🧬 À qui profitent vos données ?
+    {t('contributeResearch.section1')}
   </Text>
 
   <Text style={[styles.paragraph, { color: THEME.colors.textPrimary }]}>
-    Vos analyses anonymisées pourront être transmises à des laboratoires de recherche reconnus en neurosciences du sommeil, comme par exemple :
+    {t('contributeResearch.paragraph2')}
   </Text>
 
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • <Text style={{ fontWeight: '600' }}>DreamTeam</Text> – Institut du Cerveau (ICM), Paris
+    {t('contributeResearch.bullet_lab1')}
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • <Text style={{ fontWeight: '600' }}>Walker Lab</Text> – UC Berkeley
+    {t('contributeResearch.bullet_lab2')}
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • D'autres équipes universitaires vérifiées pourront s'ajouter au fil du temps
+    {t('contributeResearch.bullet_lab3')}
   </Text>
 
   {/* Section Sécurité */}
   <Text style={[styles.sectionTitle, { color: THEME.colors.primary }]}>
-    🔐 Vos données, protégées
+    {t('contributeResearch.section2')}
   </Text>
 
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Chiffrement AES-256 de bout en bout
+    {t('contributeResearch.bullet_sec1')}
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Stockage sécurisé avec SecureStore
+    {t('contributeResearch.bullet_sec2')}
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Anonymisation totale avant tout partage
+    {t('contributeResearch.bullet_sec3')}
   </Text>
   <Text style={[styles.bulletPoint, { color: THEME.colors.textPrimary }]}>
-    • Possibilité de désactiver à tout moment
+    {t('contributeResearch.bullet_sec4')}
   </Text>
 
   {/* Note importante */}
   <Text style={[styles.sectionTitle, { color: THEME.colors.primary }]}>
-    ✨ Note importante
+    {t('contributeResearch.section3')}
   </Text>
 
   <Text style={[styles.paragraph, { color: THEME.colors.textPrimary, fontStyle: 'italic' }]}>
-    Cette fonctionnalité n'est pas encore active. Seuls des laboratoires vérifiés et reconnus par la communauté scientifique seront éligibles. Votre consentement explicite sera toujours requis avant tout partage.
+    {t('contributeResearch.noteText')}
   </Text>
 </ScrollView>
 
@@ -97,7 +98,7 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
     onPress={onClose}
   >
     <Text style={[styles.footerButtonText, { color: THEME.colors.textPrimary }]}>
-      Fermer
+      {t('contributeResearch.close')}
     </Text>
   </TouchableOpacity>
 
@@ -106,7 +107,7 @@ export function ContributeResearchModal({ visible, onClose, onActivate }) {
     onPress={onActivate}
   >
     <Text style={[styles.footerButtonTextPrimary, { color: '#0c0e27' }]}>
-      👍 Ça m'intéresse !
+      {t('contributeResearch.ctaInterested')}
     </Text>
   </TouchableOpacity>
 </View>

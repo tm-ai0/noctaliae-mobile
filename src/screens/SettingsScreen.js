@@ -262,6 +262,9 @@ export default function SettingsScreen({ navigation }) {
         ONBOARDING_COMPLETED_KEY,
         MENU_HINT_KEY,
         FINGERPRINTS_KEY,
+        '@noctaliae_premium_cache',
+        '@noctaliae_free_deepdream_count',
+        '@noctaliae_free_gemini_image_count',
       ])
       showAlert({
         type: 'success',

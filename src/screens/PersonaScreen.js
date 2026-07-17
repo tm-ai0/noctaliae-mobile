@@ -17,6 +17,7 @@ import { useTheme } from '../config/ThemeContext';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed';
@@ -196,7 +197,7 @@ export default function PersonaScreen({ navigation }) {
   function renderFingerprintCard(fingerprint) {
     const type = detectType(fingerprint.text);
     const date = new Date(fingerprint.createdAt);
-    const formattedDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    const formattedDate = date.toLocaleDateString(i18next.language, { day: 'numeric', month: 'short' });
 
     if (type === 'structured') {
       const [key, value] = fingerprint.text.split(' : ');

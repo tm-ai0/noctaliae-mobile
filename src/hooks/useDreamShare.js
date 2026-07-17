@@ -1,6 +1,7 @@
 import { useRef, useCallback, useMemo } from 'react';
 import { Share } from 'react-native';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import DreamShareTemplate from '../components/DreamShareTemplate';
 
 /**
@@ -65,21 +66,32 @@ export function useDreamShare(dream) {
   const handleShareFriendly = useCallback(async () => {
     try {
       // Délai pour que le composant soit bien rendu avant capture
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       if (!captureRef.current) throw new Error('captureRef null');
-      const uri = await captureRef.current.capture();
+
+      // ✅ Fix Android prod : capturer en base64 → écrire dans cache Expo
+      // (le tmpfile de ViewShot est inaccessible à expo-sharing en prod)
+      const base64 = await captureRef.current.capture({
+        format: 'png',
+        quality: 0.95,
+        result: 'base64',
+      });
+      const cacheUri = FileSystem.cacheDirectory + 'noctaliae-share-card.png';
+      await FileSystem.writeAsStringAsync(cacheUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(uri, {
+        await Sharing.shareAsync(cacheUri, {
           mimeType: 'image/png',
           dialogTitle: getDreamTitle(dream),
           UTI: 'public.png',
         });
       } else {
         await Share.share(
-          { message: buildFallbackText(), url: uri },
+          { message: buildFallbackText() },
           { dialogTitle: getDreamTitle(dream) }
         );
       }

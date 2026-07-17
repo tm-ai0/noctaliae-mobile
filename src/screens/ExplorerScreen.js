@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -33,64 +34,66 @@ const COLORS = {
 };
 
 // 📚 Contenu du parcours
-const LESSON_CARDS = [
-  {
-    id: 1,
-    type: 'intro',
-    title: 'Pourquoi 82% de nos rêves sont négatifs ?',
-    subtitle: 'Un voyage dans la science des rêves',
-    icon: 'brain',
-    color: COLORS.primary,
-  },
-  {
-    id: 2,
-    type: 'question',
-    question: 'Quel pourcentage de nos rêves contient des émotions négatives ?',
-    answer: '82%',
-    detail: 'Selon la neurologue Isabelle Arnulf de l\'Institut du Cerveau à Paris.',
-    icon: 'percent',
-    color: COLORS.accent,
-  },
-  {
-    id: 3,
-    type: 'learn',
-    title: 'La théorie de simulation',
-    content: 'Le neuroscientifique Antti Revonsuo propose que notre cerveau fonctionne comme un "simulateur de vol biologique".',
-    highlight: 'Il génère des scénarios menaçants pour nous entraîner à réagir face au danger.',
-    icon: 'airplane',
-    color: COLORS.primary,
-  },
-  {
-    id: 4,
-    type: 'examples',
-    title: 'Les rêves les plus fréquents',
-    items: [
-      { icon: 'run-fast', text: 'Être poursuivi' },
-      { icon: 'school', text: 'Rater un examen' },
-      { icon: 'tooth', text: 'Perdre ses dents' },
-      { icon: 'account-group', text: 'Conflits avec des proches' },
-      { icon: 'map-marker-question', text: 'Se perdre' },
-    ],
-    color: COLORS.secondary,
-  },
-  {
-    id: 5,
-    type: 'fact',
-    title: 'Le saviez-vous ?',
-    content: 'Les étudiants en médecine qui rêvent d\'échouer à leurs examens ont tendance à mieux réussir.',
-    explanation: 'Leur cerveau les prépare au stress !',
-    icon: 'lightbulb-on',
-    color: COLORS.accent,
-  },
-  {
-    id: 6,
-    type: 'takeaway',
-    title: 'À retenir',
-    content: 'Vos rêves négatifs ne sont pas un problème. C\'est votre cerveau qui vous protège.',
-    icon: 'shield-check',
-    color: COLORS.primary,
-  },
-];
+function getLessonCards(t) {
+  return [
+    {
+      id: 1,
+      type: 'intro',
+      title: t('explorer.card1_title'),
+      subtitle: t('explorer.card1_subtitle'),
+      icon: 'brain',
+      color: COLORS.primary,
+    },
+    {
+      id: 2,
+      type: 'question',
+      question: t('explorer.card2_question'),
+      answer: t('explorer.card2_answer'),
+      detail: t('explorer.card2_detail'),
+      icon: 'percent',
+      color: COLORS.accent,
+    },
+    {
+      id: 3,
+      type: 'learn',
+      title: t('explorer.card3_title'),
+      content: t('explorer.card3_content'),
+      highlight: t('explorer.card3_highlight'),
+      icon: 'airplane',
+      color: COLORS.primary,
+    },
+    {
+      id: 4,
+      type: 'examples',
+      title: t('explorer.card4_title'),
+      items: [
+        { icon: 'run-fast', text: t('explorer.card4_item1') },
+        { icon: 'school', text: t('explorer.card4_item2') },
+        { icon: 'tooth', text: t('explorer.card4_item3') },
+        { icon: 'account-group', text: t('explorer.card4_item4') },
+        { icon: 'map-marker-question', text: t('explorer.card4_item5') },
+      ],
+      color: COLORS.secondary,
+    },
+    {
+      id: 5,
+      type: 'fact',
+      title: t('explorer.card5_title'),
+      content: t('explorer.card5_content'),
+      explanation: t('explorer.card5_explanation'),
+      icon: 'lightbulb-on',
+      color: COLORS.accent,
+    },
+    {
+      id: 6,
+      type: 'takeaway',
+      title: t('explorer.card6_title'),
+      content: t('explorer.card6_content'),
+      icon: 'shield-check',
+      color: COLORS.primary,
+    },
+  ];
+}
 
 // 📊 Dots de progression
 function ProgressDots({ current, total }) {
@@ -112,12 +115,14 @@ function ProgressDots({ current, total }) {
 
 // 🎯 Main Component
 export default function ExplorerScreen({ navigation }) {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
 
-  const currentCard = LESSON_CARDS[currentIndex];
+  const lessonCards = getLessonCards(t);
+  const currentCard = lessonCards[currentIndex];
   const isFirst = currentIndex === 0;
-  const isLast = currentIndex === LESSON_CARDS.length - 1;
+  const isLast = currentIndex === lessonCards.length - 1;
 
   const goNext = () => {
     if (!isLast) {
@@ -165,7 +170,7 @@ export default function ExplorerScreen({ navigation }) {
                   <Text style={styles.detailText}>{currentCard.detail}</Text>
                 </View>
               ) : (
-                <Text style={styles.tapToReveal}>👆 Tap pour révéler</Text>
+                <Text style={styles.tapToReveal}>{t('explorer.tapToReveal')}</Text>
               )}
             </TouchableOpacity>
           </>
@@ -233,8 +238,8 @@ export default function ExplorerScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
           <MaterialCommunityIcons name="close" size={28} color={COLORS.text} />
         </TouchableOpacity>
-        <ProgressDots current={currentIndex} total={LESSON_CARDS.length} />
-        <Text style={styles.counter}>{currentIndex + 1}/{LESSON_CARDS.length}</Text>
+        <ProgressDots current={currentIndex} total={lessonCards.length} />
+        <Text style={styles.counter}>{currentIndex + 1}/{lessonCards.length}</Text>
       </View>
 
       {/* Card */}
@@ -277,7 +282,7 @@ export default function ExplorerScreen({ navigation }) {
             onPress={handleComplete}
             activeOpacity={0.8}
           >
-            <Text style={styles.completeButtonText}>Terminer</Text>
+            <Text style={styles.completeButtonText}>{t('explorer.finish')}</Text>
             <MaterialCommunityIcons name="check" size={24} color={COLORS.background} />
           </TouchableOpacity>
         ) : (

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { streakService } from './streakService';
+import i18next from 'i18next';
 
 const DREAMS_KEY = '@noctaliae_dreams';
 
@@ -13,7 +14,7 @@ export async function saveDream(audioUri, transcription = '') {
       audioUri: audioUri,
       transcription: transcription,
       date: new Date().toISOString(),
-      title: `Rêve du ${new Date().toLocaleDateString('fr-FR')}`,
+      title: i18next.t('common.defaultDreamTitle', { date: new Date().toLocaleDateString(i18next.language) }),
     };
     
     dreams.unshift(newDream);

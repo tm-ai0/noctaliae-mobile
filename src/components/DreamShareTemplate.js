@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -37,7 +38,7 @@ export default function DreamShareTemplate({ captureRef, dream, oneLiner }) {
 
   const dateStr = (() => {
     if (!dream.date) return '';
-    const d = new Date(dream.date).toLocaleDateString('fr-FR', {
+    const d = new Date(dream.date).toLocaleDateString(i18next.language, {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
     return d.charAt(0).toUpperCase() + d.slice(1);

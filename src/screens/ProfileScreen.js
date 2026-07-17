@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../config/ThemeContext';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 const MEMORIES_KEY = '@noctaliae_user_memories';
 
@@ -99,7 +100,7 @@ export default function ProfileScreen({ navigation }) {
 
   function renderMemoryCard(memory) {
     const date = new Date(memory.createdAt);
-    const formattedDate = date.toLocaleDateString('fr-FR', { 
+    const formattedDate = date.toLocaleDateString(i18next.language, { 
       day: 'numeric',
       month: 'short',
       year: 'numeric'

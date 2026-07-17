@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import i18next from 'i18next';
 import { TouchableOpacity, View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { 
@@ -99,7 +100,7 @@ export default function AnimatedDreamCard({
   };
 
   const date = new Date(dream.date);
-  const time = date.toLocaleTimeString('fr-FR', { 
+  const time = date.toLocaleTimeString(i18next.language, { 
     hour: '2-digit', 
     minute: '2-digit' 
   });

@@ -25,6 +25,7 @@ const FIRST_ARCHIVE_KEY = '@noctaliae_first_archive_shown';
 
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 export default function AnalysisScreen({ navigation, route }) {
   const { theme } = useTheme();
@@ -120,7 +121,7 @@ export default function AnalysisScreen({ navigation, route }) {
     
     filtered.forEach(dream => {
       const date = new Date(dream.date);
-      const dateKey = date.toLocaleDateString('fr-FR', { 
+      const dateKey = date.toLocaleDateString(i18next.language, { 
         day: 'numeric',
         month: 'short' 
       });
@@ -551,11 +552,11 @@ export default function AnalysisScreen({ navigation, route }) {
               </Text>
             </>
           ) : (
-            // Empty state normal — Nocty
+            // Empty state normal — Nocty animé (GIF transparent)
             <View style={styles.emptyCard}>
               <Image
-                source={require('../../assets/nocty-welcome.png')}
-                style={styles.emptyNocty}
+                source={require('../../assets/nocty-welcome-anim.gif')}
+                style={styles.emptyNoctyVideo}
                 resizeMode="contain"
               />
               <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
@@ -713,6 +714,12 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     marginBottom: 20,
+  },
+  emptyNoctyVideo: {
+    width: 180,
+    height: 180,
+    marginBottom: 20,
+    overflow: 'hidden',
   },
   emptyTitle: {
     fontSize: 26,

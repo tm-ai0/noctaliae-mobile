@@ -89,9 +89,11 @@ src/
 - **Free tier généreux** — Llama via Groq pour les utilisateurs gratuits
 - **Éthique** — Pas de dark patterns, pas d'extraction commerciale
 
-## État actuel (31 mars 2026)
-- **v1.3.1 Build 50 SOUMIS** (31 mars 2026) — changes in review sur Play Console
-- **v1.3.0 Build 49** sur le Play Store (production, 28 mars 2026)
+## État actuel (1er avril 2026)
+- **Build 54 PRODUCTION à lancer** (1er avril 2026) — fix i18nReady gate (clés brutes atlas/etc). Release notes FR/EN/ES prêtes.
+- **Build 53 PRODUCTION lancé** (1er avril 2026) — fixes trends i18n + reset user + share base64→cache + Nocty vidéo transparent. ⚠️ N'inclut PAS le fix i18nReady
+- **v1.4.1 Build 52 SOUMIS** (1er avril 2026) — WhatsNew modal i18n
+- **v1.4.0 Build 51 LIVE** sur le Play Store (1er avril 2026) — i18n complet FR/EN/ES LATAM
 - **25-28 users installés**, 5.000★ rating, 6€ gross revenue
 - **Backend** : v2.18 sur Infomaniak. Pas de process manager (PM2) en place.
 - **RevenueCat IAP** : ✅ FONCTIONNEL depuis le 31/03/2026. Bug résolu = package name était `com.tmAi.noctaliae` au lieu de `com.noctaliae.mobile`. Credentials valides, "Restaurer mes achats" OK.
@@ -108,6 +110,17 @@ src/
 - Try/catch sur Purchases.configure (compatibilité Expo Go)
 - Fallback dev tier dans premiumService pour tests Expo Go
 
+### Build 54 changelog (à lancer)
+- **Fix i18nReady gate** : App.js — ajout state `i18nReady`, gate rendu sur `fontsLoaded && i18nReady`. Corrige les clés i18n brutes (atlas.subtitle etc) affichées au montage des tabs.
+
+### Build 53 changelog
+- **TrendsScreen i18n** : 36 clés manquantes fixées (calNarrow→toLocaleDateString native, timelineSubtitle, emptyTags, streakRestart, 26 clés insights neuroscience). 16 clés mortes supprimées (insight1-3, day_*).
+- **SettingsScreen reset** : handleResetNewUser efface désormais @noctaliae_premium_cache + @noctaliae_free_deepdream_count + @noctaliae_free_gemini_image_count
+- **DreamImageViewer** : bouton share vert (share-variant) ajouté en haut à droite. Fix base64→cache Expo pour partage image en prod Android.
+- **useDreamShare** : même fix base64→cache (pattern prouvé Build 26) pour partage DreamCard.
+- **AnalysisScreen** : empty state Nocty vidéo transparent via expo-transparent-video (CDN Masko 360p) avec fallback PNG.
+- **expo-transparent-video** : package ajouté (deprecated mais fonctionnel ?). À valider sur build preview.
+
 ### TODO
 0. **Paywall upgrade mode** (ActivateDeepDreamModal) : quand user est PREMIUM, la modale doit :
    - Marquer le palier actuel "Votre palier" + grisé (non cliquable)
@@ -117,7 +130,7 @@ src/
    - Passer isPremium + tierInfo en props
 1. **Backend** : vérifier api.thomasmaury.fr, envisager PM2
 2. **Google developer notifications** : connecter RevenueCat Pub/Sub (non configuré)
-3. **i18n FR/EN/ES LATAM** : ✅ Phases 1-5 DONE. TODO Phase 6 : QA + grep FR résiduels + test layouts ES
+3. **i18n FR/EN/ES LATAM** : ✅ Phases 1-6 DONE. 845 clés FR, 916 EN/ES. Suggestion chips DeepChatScreen désactivées en EN/ES (sprint séparé : LLM-generated suggestions)
 4. **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions)
 5. **Shake-to-feedback** : expo-sensors Accelerometer
 
@@ -142,7 +155,7 @@ src/
 - **Google Form** : restructurer pour tout-en-un (satisfaction, bugs, suggestions, features)
 - **Shake-to-feedback** : expo-sensors Accelerometer (prochain sprint)
 - **Item 5** : flow photo ne génère pas d'image (bypass PostRecordingScreen où generateDreamImage est appelé)
-- **i18n FR/EN/ES LATAM** : Phases 1-5 DONE (01/04/2026). i18next+react-i18next+expo-localization installés, src/i18n/index.js configuré, initI18n() branché dans App.js. fr.json (714 clés) / en.json / es.json (785 clés chacun, 0 missing) dans src/i18n/locales/. Phase 4 P1 : 14 fichiers (5 onboarding + ConversationScreen, PostRecordingScreen, AnalysisScreen, SettingsScreen, ActivateDeepDreamModal, DeepDreamInfoModal, DreamCard, CustomTabBar, DreamShareTemplate). Phase 4 P2 : ArchivesScreen, DeepChatScreen, ProfileScreen, PersonaScreen, ChatScreen, QuickRecordScreen, MetaAnalysisScreen, ResearchOptInModal, VoiceAssistantScreen. Phase 5 : sélecteur langue (🇫🇷/🇬🇧/🌎) dans SettingsScreen. Tags fingerprints ("Introverti", etc.) laissés en FR volontairement (LLM gèrent). TODO Phase 6 : QA + grep textes FR résiduels + test layouts ES (TrendsScreen, InsightsScreen, AtlasScreen, ExplorerScreen, PlaygroundScreen, GeminiLiveScreen non encore i18n'd)
+- **i18n FR/EN/ES LATAM** : ✅ COMPLET (01/04/2026). i18next+react-i18next+expo-localization. fr.json (845 clés) / en.json + es.json (916 clés). 30+ fichiers patchés. Sélecteur langue dropdown Settings + globe onboarding. Dates localisées (i18next.language). Titre par défaut "Rêve du..." / "Dream of..." / "Sueño del..." localisé (storageService + PostRecordingScreen). Suggestion chips DeepChatScreen désactivées en EN/ES (return [] si langue !== fr). Tags fingerprints laissés en FR (LLM gèrent). PlaygroundScreen non i18n'd (outil dev). TODO sprint séparé : suggestions LLM-generated multilingues, landing page i18n
 
 ### CE QU'IL NE FAUT PAS CASSER
 - PostRecordingScreen : la section "Enrichir l'analyse" (métadonnées lucidité/sommeil/émotions/thèmes) DOIT rester

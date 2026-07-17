@@ -4,6 +4,7 @@ import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME } from '../config/theme';
 import { ContributeResearchModal } from './ContributeResearchModal';
+import { useTranslation } from 'react-i18next';
 
 const VOTE_KEY = '@noctaliae_vote_research';
 
@@ -11,6 +12,7 @@ const VOTE_KEY = '@noctaliae_vote_research';
 const VOTE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe9TVWMzCk761X4jLwoGBR53WNyfPirQD_EjdWhxRvvOlhaNg/viewform';
 
 export function ResearchOptInVIP() {
+  const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
 
@@ -45,12 +47,12 @@ export function ResearchOptInVIP() {
 
           <View style={styles.textContainer}>
             <Text style={styles.title}>
-              Contribuer à la recherche
+              {t('researchVip.title')}
             </Text>
             <Text style={styles.subtitle}>
               {hasVoted
-                ? "Merci pour votre intérêt ! On vous tiendra informé."
-                : "Bientôt : partagez vos analyses anonymement pour la science."}
+                ? t('researchVip.thankYou')
+                : t('researchVip.descInactive')}
             </Text>
           </View>
         </View>
@@ -60,13 +62,13 @@ export function ResearchOptInVIP() {
           <View style={styles.infoRow}>
             <MaterialCommunityIcons name="brain" size={16} color="#4F8DFF" />
             <Text style={styles.infoText}>
-              Vos analyses pourront être partagées anonymement avec des labos vérifiés (DreamTeam ICM Paris, Walker Lab UC Berkeley...).
+              {t('researchVip.descActive')}
             </Text>
           </View>
           <View style={styles.betaWarning}>
             <MaterialCommunityIcons name="flask-outline" size={14} color="#F59E0B" />
             <Text style={styles.betaWarningText}>
-              Bientôt disponible — aucun envoi actif
+              {t('researchVip.betaSoon')}
             </Text>
           </View>
         </View>
@@ -80,12 +82,12 @@ export function ResearchOptInVIP() {
               activeOpacity={0.8}
             >
               <MaterialIcons name="thumb-up" size={18} color="#0c0e27" />
-              <Text style={styles.voteButtonText}>Ça m'intéresse !</Text>
+              <Text style={styles.voteButtonText}>{t('researchVip.interested')}</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.votedBadge}>
               <MaterialIcons name="check-circle" size={18} color="#00FFB0" />
-              <Text style={styles.votedText}>Vote enregistré</Text>
+              <Text style={styles.votedText}>{t('researchVip.voted')}</Text>
             </View>
           )}
 
@@ -95,7 +97,7 @@ export function ResearchOptInVIP() {
             activeOpacity={0.8}
           >
             <Text style={styles.kofiEmoji}>☕</Text>
-            <Text style={styles.kofiButtonText}>Soutenir</Text>
+            <Text style={styles.kofiButtonText}>{t('researchVip.support')}</Text>
           </TouchableOpacity>
         </View>
       </View>

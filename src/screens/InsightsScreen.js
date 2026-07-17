@@ -1,8 +1,8 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Dimensions
@@ -11,11 +11,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export default function InsightsScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -24,7 +26,7 @@ export default function InsightsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <MaterialCommunityIcons name="chart-line" size={32} color={THEME.colors.primary} />
-          <Text style={styles.headerTitle}>Insights</Text>
+          <Text style={styles.headerTitle}>{t('insights.title')}</Text>
         </View>
 
         {/* Coming soon */}
@@ -35,37 +37,34 @@ export default function InsightsScreen() {
             color={THEME.colors.textSecondary} 
             style={{ marginBottom: 20 }}
           />
-          <Text style={styles.comingSoonTitle}>Bientôt disponible</Text>
-          <Text style={styles.comingSoonText}>
-            Découvrez vos patterns de rêves,{'\n'}
-            statistiques et tendances
-          </Text>
+          <Text style={styles.comingSoonTitle}>{t('insights.comingSoon')}</Text>
+          <Text style={styles.comingSoonText}>{t('insights.comingSoonDesc')}</Text>
         </View>
 
         {/* Preview cards */}
         <View style={styles.previewGrid}>
           <View style={styles.previewCard}>
             <MaterialIcons name="timeline" size={32} color={THEME.colors.primary} />
-            <Text style={styles.previewTitle}>Timeline</Text>
-            <Text style={styles.previewDesc}>Visualisez vos rêves dans le temps</Text>
+            <Text style={styles.previewTitle}>{t('insights.preview_timeline')}</Text>
+            <Text style={styles.previewDesc}>{t('insights.preview_timeline_desc')}</Text>
           </View>
 
           <View style={styles.previewCard}>
             <MaterialCommunityIcons name="brain" size={32} color={THEME.colors.primary} />
-            <Text style={styles.previewTitle}>Patterns</Text>
-            <Text style={styles.previewDesc}>Thèmes récurrents détectés</Text>
+            <Text style={styles.previewTitle}>{t('insights.preview_patterns')}</Text>
+            <Text style={styles.previewDesc}>{t('insights.preview_patterns_desc')}</Text>
           </View>
 
           <View style={styles.previewCard}>
             <MaterialIcons name="bar-chart" size={32} color={THEME.colors.primary} />
-            <Text style={styles.previewTitle}>Statistiques</Text>
-            <Text style={styles.previewDesc}>Métriques et analyses</Text>
+            <Text style={styles.previewTitle}>{t('insights.preview_stats')}</Text>
+            <Text style={styles.previewDesc}>{t('insights.preview_stats_desc')}</Text>
           </View>
 
           <View style={styles.previewCard}>
             <MaterialCommunityIcons name="cloud-outline" size={32} color={THEME.colors.primary} />
-            <Text style={styles.previewTitle}>Word Cloud</Text>
-            <Text style={styles.previewDesc}>Mots-clés les plus fréquents</Text>
+            <Text style={styles.previewTitle}>{t('insights.preview_wordcloud')}</Text>
+            <Text style={styles.previewDesc}>{t('insights.preview_wordcloud_desc')}</Text>
           </View>
         </View>
       </ScrollView>

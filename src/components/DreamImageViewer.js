@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react'
+import i18next from 'i18next'
 import {
   Modal,
   View,
@@ -17,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import * as Sharing from 'expo-sharing'
+import * as FileSystem from 'expo-file-system/legacy'
 import ViewShot from 'react-native-view-shot'
 import { useTheme } from '../config/ThemeContext'
 
@@ -62,42 +64,35 @@ export default function DreamImageViewer({
     })
   }
 
-  // ── Share Friendly : capture ViewShot → shareAsync ───────────────────────
+  // ── Share : télécharger l'image directement → shareAsync ─────────────────
+  // Bypass ViewShot (instable en prod Android). Télécharge l'image depuis son URL.
   const handleShareFriendly = async () => {
     setShowShareMenu(false)
     try {
-      // Masquer les boutons UI pour la capture
-      setIsCapturing(true)
-      // Petit délai pour laisser le re-render se faire
-      await new Promise((resolve) => setTimeout(resolve, 150))
-
-      const uri = await captureRef.current.capture()
-      setIsCapturing(false)
-
-      // Partager l'image capturée
-      const canShare = await Sharing.isAvailableAsync()
-      if (canShare) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          dialogTitle: getTitle(),
-          UTI: 'public.png',
-        })
+      if (!dream?.imageUrl) {
+        await Share.share({ message: buildShareCaption() }, { dialogTitle: getTitle() })
+        return
+      }
+      // Télécharger l'image dans le cache Expo
+      const ext = dream.imageUrl.includes('.png') ? 'png' : 'jpg'
+      const cacheUri = FileSystem.cacheDirectory + `noctaliae-share.${ext}`
+      const download = await FileSystem.downloadAsync(dream.imageUrl, cacheUri)
+      if (download.status === 200) {
+        const canShare = await Sharing.isAvailableAsync()
+        if (canShare) {
+          await Sharing.shareAsync(download.uri, {
+            mimeType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+            dialogTitle: getTitle(),
+            UTI: ext === 'png' ? 'public.png' : 'public.jpeg',
+          })
+        }
       } else {
-        // Fallback : Share.share avec texte + lien
-        await Share.share(
-          { message: buildShareCaption(), url: uri },
-          { dialogTitle: getTitle() }
-        )
+        await Share.share({ message: buildShareCaption() }, { dialogTitle: getTitle() })
       }
     } catch (err) {
-      setIsCapturing(false)
-      console.error('❌ ViewShot capture error:', err)
-      // Fallback ultime : partage texte seul
+      console.error('❌ Share image error:', err)
       try {
-        await Share.share(
-          { message: buildShareCaption() },
-          { dialogTitle: getTitle() }
-        )
+        await Share.share({ message: buildShareCaption() }, { dialogTitle: getTitle() })
       } catch (e) {
         console.error('❌ Share fallback error:', e)
       }
@@ -107,7 +102,7 @@ export default function DreamImageViewer({
   // ── Texte fallback si Sharing indisponible ────────────────────────────────
   const buildShareCaption = () => {
     const title = getTitle()
-    const date = new Date(dream.date).toLocaleDateString('fr-FR', {
+    const date = new Date(dream.date).toLocaleDateString(i18next.language, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -161,7 +156,7 @@ export default function DreamImageViewer({
 
   const formatFullDate = () => {
     if (!dream?.date) return ''
-    return new Date(dream.date).toLocaleDateString('fr-FR', {
+    return new Date(dream.date).toLocaleDateString(i18next.language, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -304,6 +299,13 @@ export default function DreamImageViewer({
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <MaterialIcons name="close" size={24} color="#FFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.ctrlBtn, styles.shareCtrlBtn]}
+              onPress={handleShareFriendly}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <MaterialCommunityIcons name="share-variant" size={22} color="#00FFB0" />
             </TouchableOpacity>
           </View>
         )}

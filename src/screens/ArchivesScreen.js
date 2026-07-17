@@ -17,6 +17,7 @@ import { THEME } from '../config/theme';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 export default function ArchivesScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -103,7 +104,7 @@ export default function ArchivesScreen({ navigation }) {
 
   function renderDreamCard({ item: dream }) {
     const date = new Date(dream.date);
-    const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const time = date.toLocaleTimeString(i18next.language, { hour: '2-digit', minute: '2-digit' });
     const daysLeft = getDaysRemaining(dream.archivedAt);
     const isExpiringSoon = daysLeft <= 7;
     const hasImage = !!dream.imageUrl;
@@ -165,7 +166,7 @@ export default function ArchivesScreen({ navigation }) {
 
           {/* Date archivage */}
           <Text style={styles.cardInfo}>
-            {t('archives.archivedOn', { date: new Date(dream.archivedAt).toLocaleDateString('fr-FR') })}
+            {t('archives.archivedOn', { date: new Date(dream.archivedAt).toLocaleDateString(i18next.language) })}
           </Text>
 
           {/* Actions */}

@@ -27,6 +27,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '../config/theme';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { saveDream } from '../services/storageService';
 import { transcribeAudio, analyzeImageDream } from '../services/apiService';
 
@@ -97,7 +98,7 @@ export default function QuickRecordScreen({ navigation }) {
   // Heure actuelle
   const [currentTime, setCurrentTime] = useState(getTime());
   function getTime() {
-    return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return new Date().toLocaleTimeString(i18next.language, { hour: '2-digit', minute: '2-digit' });
   }
   useEffect(() => {
     const id = setInterval(() => setCurrentTime(getTime()), 10000);

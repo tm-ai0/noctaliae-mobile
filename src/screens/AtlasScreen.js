@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../config/ThemeContext';
 import DebugScreenLabel from '../components/DebugScreenLabel';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ const MODULE_COLORS = {
 export default function AtlasScreen({ navigation }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   
   // 🎭 Animation pulse pour les ghost cards
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
@@ -118,9 +120,9 @@ export default function AtlasScreen({ navigation }) {
         <View style={styles.header}>
           <MaterialCommunityIcons name="map-marker-path" size={32} color={theme.colors.primary} />
           <View style={styles.headerText}>
-            <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>Atlas</Text>
+            <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>{t('atlas.title')}</Text>
             <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
-              L'univers des rêves, bientôt
+              {t('atlas.subtitle')}
             </Text>
           </View>
         </View>
@@ -137,20 +139,20 @@ export default function AtlasScreen({ navigation }) {
 
           {/* Titre */}
           <Text style={[styles.heroTitle, { color: theme.colors.textPrimary }]}>
-            L'Atlas des Rêves{'\n'}arrive bientôt
+            {t('atlas.heroTitle')}
           </Text>
-          
+
           {/* Description */}
           <Text style={[styles.heroDescription, { color: theme.colors.textSecondary }]}>
-            Un espace dédié pour explorer la science des rêves, visualiser vos patterns oniriques et approfondir vos connaissances.
+            {t('atlas.heroDescription')}
           </Text>
 
           {/* Preview des 4 modules */}
           <View style={styles.previewGrid}>
-            <PreviewCard icon="compass-outline" title="Explorer" color={MODULE_COLORS.explorer} />
-            <PreviewCard icon="chart-timeline-variant" title="Cartographie" color={MODULE_COLORS.cartographie} />
-            <PreviewCard icon="flask-outline" title="Laboratoire" color={MODULE_COLORS.laboratoire} />
-            <PreviewCard icon="key-variant" title="Décrypter" color={MODULE_COLORS.decrypter} />
+            <PreviewCard icon="compass-outline" title={t('atlas.moduleExplorer')} color={MODULE_COLORS.explorer} />
+            <PreviewCard icon="chart-timeline-variant" title={t('atlas.moduleCartographie')} color={MODULE_COLORS.cartographie} />
+            <PreviewCard icon="flask-outline" title={t('atlas.moduleLaboratoire')} color={MODULE_COLORS.laboratoire} />
+            <PreviewCard icon="key-variant" title={t('atlas.moduleDecrypter')} color={MODULE_COLORS.decrypter} />
           </View>
 
           {/* Séparateur */}
@@ -158,10 +160,10 @@ export default function AtlasScreen({ navigation }) {
 
           {/* Question d'intérêt */}
           <Text style={[styles.interestQuestion, { color: theme.colors.textPrimary }]}>
-            Ça vous intéresse ?
+            {t('atlas.interestQuestion')}
           </Text>
           <Text style={[styles.interestSubtext, { color: theme.colors.textSecondary }]}>
-            Dites-nous ce qui vous plaît et aidez-nous à construire la suite !
+            {t('atlas.interestSubtext')}
           </Text>
 
           {/* CTA Buttons Row */}
@@ -173,7 +175,7 @@ export default function AtlasScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <MaterialCommunityIcons name="vote" size={20} color="#0c0e27" />
-              <Text style={styles.ctaText}>Donnez votre avis</Text>
+              <Text style={styles.ctaText}>{t('atlas.feedback')}</Text>
             </TouchableOpacity>
 
             {/* Bouton Ko-fi */}
@@ -183,7 +185,7 @@ export default function AtlasScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <Text style={{ fontSize: 16 }}>☕</Text>
-              <Text style={[styles.ctaTextKofi, { color: theme.colors.primary }]}>Soutenir</Text>
+              <Text style={[styles.ctaTextKofi, { color: theme.colors.primary }]}>{t('atlas.support')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -192,7 +194,7 @@ export default function AtlasScreen({ navigation }) {
         <View style={[styles.infoCard, { backgroundColor: theme.colors.primaryGlow }]}>
           <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.primary} />
           <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
-            L'Atlas est en cours de développement. Les fonctionnalités d'analyse et d'enregistrement de rêves restent disponibles normalement.
+            {t('atlas.infoText')}
           </Text>
         </View>
 

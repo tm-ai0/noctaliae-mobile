@@ -40,6 +40,7 @@ import DreamImageViewer from '../components/DreamImageViewer'
 import DreamFallbackHero from '../components/DreamFallbackHero'
 import { useDreamShare } from '../hooks/useDreamShare'
 import { useTranslation } from 'react-i18next'
+import i18next from 'i18next'
 
 
 export default function ConversationScreen({ route, navigation }) {
@@ -244,8 +245,8 @@ export default function ConversationScreen({ route, navigation }) {
   }, [isPremium])
 
   const date = new Date(dreamDate)
-  const formattedTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  const formattedDate = date.toLocaleDateString('fr-FR')
+  const formattedTime = date.toLocaleTimeString(i18next.language, { hour: '2-digit', minute: '2-digit' })
+  const formattedDate = date.toLocaleDateString(i18next.language)
 
   async function handleSelectReanalyzeModel(useClaude) {
     if (useClaude && !isPremium) {
@@ -345,7 +346,7 @@ export default function ConversationScreen({ route, navigation }) {
   // ============================================
   const buildShareCaption = () => {
     const title   = currentDreamTitle || 'Mon rêve'
-    const date    = new Date(dreamDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const date    = new Date(dreamDate).toLocaleDateString(i18next.language, { weekday: 'long', day: 'numeric', month: 'long' })
     const dateStr = date.charAt(0).toUpperCase() + date.slice(1)
     const tags    = (dreamTags || []).slice(0, 3).map(t => `#${t}`).join(' ')
     const lines   = [

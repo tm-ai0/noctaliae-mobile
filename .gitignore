@@ -93,3 +93,5 @@ REORGANIZE_PROJECT.ps1
 
 # Claude Desktop worktrees
 .claude/
+
+assets/nocty-welcome.gif

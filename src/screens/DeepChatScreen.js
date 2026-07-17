@@ -35,11 +35,13 @@ import { ActivateDeepDreamModal } from '../modals/ActivateDeepDreamModal';
 import DebugScreenLabel from '../components/DebugScreenLabel';
 import { useNoctaliaeAlert } from '../components/NoctaliaeAlert';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // 🧠 GÉNÉRATEUR DE SUGGESTIONS INTELLIGENTES
 function generateSmartSuggestions(analysis, transcription) {
+  if (i18next.language !== 'fr') return [];
   const text = (analysis + ' ' + transcription).toLowerCase();
   const suggestions = [];
   
@@ -544,7 +546,7 @@ export default function DeepChatScreen({ route, navigation }) {
   // ============================================
   const generateEnrichedPdfHtml = () => {
     const now = new Date();
-    const exportDate = now.toLocaleDateString('fr-FR', { 
+    const exportDate = now.toLocaleDateString(i18next.language, { 
       day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
     

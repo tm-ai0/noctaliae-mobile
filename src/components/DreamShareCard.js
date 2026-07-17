@@ -1,4 +1,5 @@
 import React from 'react';
+import i18next from 'i18next';
 import {
   View,
   Text,
@@ -33,7 +34,7 @@ export default function DreamShareCard({ dream, cardRef }) {
   })();
 
   const dateStr = dream?.date
-    ? new Date(dream.date).toLocaleDateString('fr-FR', {
+    ? new Date(dream.date).toLocaleDateString(i18next.language, {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
     : '';

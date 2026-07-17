@@ -76,6 +76,7 @@ import {
   dismissUpdate,
 } from './src/services/updateService'
 import { UpdateAvailableModal } from './src/modals/UpdateAvailableModal'
+import { WhatsNewModal } from './src/modals/WhatsNewModal'
 import { UpdateToast } from './src/components/UpdateToast'
 import { freeTierService } from './src/services/freeTierService'
 import { premiumService } from './src/services/premiumService'
@@ -83,6 +84,7 @@ import { ActivateDeepDreamModal } from './src/modals/ActivateDeepDreamModal'
 import { initI18n } from './src/i18n'
 
 const ONBOARDING_COMPLETED_KEY = '@noctaliae_onboarding_completed'
+const WHATS_NEW_KEY = '@noctaliae_whats_new_1_4_0'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -992,6 +994,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export default function App() {
   // 🔤 Chargement des fonts custom
+  const [i18nReady, setI18nReady] = useState(false)
   const [fontsLoaded, fontError] = useFonts({
     // Cormorant Upright — Display / Titres (serif gravure)
     'CormorantUpright-Regular': require('./assets/fonts/CormorantUpright-Regular.ttf'),
@@ -1023,6 +1026,8 @@ export default function App() {
   const [updateInfo, setUpdateInfo] = React.useState(null)
   const [showUpdateModal, setShowUpdateModal] = React.useState(false)
   const [showUpdateToast, setShowUpdateToast] = React.useState(false)
+  // 🌍 What's New modal (v1.4.0)
+  const [showWhatsNew, setShowWhatsNew] = React.useState(false)
 
   // 🧪 TEST MODE - Mettre à true pour tester le modal
   const TEST_UPDATE_MODAL = false
@@ -1107,7 +1112,15 @@ export default function App() {
     } catch (e) {
       console.warn('RevenueCat configure skipped (Expo Go?):', e.message)
     }
-    initI18n() // 🌍 i18n (FR/EN/ES)
+    initI18n().then(() => setI18nReady(true)) // 🌍 i18n (FR/EN/ES)
+
+    // 🌍 What's New v1.4.0 — afficher une seule fois après l'onboarding
+    AsyncStorage.multiGet([ONBOARDING_COMPLETED_KEY, WHATS_NEW_KEY]).then(([[, onboarded], [, seen]]) => {
+      if (onboarded === 'true' && seen !== 'true') {
+        setTimeout(() => setShowWhatsNew(true), 1500)
+      }
+    })
+
     initSentry() // 🛡️ Crash reporting
     secureStorageService.migrateFromAsyncStorage()
     sendInstallPing() // Track les installations
@@ -1165,8 +1178,14 @@ export default function App() {
     setShowUpdateToast(false)
   }
 
+  // Handler dismiss What's New
+  const handleDismissWhatsNew = () => {
+    setShowWhatsNew(false)
+    AsyncStorage.setItem(WHATS_NEW_KEY, 'true')
+  }
+
   // 🔤 Attendre que les fonts soient chargées
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !i18nReady) {
     return null // Le SplashScreen reste visible
   }
 
@@ -1204,6 +1223,12 @@ export default function App() {
               onDismiss={handleDismissToast}
             />
           )}
+
+          {/* 🌍 WHAT'S NEW v1.4.0 */}
+          <WhatsNewModal
+            visible={showWhatsNew}
+            onDismiss={handleDismissWhatsNew}
+          />
         </GlowProvider>
       </ThemeProvider>
       </SafeAreaProvider>
