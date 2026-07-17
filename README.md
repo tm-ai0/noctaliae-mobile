@@ -2,7 +2,7 @@
 
 **AI-powered dream analysis with neuroscience**
 
-[![Version](https://img.shields.io/badge/version-0.9.17-blue)]
+[![Version](https://img.shields.io/badge/version-1.4.1-blue)]
 [![React Native](https://img.shields.io/badge/React%20Native-0.81.5-61dafb)](https://reactnative.dev/)
 [![Expo](https://img.shields.io/badge/Expo-54-000020)](https://expo.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
@@ -10,7 +10,7 @@
 
 ---
 
-A React Native (Expo) mobile app for scientific dream analysis, based on cutting-edge neuroscience research from Isabelle Arnulf (Paris Brain Institute), Matthew Walker (UC Berkeley), Allan Hobson, G. William Domhoff and more. Powered by Claude Sonnet 4.5 and Llama 3.3 70B.
+A React Native (Expo) mobile app for scientific dream analysis, based on cutting-edge neuroscience research from Isabelle Arnulf (Paris Brain Institute), Matthew Walker (UC Berkeley), Allan Hobson, G. William Domhoff and more. Powered by Claude Sonnet 4.6 and Llama 3.3 70B.
 
 ---
 
@@ -18,7 +18,7 @@ A React Native (Expo) mobile app for scientific dream analysis, based on cutting
 
 - 🎙️ **Voice Recording** : Capture your dreams right after waking up
 - 🧠 **AI Analysis** : Two models to analyze your dreams
-  - Claude Sonnet 4.5 (deep analysis)
+  - Claude Sonnet 4.6 (deep analysis)
   - Llama 3.3 70B (quick analysis)
 - 💬 **Deep Conversation** : Chat with AI about your dreams
 - 🎨 **Customizable Themes** : 6 night-inspired themes
@@ -92,8 +92,8 @@ npm run start:clear
 - **Zustand** (state management)
 
 ### Backend
-- **Node.js** + Express (v2.14)
-- **Claude Sonnet 4.5** (Anthropic)
+- **Node.js** + Express (v2.18)
+- **Claude Sonnet 4.6** (Anthropic)
 - **Llama 3.3 70B** (Groq)
 - **Whisper** (Groq) for transcription
 
