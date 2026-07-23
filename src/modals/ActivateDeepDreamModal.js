@@ -29,7 +29,7 @@ const FALLBACK_TIERS_BASE = [
 // Note : ces prix sont les fallback TTC affichés si RevenueCat est offline.
 // Les vrais prix viennent de RevenueCat/Google Play (dynamiques).
 
-export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, hasFreeTrials, freeTrialsRemaining }) {
+export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, onContinueFree, hasFreeTrials, freeTrialsRemaining }) {
   const { t } = useTranslation();
   const FALLBACK_TIERS = FALLBACK_TIERS_BASE.map(ft => ({ ...ft, name: t(ft.nameKey) }));
   const [packages, setPackages] = useState([]);
@@ -222,7 +222,7 @@ export function ActivateDeepDreamModal({ visible, onClose, onPurchaseSuccess, ha
             {/* Bouton secondaire */}
             <TouchableOpacity
               style={styles.skipButton}
-              onPress={onClose}
+              onPress={onContinueFree || onClose}
               activeOpacity={0.8}
             >
               <Text style={styles.skipButtonText}>{t('activateDeepDreamModal.skipBtn')}</Text>

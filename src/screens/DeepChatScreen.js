@@ -328,18 +328,9 @@ export default function DeepChatScreen({ route, navigation }) {
   
   const handleChooseFromGallery = async () => {
     setShowImagePicker(false);
-    
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert({
-        type: 'error',
-        title: t('deepChat.permGallery_title'),
-        message: t('deepChat.permGallery_msg'),
-        confirmText: t('common.ok')
-      });
-      return;
-    }
-    
+
+    // Le Photo Picker natif Android (API 33+) ne nécessite aucune permission :
+    // ne pas appeler requestMediaLibraryPermissionsAsync() ici (policy Google Play).
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false,

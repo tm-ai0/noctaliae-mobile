@@ -154,7 +154,8 @@
       "freeLabel": "Gratuit · illimité",
       "unlockCta": "Débloquer →",
       "tastesLeft_one": "{{count}} analyse offerte",
-      "tastesLeft_other": "{{count}} analyses offertes"
+      "tastesLeft_other": "{{count}} analyses offertes",
+      "premiumIncluded": "Inclus dans votre abonnement"
     },
     "loading": {
       "msg1": "Exploration de votre inconscient...",

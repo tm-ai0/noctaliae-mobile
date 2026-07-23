@@ -5,6 +5,7 @@ import { premiumService } from './premiumService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuthHeaders, handleTokenError } from './authTokenService';
 import { freeTierService } from './freeTierService';
+import { getDeviceId } from './deviceIdService';
 
 const FINGERPRINTS_KEY = '@noctaliae_user_fingerprints';
 
@@ -54,34 +55,51 @@ async function loadUserFingerprints() {
 }
 
 // Analyser un rêve depuis du texte
-export async function analyzeDreamFromText(dreamText, isPremium = false, dreamMetadata = null) {
+// useClaude : quel moteur/endpoint utiliser (true pour DeepDream, y compris les taste tests gratuits)
+// realIsPremium : statut premium réel de l'utilisateur, envoyé au backend pour le suivi/rate limiting
+//   (distinct de useClaude : un utilisateur gratuit qui consomme un taste test utilise Claude sans être premium)
+export async function analyzeDreamFromText(dreamText, useClaude = false, dreamMetadata = null, realIsPremium = useClaude) {
   try {
     console.log('📤 Envoi du rêve pour analyse');
-    
+
     const userFingerprints = await loadUserFingerprints();
     if (userFingerprints.length >= 3) {
       console.log(`👣 ${userFingerprints.length} empreintes chargées`);
     } else {
       console.log('⚠️ Moins de 3 empreintes, analyse standard');
     }
-    
-    const endpoint = isPremium ? API_ENDPOINTS.analyze : API_ENDPOINTS.analyzeFree;
+
+    const endpoint = useClaude ? API_ENDPOINTS.analyze : API_ENDPOINTS.analyzeFree;
     const headers = await getAuthHeaders();
-    
+    const deviceId = await getDeviceId();
+
+    // 🩺 DEBUG TEMPORAIRE — confirme la config réseau réellement utilisée
+    // (endpoint + timeout) au moment de l'appel, pour écarter tout bundle
+    // JS obsolète ou chemin de code parallèle.
+    console.log('🩺 [DIAG] axios.post config:', {
+      url: `${API_BASE_URL}${endpoint}`,
+      timeout: 60000,
+      textLength: dreamText.length,
+    });
+
     const response = await axios.post(
       `${API_BASE_URL}${endpoint}`,
       {
         transcript: dreamText,
         userFingerprints: userFingerprints,
-        isPremium: isPremium,
+        isPremium: realIsPremium,
         dreamMetadata: dreamMetadata,  // 🌙 Métadonnées optionnelles (lucidité, qualité, émotions, thèmes)
+        deviceId,
       },
       {
         headers,
-        timeout: 30000,
+        // 60s (comme generateDreamImage) : 30s coupait prématurément l'analyse
+        // DeepDream (Claude Sonnet 4) sur les rêves longs, Claude ayant plus de
+        // texte à générer (analyse + titre + tags + palette + prompt image).
+        timeout: 60000,
       }
     );
-    
+
     console.log('✅ Analyse reçue');
     console.log('📦 Backend response:', {
       emoji: response.data.emoji,
@@ -94,7 +112,17 @@ export async function analyzeDreamFromText(dreamText, isPremium = false, dreamMe
     if (limitInfo && limitInfo.limited) {
       console.log('⚠️ Limite atteinte:', limitInfo.message);
     }
-    
+
+    // Le backend répond parfois 200 avec analysis: null quand la limite est atteinte
+    // (pas d'erreur HTTP) — sans ce garde-fou, l'app affiche un échec générique
+    // ou enregistre un rêve sans analyse au lieu du message de limite.
+    if (!response.data.analysis) {
+      const err = new Error(limitInfo?.message || 'Limite de rêves atteinte');
+      err.code = 'DAILY_LIMIT';
+      err.limitInfo = limitInfo;
+      throw err;
+    }
+
     return {
       transcription: dreamText,
       analysis: response.data.analysis,
@@ -104,18 +132,27 @@ export async function analyzeDreamFromText(dreamText, isPremium = false, dreamMe
       imagePrompt: response.data.imagePrompt || '',
       palette: response.data.palette || ['#00FFB0', '#4F8DFF', '#D2B14C'],
       suggestedQuestions: response.data.suggestedQuestions || [],
-      model: response.data.model || (isPremium ? 'claude-sonnet-4' : 'llama-3.3-70b'),
+      model: response.data.model || (useClaude ? 'claude-sonnet-4' : 'llama-3.3-70b'),
       limitInfo: limitInfo
     };
     
   } catch (error) {
     console.error('❌ Erreur:', error);
-    
+
+    // Erreur déjà qualifiée (DAILY_LIMIT levée ci-dessus pour un 200 sans analysis) — ne pas la ré-emballer
+    // ⚠️ Ne pas tester `error.code` seul : axios pose lui-même error.code
+    // (ERR_BAD_REQUEST/ERR_BAD_RESPONSE sur tout 4xx/5xx, ERR_NETWORK, ECONNABORTED)
+    // sur quasi toutes ses erreurs, ce qui court-circuiterait handleTokenError()
+    // et le mapping 429→DAILY_LIMIT juste en dessous.
+    if (error.code === 'DAILY_LIMIT') {
+      throw error;
+    }
+
     const tokenError = handleTokenError(error.response);
     if (tokenError) {
       throw new Error(tokenError.message);
     }
-    
+
     // 🚨 Rate limit global (IP) — code spécifique pour fallback QuickDream
     if (error.response?.status === 429) {
       const err = new Error(error.response?.data?.message || 'Limite quotidienne atteinte');
@@ -485,6 +522,7 @@ export async function generateDreamImage(imagePrompt, dreamId, dreamTitle = '') 
     // 🏧 Envoyer le statut premium au backend pour le free tier tracking
     const isPremiumUser = await premiumService.isPremium();
     const headers = await getAuthHeaders();
+    const deviceId = await getDeviceId();
 
     const response = await axios.post(
       `${API_BASE_URL}${API_ENDPOINTS.generateDreamImage}`,
@@ -492,6 +530,7 @@ export async function generateDreamImage(imagePrompt, dreamId, dreamTitle = '') 
         imagePrompt,
         dreamTitle,
         isPremium: isPremiumUser,
+        deviceId,
       },
       {
         headers,

@@ -137,7 +137,10 @@ export default function PostRecordingScreen({ route, navigation }) {
         if (!premium) {
           const remaining = await freeTierService.getDeepDreamRemaining();
           setDeepDreamRemaining(remaining);
-          setSelectedEngine(remaining > 0 ? 'deep' : 'quick');
+          // ⚠️ Ne pas basculer silencieusement sur 'quick' quand le quota est
+          // épuisé : le défaut reste 'deep' pour que handleAnalyze déclenche
+          // sa vérification de quota et affiche la modale paywall au premier
+          // tap sur "Analyser", au lieu de partir sur Llama sans consentement.
         } else {
           setSelectedEngine('deep');
         }
@@ -153,10 +156,16 @@ export default function PostRecordingScreen({ route, navigation }) {
     setShowActivateModal(false);
   }
 
+  function handleContinueFree() {
+    setShowActivateModal(false);
+    setSelectedEngine('quick');
+    handleAnalyze('quick');
+  }
+
   const MIN_DURATION_SECONDS = 3;
   const MIN_TEXT_LENGTH = 10;
 
-  async function handleAnalyze() {
+  async function handleAnalyze(forcedEngine) {
     const isPhotoSource = source?.startsWith('photo-');
 
     if (source === 'write' || isPhotoSource) {
@@ -195,11 +204,12 @@ export default function PostRecordingScreen({ route, navigation }) {
 
     try {
       const premium = await premiumService.isPremium();
+      const engine = forcedEngine || selectedEngine;
       let useDeepDream;
 
       if (premium) {
-        useDeepDream = true;
-      } else if (selectedEngine === 'deep') {
+        useDeepDream = engine === 'deep';
+      } else if (engine === 'deep') {
         const allowance = await freeTierService.checkDeepDreamAllowance();
         if (allowance.remaining <= 0) {
           setShowActivateModal(true);
@@ -212,7 +222,19 @@ export default function PostRecordingScreen({ route, navigation }) {
       }
 
       const metaPayload = hasMetadata ? dreamMetadata : null;
-      const result = await analyzeDreamFromText(editableTranscript, useDeepDream, metaPayload);
+
+      // 🩺 DEBUG TEMPORAIRE — à retirer une fois le bug écriture directe vs
+      // transcript édité diagnostiqué (voir échange sur le timeout 470 chars)
+      console.log('🩺 [DIAG] analyzeDreamFromText appel:', {
+        source,
+        endpoint: useDeepDream ? 'analyze (DeepDream/Claude)' : 'analyzeFree (QuickDream/Llama)',
+        useDeepDream,
+        premium,
+        textLength: editableTranscript.length,
+        newlineCount: (editableTranscript.match(/\n/g) || []).length,
+      });
+
+      const result = await analyzeDreamFromText(editableTranscript, useDeepDream, metaPayload, premium);
 
       await saveAnalysis(dreamId, result, result.model || (useDeepDream ? 'claude' : 'llama'));
       if (metaPayload) saveDreamMetadata(dreamId, metaPayload);
@@ -274,6 +296,7 @@ export default function PostRecordingScreen({ route, navigation }) {
     } catch (error) {
       console.error('❌ Erreur analyse:', error);
       if (error.code === 'DAILY_LIMIT' || error.status === 429) {
+        setShowActivateModal(true);
       } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network') || error.message?.includes('fetch')) {
         showAlert({
           type: 'error',
@@ -341,9 +364,10 @@ export default function PostRecordingScreen({ route, navigation }) {
         {/* Transcription éditable */}
         <View style={styles.transcriptBox}>
           <TextInput
-            style={styles.transcriptInput}
+            style={[styles.transcriptInput, isAnalyzing && styles.transcriptInputDisabled]}
             value={editableTranscript}
             onChangeText={setEditableTranscript}
+            editable={!isAnalyzing}
             multiline
             textAlignVertical="top"
             placeholder={t('postRecording.placeholder')}
@@ -431,56 +455,56 @@ export default function PostRecordingScreen({ route, navigation }) {
             <MaterialIcons name="info-outline" size={18} color={THEME.colors.textSecondary} />
           </TouchableOpacity>
         </View>
-        {isPremium ? (
-          <Text style={[styles.engineLine, { color: '#4F8DFF' }]}>✨ DeepDream</Text>
-        ) : (
-          <View style={styles.engineSelector}>
-            <TouchableOpacity
-              style={[styles.engineOption, selectedEngine === 'quick' && styles.engineOptionActive]}
-              onPress={() => setSelectedEngine('quick')}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.engineRadio, selectedEngine === 'quick' && styles.engineRadioActive]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.engineOptionTitle, { color: selectedEngine === 'quick' ? '#00FFB0' : THEME.colors.textSecondary }]}>
-                  ⚡ QuickDream
-                </Text>
-                <Text style={styles.engineOptionDesc}>{t('postRecording.engine.freeLabel')}</Text>
-              </View>
-            </TouchableOpacity>
+        <View style={[styles.engineSelector, isAnalyzing && { opacity: 0.5 }]}>
+          <TouchableOpacity
+            style={[styles.engineOption, selectedEngine === 'quick' && styles.engineOptionActive]}
+            onPress={() => setSelectedEngine('quick')}
+            disabled={isAnalyzing}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.engineRadio, selectedEngine === 'quick' && styles.engineRadioActive]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.engineOptionTitle, { color: selectedEngine === 'quick' ? '#00FFB0' : THEME.colors.textSecondary }]}>
+                ⚡ QuickDream
+              </Text>
+              <Text style={styles.engineOptionDesc}>{t('postRecording.engine.freeLabel')}</Text>
+            </View>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.engineOption, selectedEngine === 'deep' && styles.engineOptionActiveDeep]}
-              onPress={() => {
-                if (deepDreamRemaining !== null && deepDreamRemaining > 0) {
-                  setSelectedEngine('deep');
-                } else {
-                  setShowActivateModal(true);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.engineRadio, selectedEngine === 'deep' && styles.engineRadioActiveDeep]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.engineOptionTitle, { color: selectedEngine === 'deep' ? '#4F8DFF' : THEME.colors.textSecondary }]}>
-                  ✨ DeepDream
-                </Text>
-                <Text style={styles.engineOptionDesc}>
-                  {deepDreamRemaining !== null && deepDreamRemaining > 0
-                    ? t('postRecording.engine.tastesLeft', { count: deepDreamRemaining })
-                    : t('postRecording.engine.unlockCta')}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
+          <TouchableOpacity
+            style={[styles.engineOption, selectedEngine === 'deep' && styles.engineOptionActiveDeep]}
+            onPress={() => {
+              if (isPremium || (deepDreamRemaining !== null && deepDreamRemaining > 0)) {
+                setSelectedEngine('deep');
+              } else {
+                setShowActivateModal(true);
+              }
+            }}
+            disabled={isAnalyzing}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.engineRadio, selectedEngine === 'deep' && styles.engineRadioActiveDeep]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.engineOptionTitle, { color: selectedEngine === 'deep' ? '#4F8DFF' : THEME.colors.textSecondary }]}>
+                ✨ DeepDream
+              </Text>
+              <Text style={styles.engineOptionDesc}>
+                {isPremium
+                  ? t('postRecording.engine.premiumIncluded')
+                  : (deepDreamRemaining !== null && deepDreamRemaining > 0
+                      ? t('postRecording.engine.tastesLeft', { count: deepDreamRemaining })
+                      : t('postRecording.engine.unlockCta'))}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* 🟢 BOUTON ANALYSER FLOTTANT */}
       <View style={[styles.floatingAnalyzeContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <TouchableOpacity
           style={[styles.floatingAnalyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
-          onPress={handleAnalyze}
+          onPress={() => handleAnalyze()}
           disabled={isAnalyzing}
           activeOpacity={0.8}
         >
@@ -504,6 +528,7 @@ export default function PostRecordingScreen({ route, navigation }) {
         onPurchaseSuccess={handlePurchaseSuccess}
         hasFreeTrials={deepDreamRemaining !== null && deepDreamRemaining > 0}
         freeTrialsRemaining={deepDreamRemaining || 0}
+        onContinueFree={handleContinueFree}
       />
 
       <DeepDreamInfoModal
@@ -584,6 +609,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 280,
     textAlignVertical: 'top',
+  },
+  transcriptInputDisabled: {
+    opacity: 0.5,
   },
   engineLine: {
     fontSize: 12,

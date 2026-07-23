@@ -170,7 +170,8 @@
       "freeLabel": "Free · unlimited",
       "unlockCta": "Unlock →",
       "tastesLeft_one": "{{count}} free DeepDream analysis",
-      "tastesLeft_other": "{{count}} free DeepDream analyses"
+      "tastesLeft_other": "{{count}} free DeepDream analyses",
+      "premiumIncluded": "Included in your subscription"
     },
     "loading": {
       "msg1": "Connecting to the analysis engine...",

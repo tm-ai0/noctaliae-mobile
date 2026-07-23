@@ -267,7 +267,7 @@ export default function ConversationScreen({ route, navigation }) {
     setReanalyzeDropdownOpen(false)
     setIsReanalyzing(true)
     try {
-      const result = await analyzeDreamFromText(dreamTranscription, useClaude)
+      const result = await analyzeDreamFromText(dreamTranscription, useClaude, null, isPremium)
       await saveAnalysis(dreamId, result, useClaude ? 'claude' : 'llama')
       setCurrentAnalysis(result.analysis)
       if (result.title && result.title !== 'Rêve sans titre') setCurrentDreamTitle(result.title)

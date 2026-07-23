@@ -202,10 +202,10 @@ export default function QuickRecordScreen({ navigation }) {
   async function handlePickFromGallery() {
     setShowPhotoModal(false);
     try {
-      const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!granted) return;
+      // Le Photo Picker natif Android (API 33+) ne nécessite aucune permission :
+      // ne pas appeler requestMediaLibraryPermissionsAsync() ici (policy Google Play).
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         base64: true,
         quality: 0.7,
       });
@@ -268,7 +268,7 @@ export default function QuickRecordScreen({ navigation }) {
         audioUri: null,
         transcription: text,
         duration: 0,
-        source: 'text',
+        source: 'write',
       });
     } catch (err) {
       console.error('❌ QuickRecord write:', err);

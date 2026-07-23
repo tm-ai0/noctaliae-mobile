@@ -170,7 +170,8 @@
       "freeLabel": "Gratis · ilimitado",
       "unlockCta": "Desbloquear →",
       "tastesLeft_one": "{{count}} análisis DeepDream gratis",
-      "tastesLeft_other": "{{count}} análisis DeepDream gratis"
+      "tastesLeft_other": "{{count}} análisis DeepDream gratis",
+      "premiumIncluded": "Incluido en tu suscripción"
     },
     "loading": {
       "msg1": "Conectando al motor de análisis...",
