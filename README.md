@@ -276,3 +276,7 @@ MIT License - see [LICENSE](./LICENSE) file for details
 ---
 
 **Made with ❤️ and 🧠 in Montpellier, France**
+
+---
+
+Licence : Creative Commons Attribution - Pas d'Utilisation Commerciale 4.0 (CC BY-NC 4.0). Usage personnel et non commercial uniquement. Pour tout usage commercial, me contacter. © 2026 Thomas Maury.
