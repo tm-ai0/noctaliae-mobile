@@ -341,7 +341,8 @@ export async function chatWithDream(dreamTranscription, dreamAnalysis, conversat
         message: userMessage,
         dreamTranscription: dreamTranscription,
         dreamAnalysis: dreamAnalysis,
-        conversation_history: conversationHistory
+        conversation_history: conversationHistory,
+        isPremium: isPremium,
       },
       {
         headers,
